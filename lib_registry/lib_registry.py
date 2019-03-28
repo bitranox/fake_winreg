@@ -9,7 +9,7 @@ def get_number_of_subkeys(key: HKEYType) -> int:
                 HKEY_LOCAL_MACHINE, HKEY_PERFORMANCE_DATA, HKEY_USERS
 
     >>> get_number_of_subkeys(HKEY_USERS)
-    6
+
     """
     number_of_subkeys, number_of_values, last_modified_win_timestamp = QueryInfoKey(key)
     return number_of_subkeys
@@ -50,21 +50,21 @@ def get_value(key_name: str, subkey_name: str):
     """
     >>> ### key and subkey exist
     >>> sid='S-1-5-20'
-    >>> get_value('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\{}'.format(sid), 'ProfileImagePath')
+    >>> get_value('HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid), 'ProfileImagePath')
     '%systemroot%\\\\ServiceProfiles\\\\NetworkService'
 
     >>> ### key does not exist
-    >>> get_value('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft_XXX\Windows NT\CurrentVersion\ProfileList\{}'.format(sid), 'ProfileImagePath') # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
+    >>> get_value('HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft_XXX\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid), 'ProfileImagePath') # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     Traceback (most recent call last):
     ...
-    FileNotFoundError: [WinError 2] Das System kann die angegebene Datei nicht finden
+    FileNotFoundError: ...
 
     >>> ### subkey does not exist
     >>> sid='S-1-5-20'
-    >>> get_value('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\{}'.format(sid), 'does_not_exist')  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
+    >>> get_value('HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid), 'does_not_exist')  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     Traceback (most recent call last):
     ...
-    FileNotFoundError: [WinError 2] Das System kann die angegebene Datei nicht finden
+    FileNotFoundError: ...
 
     """
     reg = get_registry_connection(key_name)
@@ -80,7 +80,7 @@ def get_registry_connection(key_name: str) -> HKEYType:
     >>> get_registry_connection('HKLM') # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     <PyHKEY object at ...>
     >>> sid='S-1-5-20'
-    >>> get_registry_connection(r'HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\{}'.format(sid)) # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
+    >>> get_registry_connection(r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)) # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     <PyHKEY object at ...>
     >>> get_registry_connection('HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)) # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     <PyHKEY object at ...>
@@ -111,7 +111,7 @@ def get_registry_connection(key_name: str) -> HKEYType:
 def get_key_name_without_hive(key_name: str) -> str:
     """
     >>> sid='S-1-5-20'
-    >>> get_key_name_without_hive(r'HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\{}'.format(sid)) # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
+    >>> get_key_name_without_hive(r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)) # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     'SOFTWARE\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\ProfileList\\\\S-1-5-20'
     >>> get_key_name_without_hive('HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)) # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     'SOFTWARE\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\ProfileList\\\\S-1-5-20'
@@ -134,9 +134,9 @@ def get_key_name_without_hive(key_name: str) -> str:
 def key_exist(key_name: str) -> bool:
     """
     >>> sid='S-1-5-20'
-    >>> key_exist('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\{}'.format(sid))
+    >>> key_exist('HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid))
     True
-    >>> key_exist('HKEY_LOCAL_MACHINE\Software\Wine')
+    >>> key_exist('HKEY_LOCAL_MACHINE\\Software\\Wine')
     False
 
     """

@@ -11,7 +11,7 @@ matrix:
     language: sh
     name: "Windows Python 2.7"
     before_install:
-    - choco install python
+    - choco install python2
     - export PATH="/c/Python27:/c/Python27/Scripts:$PATH"
     - python -m pip install --upgrade pip
     - pip install codecov pytest-pep8 pytest-cov
@@ -32,6 +32,9 @@ matrix:
 
 script:
   - py.test --pep8 --cov lib_registry
+# https://stackoverflow.com/questions/49254777/how-to-let-pytest-discover-and-run-doctests-in-installed-modules
+# coverage run -p -m pytest {envsitepackagesdir}/my_package
+# pytest --doctest-modules --doctest-continue-on-failure
 
 after_success:
 - pip install -e .
