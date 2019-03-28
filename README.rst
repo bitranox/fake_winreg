@@ -1,21 +1,11 @@
-wrapt-timeout-decorator
-=======================
+lib_registry
+============
 
 |Build Status| |jupyter| |Pypi Status| |Codecov Status| |Better Code| |snyk security|
 
-there are many timeout decorators out there - that one focuses on correctness if using with Classes, methods,
+some convenience functions to access the windows registry - to be extended.
 
-class methods, static methods and so on, preserving also the traceback information for Pycharm debugging.
-
-There is also a powerful eval function, it allows to read the desired timeout value even from Class attributes.
-
-It is very flexible and can be used from python 2.7 to python 3.x, pypy, pypy3 and probably other dialects.
-
-Since it is using multiprocess and dill, this decorator can be used on more sophisticated objects 
-
-when not using signals (under Windows for instance). In that case multiprocess and multiprocess.pipe is used 
-
-to communicate with the child process (instead of multiprocessing.queue) which is faster and might work on Amazon AWS.
+supports python2.7 - python3.7 and possibly other dialects.
 
 `100% code coverage <https://codecov.io/gh/bitranox/lib_registry>`_, tested under `Windows <https://travis-ci.org/bitranox/lib_registry>`_
 
@@ -77,6 +67,8 @@ Basic Usage
 ::
 
     from lib_registry import *
+
+
 
 
 Requirements

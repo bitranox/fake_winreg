@@ -8,7 +8,9 @@ def get_number_of_subkeys(key: HKEYType) -> int:
                 HKEY_CLASSES_ROOT, HKEY_CURRENT_CONFIG, HKEY_CURRENT_USER, HKEY_DYN_DATA,
                 HKEY_LOCAL_MACHINE, HKEY_PERFORMANCE_DATA, HKEY_USERS
 
-    >>> get_number_of_subkeys(HKEY_USERS)
+    >>> result = get_number_of_subkeys(HKEY_USERS)
+    >>> result > 1
+    True
 
     """
     number_of_subkeys, number_of_values, last_modified_win_timestamp = QueryInfoKey(key)
@@ -62,7 +64,7 @@ def get_value(key_name: str, subkey_name: str):
     FileNotFoundError: ...
 
     >>> ### subkey does not exist
-    >>> sid='S-1-5-20'
+    >>> sid = 'S-1-5-20'
     >>> key = 'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)
     >>> get_value(key, 'does_not_exist')  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     Traceback (most recent call last):
@@ -128,7 +130,7 @@ def get_key_name_without_hive(key_name: str) -> str:
     'SOFTWARE/Microsoft/Windows NT/CurrentVersion/ProfileList/S-1-5-20'
     """
 
-    l_hive_names = ['HKEY_LOCAL_MACHINE', 'HKLM', 'HKEY_CURRENT_USER', 'HKCU' 
+    l_hive_names = ['HKEY_LOCAL_MACHINE', 'HKLM', 'HKEY_CURRENT_USER', 'HKCU'
                     'HKEY_CLASSES_ROOT', 'HKCR', 'HKEY_CURRENT_CONFIG', 'HKCC',
                     'HKEY_DYN_DATA', 'HKDD', 'HKEY_USERS', 'HKU',
                     'HKEY_PERFORMANCE_DATA', 'HKPD']
