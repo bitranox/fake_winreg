@@ -80,7 +80,7 @@ def get_value(key_name, subkey_name):
     >>> get_value(key, 'ProfileImagePath')  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     Traceback (most recent call last):
     ...
-    FileNotFoundError: ...
+    OSError: key or subkey not found
 
     >>> ### subkey does not exist
     >>> sid = 'S-1-5-20'
@@ -88,16 +88,18 @@ def get_value(key_name, subkey_name):
     >>> get_value(key, 'does_not_exist')  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     Traceback (most recent call last):
     ...
-    FileNotFoundError: ...
+    OSError: key or subkey not found
 
     """
-    reg = get_registry_connection(key_name)
-    key_without_hive = get_key_name_without_hive(key_name)
-    key = OpenKey(reg, key_without_hive)
-    val_type = QueryValueEx(key, subkey_name)
-    result = val_type[0]
-    return result
-
+    try:
+        reg = get_registry_connection(key_name)
+        key_without_hive = get_key_name_without_hive(key_name)
+        key = OpenKey(reg, key_without_hive)
+        val_type = QueryValueEx(key, subkey_name)
+        result = val_type[0]
+        return result
+    except Exception:
+        raise OSError('key or subkey not found')  # FileNotFoundError does not exist in Python 2.7
 
 def get_registry_connection(key_name):
     # type: (str) -> int
