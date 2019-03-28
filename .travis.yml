@@ -33,6 +33,8 @@ matrix:
 script:
   - py.test --pep8 --cov lib_registry
 
+# pytest --doctest-modules --doctest-continue-on-failure
+
 after_success:
 - pip install -e .
 - coverage report
