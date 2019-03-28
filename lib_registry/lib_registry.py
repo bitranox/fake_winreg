@@ -127,7 +127,6 @@ def get_registry_connection(key_name):
 
     main_key = get_main_key(key_name)
     reg = ConnectRegistry(None, main_key)
-    reg = None
     return reg
 
 
@@ -171,6 +170,7 @@ def get_first_part_of_the_key(key_name):
     # type: (str) -> str
     """
     >>> get_first_part_of_the_key('')
+    ''
     >>> get_first_part_of_the_key('/something/')
     'something'
 
