@@ -62,7 +62,26 @@ Basic Usage
 
 ::
 
-    from lib_registry import *
+    >>> from lib_registry import *
+    >>> import winreg
+
+    >>> # get the SID´s of all Windows users
+    >>> get_ls_user_sids()
+    ['.DEFAULT', 'S-1-5-18', 'S-1-5-19', 'S-1-5-20', ...]
+
+    >>> # get the Username from SID
+    >>> get_username_from_sid(sid='S-1-5-20')
+    'NetworkService'
+
+    >>> # Read a Subkey from the Registry
+    >>> key =  'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\S-1-5-20'
+    >>> get_value(key_name=key, subkey_name='ProfileImagePath')
+    '%systemroot%\\\\ServiceProfiles\\\\NetworkService'
+
+    >>> key_exist('HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\S-1-5-20'
+    True
+    >>> key_exist('HKEY_LOCAL_MACHINE\\Software\\Wine')
+    False
 
 
 
