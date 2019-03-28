@@ -17,8 +17,8 @@ def get_number_of_subkeys(key: HKEYType) -> int:
 
 def get_ls_user_sids() -> [str]:
     """
-    >>> get_ls_user_sids()
-    ['.DEFAULT', 'S-1-5-18', 'S-1-5-19', 'S-1-5-20', 'S-1-5-21-206651429-2786145735-121611483-1001', 'S-1-5-21-206651429-2786145735-121611483-1001_Classes']
+    >>> get_ls_user_sids()  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
+    ['.DEFAULT', 'S-1-5-18', 'S-1-5-19', 'S-1-5-20', ...]
 
     """
     ls_user_sids = []
@@ -50,18 +50,21 @@ def get_value(key_name: str, subkey_name: str):
     """
     >>> ### key and subkey exist
     >>> sid='S-1-5-20'
-    >>> get_value('HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid), 'ProfileImagePath')
+    >>> key = 'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)
+    >>> get_value(key, 'ProfileImagePath')
     '%systemroot%\\\\ServiceProfiles\\\\NetworkService'
 
     >>> ### key does not exist
-    >>> get_value('HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft_XXX\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid), 'ProfileImagePath') # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
+    >>> key = 'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft_XXX\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)
+    >>> get_value(key, 'ProfileImagePath') # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     Traceback (most recent call last):
     ...
     FileNotFoundError: ...
 
     >>> ### subkey does not exist
     >>> sid='S-1-5-20'
-    >>> get_value('HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid), 'does_not_exist')  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
+    >>> key = 'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)
+    >>> get_value(key, 'does_not_exist')  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     Traceback (most recent call last):
     ...
     FileNotFoundError: ...
@@ -80,11 +83,14 @@ def get_registry_connection(key_name: str) -> HKEYType:
     >>> get_registry_connection('HKLM') # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     <PyHKEY object at ...>
     >>> sid='S-1-5-20'
-    >>> get_registry_connection(r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)) # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
+    >>> key = 'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)
+    >>> get_registry_connection(key) # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     <PyHKEY object at ...>
-    >>> get_registry_connection('HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)) # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
+    >>> key = 'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)
+    >>> get_registry_connection(key) # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     <PyHKEY object at ...>
-    >>> get_registry_connection('HKEY_LOCAL_MACHINE/SOFTWARE/Microsoft/Windows NT/CurrentVersion/ProfileList/{}'.format(sid)) # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
+    >>> key = 'HKEY_LOCAL_MACHINE/SOFTWARE/Microsoft/Windows NT/CurrentVersion/ProfileList/{}'.format(sid)
+    >>> get_registry_connection(key) # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     <PyHKEY object at ...>
 
     """
@@ -111,11 +117,14 @@ def get_registry_connection(key_name: str) -> HKEYType:
 def get_key_name_without_hive(key_name: str) -> str:
     """
     >>> sid='S-1-5-20'
-    >>> get_key_name_without_hive(r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)) # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
+    >>> key = 'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)
+    >>> get_key_name_without_hive(key) # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     'SOFTWARE\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\ProfileList\\\\S-1-5-20'
-    >>> get_key_name_without_hive('HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)) # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
+    >>> key = 'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)
+    >>> get_key_name_without_hive(key) # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     'SOFTWARE\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\ProfileList\\\\S-1-5-20'
-    >>> get_key_name_without_hive('HKEY_LOCAL_MACHINE/SOFTWARE/Microsoft/Windows NT/CurrentVersion/ProfileList/{}'.format(sid)) # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
+    >>> key = 'HKEY_LOCAL_MACHINE/SOFTWARE/Microsoft/Windows NT/CurrentVersion/ProfileList/{}'.format(sid)
+    >>> get_key_name_without_hive(key) # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     'SOFTWARE/Microsoft/Windows NT/CurrentVersion/ProfileList/S-1-5-20'
     """
 
