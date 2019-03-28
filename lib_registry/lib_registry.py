@@ -1,7 +1,7 @@
 from typing import Any, List
 import sys
 
-if sys.version() < (3, 0):
+if sys.version_info < (3, 0):
     from _winreg import *
 else:
     from winreg import *
