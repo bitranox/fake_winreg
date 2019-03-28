@@ -1,5 +1,10 @@
 from typing import Any, List
-from winreg import *
+import sys
+
+if sys.version() < (3, 0):
+    from _winreg import *
+else:
+    from winreg import *
 
 main_key_hashed_by_name = {'hkey_classes_root': HKEY_CLASSES_ROOT, 'hkcr': HKEY_CLASSES_ROOT,
                            'hkey_current_config': HKEY_CURRENT_CONFIG, 'hkcc': HKEY_CURRENT_CONFIG,
