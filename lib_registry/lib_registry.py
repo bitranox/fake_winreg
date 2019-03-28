@@ -101,6 +101,7 @@ def get_value(key_name, subkey_name):
     except Exception:
         raise OSError('key or subkey not found')  # FileNotFoundError does not exist in Python 2.7
 
+
 def get_registry_connection(key_name):
     # type: (str) -> int
     """
