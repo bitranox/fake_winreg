@@ -238,7 +238,7 @@ def key_exist(key_name):
     try:
         OpenKey(reg, key_without_hive)
         return True
-    except (FileNotFoundError, Exception):
+    except Exception:  # FileNotFoundError does not exist in Python 2.7
         return False
 
 
