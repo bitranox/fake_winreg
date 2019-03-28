@@ -24,7 +24,7 @@ def get_ls_user_sids() -> [str]:
     ls_user_sids = []
     n_sub_keys = get_number_of_subkeys(key=HKEY_USERS)
     for i in range(n_sub_keys):
-        subkey = EnumKey(HKEY_USERS,i)
+        subkey = EnumKey(HKEY_USERS, i)
         ls_user_sids.append(subkey)
     return sorted(ls_user_sids)
 
