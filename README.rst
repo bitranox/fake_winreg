@@ -119,5 +119,3 @@ See `License file <https://github.com/bitranox/wrapt-timeout-decorator/blob/mast
    :target: https://bettercodehub.com/results/bitranox/lib_registry
 .. |snyk security| image:: https://snyk.io/test/github/bitranox/lib_registry/badge.svg
    :target: https://snyk.io/test/github/bitranox/lib_registry
-.. |jupyter| image:: https://mybinder.org/badge.svg
-   :target: https://mybinder.org/v2/gh/bitranox/lib_registry/master?filepath=jupyter_test_lib_registry.ipynb

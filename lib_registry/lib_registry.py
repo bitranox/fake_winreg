@@ -1,6 +1,20 @@
 from typing import Any, List
 from winreg import *
 
+main_key_hashed_by_name = {'hkey_classes_root': HKEY_CLASSES_ROOT, 'hkcr': HKEY_CLASSES_ROOT,
+                           'hkey_current_config': HKEY_CURRENT_CONFIG, 'hkcc': HKEY_CURRENT_CONFIG,
+                           'hkey_current_user': HKEY_CURRENT_USER, 'hkcu': HKEY_CURRENT_USER,
+                           'hkey_dyn_data': HKEY_DYN_DATA, 'hkdd': HKEY_DYN_DATA,
+                           'hkey_local_machine': HKEY_LOCAL_MACHINE, 'hklm': HKEY_LOCAL_MACHINE,
+                           'hkey_performance_data': HKEY_PERFORMANCE_DATA, 'hkpd': HKEY_PERFORMANCE_DATA,
+                           'hkey_users': HKEY_USERS, 'hku': HKEY_USERS
+                           }
+
+l_hive_names = ['HKEY_LOCAL_MACHINE', 'HKLM', 'HKEY_CURRENT_USER', 'HKCU', 'HKEY_CLASSES_ROOT',
+                'HKCR', 'HKEY_CURRENT_CONFIG', 'HKCC', 'HKEY_DYN_DATA', 'HKDD', 'HKEY_USERS',
+                'HKU', 'HKEY_PERFORMANCE_DATA', 'HKPD'
+                ]
+
 
 def get_number_of_subkeys(key):
     # type: (HKEYType) -> int
@@ -81,7 +95,7 @@ def get_value(key_name, subkey_name):
 
 
 def get_registry_connection(key_name):
-    # type: (str) -> HKEYType
+    # type: (str) -> int
     """
     >>> get_registry_connection('HKCR')  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     <PyHKEY object at ...>
@@ -110,24 +124,75 @@ def get_registry_connection(key_name):
     <PyHKEY object at ...>
 
     """
-    key_name = key_name.strip('/')
-    key_name = key_name.strip('\\')
-    reg = None
-    if key_name.startswith('HKEY_CLASSES_ROOT') or key_name.startswith('HKCR'):
-        reg = ConnectRegistry(None, HKEY_CLASSES_ROOT)
-    elif key_name.startswith('HKEY_CURRENT_CONFIG') or key_name.startswith('HKCC'):
-        reg = ConnectRegistry(None, HKEY_CURRENT_CONFIG)
-    elif key_name.startswith('HKEY_CURRENT_USER') or key_name.startswith('HKCU'):
-        reg = ConnectRegistry(None, HKEY_CURRENT_USER)
-    elif key_name.startswith('HKEY_DYN_DATA') or key_name.startswith('HKDD'):
-        reg = ConnectRegistry(None, HKEY_DYN_DATA)
-    elif key_name.startswith('HKEY_LOCAL_MACHINE') or key_name.startswith('HKLM'):
-        reg = ConnectRegistry(None, HKEY_LOCAL_MACHINE)
-    elif key_name.startswith('HKEY_PERFORMANCE_DATA') or key_name.startswith('HKPD'):
-        reg = ConnectRegistry(None, HKEY_PERFORMANCE_DATA)
-    elif key_name.startswith('HKEY_USERS') or key_name.startswith('HKU'):
-        reg = ConnectRegistry(None, HKEY_USERS)
+
+    main_key = get_main_key(key_name)
+    reg = ConnectRegistry(None, main_key)
     return reg
+
+
+def get_main_key(key_name):
+    # type: (str) -> HKEYType
+    """
+    >>> result = get_main_key('HKLM/something')
+    >>> assert isinstance(result, int)
+
+    >>> result = get_main_key('hklm/something')
+    >>> assert isinstance(result, int)
+
+    >>> get_main_key('something/else')  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
+    Traceback (most recent call last):
+    ...
+    ValueError: the registry key needs to start with a valid root key
+
+    """
+    key_name = strip_leading_and_trailing_slashes(key_name)
+    main_key_name = get_first_part_of_the_key(key_name)
+    main_key_name = main_key_name.lower()
+    if main_key_name in main_key_hashed_by_name:
+        main_key = main_key_hashed_by_name[main_key_name]
+        return main_key
+    else:
+        raise ValueError('the registry key needs to start with a valid root key')
+
+
+def strip_leading_and_trailing_slashes(input_string):
+    # type: (str) -> str
+    """
+    >>> strip_leading_and_trailing_slashes('//test\\\\')
+    'test'
+    """
+    input_string = input_string.strip('/')
+    input_string = input_string.strip('\\')
+    return input_string
+
+
+def get_first_part_of_the_key(key_name):
+    # type: (str) -> str
+    """
+    >>> get_first_part_of_the_key('')
+    ''
+    >>> get_first_part_of_the_key('something/')
+    'something'
+
+    """
+    key_name = split_on_first_appearance(key_name, '/')
+    key_name = split_on_first_appearance(key_name, '\\')
+    return key_name
+
+
+def split_on_first_appearance(input_string, separator):
+    # type: (str, str) -> str
+    """
+    >>> split_on_first_appearance('test','/')
+    'test'
+    >>> split_on_first_appearance('test/','/')
+    'test'
+    >>> split_on_first_appearance('test/something','/')
+    'test'
+    """
+    if separator in input_string:
+        input_string = input_string.split(sep=separator, maxsplit=1)[0]
+    return input_string
 
 
 def get_key_name_without_hive(key_name):
@@ -145,10 +210,6 @@ def get_key_name_without_hive(key_name):
     'SOFTWARE/Microsoft/Windows NT/CurrentVersion/ProfileList/S-1-5-20'
     """
 
-    l_hive_names = ['HKEY_LOCAL_MACHINE', 'HKLM', 'HKEY_CURRENT_USER', 'HKCU'
-                    'HKEY_CLASSES_ROOT', 'HKCR', 'HKEY_CURRENT_CONFIG', 'HKCC',
-                    'HKEY_DYN_DATA', 'HKDD', 'HKEY_USERS', 'HKU',
-                    'HKEY_PERFORMANCE_DATA', 'HKPD']
     result = key_name
     for hive_name in l_hive_names:
         if key_name.startswith(hive_name):
