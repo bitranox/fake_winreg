@@ -196,7 +196,7 @@ def split_on_first_appearance(input_string, separator):
     'test'
     """
     if separator in input_string:
-        input_string = input_string.split(sep=separator, maxsplit=1)[0]
+        input_string = input_string.split(separator, 1)[0]
     return input_string
 
 
