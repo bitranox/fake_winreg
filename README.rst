@@ -1,7 +1,7 @@
 lib_registry
 ============
 
-|Build Status| |jupyter| |Pypi Status| |Codecov Status| |Better Code| |snyk security|
+|Build Status| |Pypi Status| |Codecov Status| |Better Code| |snyk security|
 
 some convenience functions to access the windows registry - to be extended.
 
@@ -23,10 +23,6 @@ supports python2.7 - python3.7 and possibly other dialects.
 
 -----
 
-Try it in Jupyter Notebook
---------------------------
-
-You might try it right away in Jupyter Notebook by using the "launch binder" badge, or click `here <https://mybinder.org/v2/gh/bitranox/lib_registry/master?filepath=jupyter_test_lib_registry.ipynb>`_
 
 Installation and Upgrade
 ------------------------
