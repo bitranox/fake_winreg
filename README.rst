@@ -90,6 +90,7 @@ Requirements
 ------------
 
 PYTEST, see : https://github.com/pytest-dev/pytest
+TYPING, see : https://mypy.readthedocs.io/en/latest/python2.html#
 
 Acknowledgement
 ---------------
