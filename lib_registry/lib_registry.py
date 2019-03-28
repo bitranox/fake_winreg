@@ -171,7 +171,7 @@ def get_first_part_of_the_key(key_name):
     """
     >>> get_first_part_of_the_key('')
     ''
-    >>> get_first_part_of_the_key('/something/')
+    >>> get_first_part_of_the_key('something/')
     'something'
 
     """
