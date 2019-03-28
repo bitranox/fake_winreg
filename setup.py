@@ -34,7 +34,7 @@ setup(
     author_email='rnowotny1966@gmail.com',
     url='https://github.com/bitranox/lib_registry',
     packages=['lib_registry'],
-    install_requires=['pytest', 'typing'],
+    install_requires=['pytest', 'typing', 'pywin32'],
     classifiers=CLASSIFIERS,
     setup_requires=['pytest-runner'],
     tests_require=['pytest'])
