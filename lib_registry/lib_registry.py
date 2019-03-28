@@ -125,21 +125,9 @@ def get_registry_connection(key_name):
 
     """
 
+    main_key = get_main_key(key_name)
+    reg = ConnectRegistry(None, main_key)
     reg = None
-    if key_name.startswith('HKEY_CLASSES_ROOT') or key_name.startswith('HKCR'):
-        reg = ConnectRegistry(None, HKEY_CLASSES_ROOT)
-    elif key_name.startswith('HKEY_CURRENT_CONFIG') or key_name.startswith('HKCC'):
-        reg = ConnectRegistry(None, HKEY_CURRENT_CONFIG)
-    elif key_name.startswith('HKEY_CURRENT_USER') or key_name.startswith('HKCU'):
-        reg = ConnectRegistry(None, HKEY_CURRENT_USER)
-    elif key_name.startswith('HKEY_DYN_DATA') or key_name.startswith('HKDD'):
-        reg = ConnectRegistry(None, HKEY_DYN_DATA)
-    elif key_name.startswith('HKEY_LOCAL_MACHINE') or key_name.startswith('HKLM'):
-        reg = ConnectRegistry(None, HKEY_LOCAL_MACHINE)
-    elif key_name.startswith('HKEY_PERFORMANCE_DATA') or key_name.startswith('HKPD'):
-        reg = ConnectRegistry(None, HKEY_PERFORMANCE_DATA)
-    elif key_name.startswith('HKEY_USERS') or key_name.startswith('HKU'):
-        reg = ConnectRegistry(None, HKEY_USERS)
     return reg
 
 
