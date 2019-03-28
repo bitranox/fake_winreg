@@ -95,7 +95,7 @@ def get_value(key_name, subkey_name):
 
 
 def get_registry_connection(key_name):
-    # type: (str) -> Any  # can not find the definition of PyHKEY
+    # type: (str) -> int
     """
     >>> get_registry_connection('HKCR')  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     <PyHKEY object at ...>
