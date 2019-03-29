@@ -1,5 +1,10 @@
 from typing import Any, List
-from winreg import *
+import sys
+
+if sys.version_info < (3, 0):
+    from _winreg import *
+else:
+    from winreg import *
 
 main_key_hashed_by_name = {'hkey_classes_root': HKEY_CLASSES_ROOT, 'hkcr': HKEY_CLASSES_ROOT,
                            'hkey_current_config': HKEY_CURRENT_CONFIG, 'hkcc': HKEY_CURRENT_CONFIG,
@@ -75,7 +80,7 @@ def get_value(key_name, subkey_name):
     >>> get_value(key, 'ProfileImagePath')  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     Traceback (most recent call last):
     ...
-    FileNotFoundError: ...
+    OSError: key or subkey not found
 
     >>> ### subkey does not exist
     >>> sid = 'S-1-5-20'
@@ -83,15 +88,18 @@ def get_value(key_name, subkey_name):
     >>> get_value(key, 'does_not_exist')  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     Traceback (most recent call last):
     ...
-    FileNotFoundError: ...
+    OSError: key or subkey not found
 
     """
-    reg = get_registry_connection(key_name)
-    key_without_hive = get_key_name_without_hive(key_name)
-    key = OpenKey(reg, key_without_hive)
-    val_type = QueryValueEx(key, subkey_name)
-    result = val_type[0]
-    return result
+    try:
+        reg = get_registry_connection(key_name)
+        key_without_hive = get_key_name_without_hive(key_name)
+        key = OpenKey(reg, key_without_hive)
+        val_type = QueryValueEx(key, subkey_name)
+        result = val_type[0]
+        return result
+    except Exception:
+        raise OSError('key or subkey not found')  # FileNotFoundError does not exist in Python 2.7
 
 
 def get_registry_connection(key_name):
@@ -113,13 +121,13 @@ def get_registry_connection(key_name):
     <PyHKEY object at ...>
 
     >>> sid='S-1-5-20'
-    >>> key = 'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)
+    >>> key = r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)
     >>> get_registry_connection(key)  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     <PyHKEY object at ...>
-    >>> key = 'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)
+    >>> key = r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)
     >>> get_registry_connection(key)  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     <PyHKEY object at ...>
-    >>> key = 'HKEY_LOCAL_MACHINE/SOFTWARE/Microsoft/Windows NT/CurrentVersion/ProfileList/{}'.format(sid)
+    >>> key = r'HKEY_LOCAL_MACHINE/SOFTWARE/Microsoft/Windows NT/CurrentVersion/ProfileList/{}'.format(sid)
     >>> get_registry_connection(key)  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     <PyHKEY object at ...>
 
@@ -131,13 +139,15 @@ def get_registry_connection(key_name):
 
 
 def get_main_key(key_name):
-    # type: (str) -> HKEYType
+    # type: (str) -> int
     """
     >>> result = get_main_key('HKLM/something')
-    >>> assert isinstance(result, int)
+    >>> result > 1
+    True
 
     >>> result = get_main_key('hklm/something')
-    >>> assert isinstance(result, int)
+    >>> result > 1
+    True
 
     >>> get_main_key('something/else')  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     Traceback (most recent call last):
@@ -191,7 +201,7 @@ def split_on_first_appearance(input_string, separator):
     'test'
     """
     if separator in input_string:
-        input_string = input_string.split(sep=separator, maxsplit=1)[0]
+        input_string = input_string.split(separator, 1)[0]
     return input_string
 
 
@@ -199,13 +209,13 @@ def get_key_name_without_hive(key_name):
     # type: (str) -> str
     """
     >>> sid='S-1-5-20'
-    >>> key = 'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)
+    >>> key = r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)
     >>> get_key_name_without_hive(key)  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     'SOFTWARE\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\ProfileList\\\\S-1-5-20'
-    >>> key = 'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)
+    >>> key = r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)
     >>> get_key_name_without_hive(key)  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     'SOFTWARE\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\ProfileList\\\\S-1-5-20'
-    >>> key = 'HKEY_LOCAL_MACHINE/SOFTWARE/Microsoft/Windows NT/CurrentVersion/ProfileList/{}'.format(sid)
+    >>> key = r'HKEY_LOCAL_MACHINE/SOFTWARE/Microsoft/Windows NT/CurrentVersion/ProfileList/{}'.format(sid)
     >>> get_key_name_without_hive(key)  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     'SOFTWARE/Microsoft/Windows NT/CurrentVersion/ProfileList/S-1-5-20'
     """
@@ -222,18 +232,19 @@ def key_exist(key_name):
     # type: (str) -> bool
     """
     >>> sid='S-1-5-20'
-    >>> key_exist('HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid))
+    >>> key_exist(r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid))
     True
-    >>> key_exist('HKEY_LOCAL_MACHINE\\Software\\Wine')
+    >>> key_exist(r'HKEY_LOCAL_MACHINE\\Software\\Wine')
     False
 
     """
     reg = get_registry_connection(key_name)
     key_without_hive = get_key_name_without_hive(key_name)
+    # noinspection PyBroadException
     try:
         OpenKey(reg, key_without_hive)
         return True
-    except (FileNotFoundError, Exception):
+    except Exception:  # FileNotFoundError does not exist in Python 2.7
         return False
 
 
