@@ -72,7 +72,7 @@ def get_username_from_sid(sid):
     return username
 
 
-def get_value(key_name, subkey_name):
+def get_value(key_name, value_name):
     # type: (str, str) -> Any
     """
     >>> ### key and subkey exist
@@ -99,13 +99,70 @@ def get_value(key_name, subkey_name):
     """
     try:
         reg = get_registry_connection(key_name)
-        key_without_hive = get_key_name_without_hive(key_name)
+        key_without_hive = get_reg_path(key_name)
         key = OpenKey(reg, key_without_hive)
-        val_type = QueryValueEx(key, subkey_name)
+        val_type = QueryValueEx(key, value_name)
         result = val_type[0]
         return result
     except Exception:
         raise OSError('key or subkey not found')  # FileNotFoundError does not exist in Python 2.7
+
+
+def create_key(key_name):
+    # type (str) -> None
+    """
+    >>> create_key(r'HKCU\\Software\\lib_registry_test')
+    >>> delete_key(r'HKCU\\Software\\lib_registry_test')
+    """
+    root_key = get_root_key(key_name)
+    reg_path = get_reg_path(key_name)
+    CreateKey(root_key, reg_path)
+
+
+def delete_key(key_name):
+    # type: (str) -> None
+    root_key = get_root_key(key_name)
+    reg_path = get_reg_path(key_name)
+    DeleteKey(root_key, reg_path)
+
+
+def set_value(key_name, value_name, value, value_type=REG_SZ):
+    # type: (str, str, Any, int) -> None
+    """
+    value_type:
+    REG_BINARY	                Binary data in any form.
+    REG_DWORD	                A 32-bit number.
+    REG_DWORD_LITTLE_ENDIAN	    A 32-bit number in little-endian format.
+    REG_DWORD_BIG_ENDIAN	    A 32-bit number in big-endian format.
+    REG_EXPAND_SZ	            Null-terminated string containing references to environment variables (%PATH%).
+    REG_LINK	                A Unicode symbolic link.
+    REG_MULTI_SZ	            A sequence of null-terminated strings, terminated by two null characters. (Python handles this termination automatically.)
+    REG_NONE	                No defined value type.
+    REG_RESOURCE_LIST	        A device-driver resource list.
+    REG_SZ	                    A null-terminated string.
+
+    >>> create_key(r'HKCU\\Software\\lib_registry_test')
+    >>> set_value(key_name=r'HKCU\\Software\\lib_registry_test', value_name='test_name', value='test_string', value_type=REG_SZ)
+    >>> result = get_value(key_name=r'HKCU\\Software\\lib_registry_test', value_name='test_name')
+    >>> assert result == 'test_string'
+    >>> delete_value(key_name=r'HKCU\\Software\\lib_registry_test', value_name='test_name')
+    >>> delete_key(r'HKCU\\Software\\lib_registry_test')
+
+    """
+    root_key = get_root_key(key_name)
+    reg_path = get_reg_path(key_name)
+    registry_key = OpenKey(root_key, reg_path, 0, KEY_WRITE)
+    SetValueEx(registry_key, value_name, 0, value_type, value)
+    CloseKey(registry_key)
+
+
+def delete_value(key_name, value_name):
+    # type: (str, str) -> None
+    root_key = get_root_key(key_name)
+    reg_path = get_reg_path(key_name)
+    registry_key = OpenKey(root_key, reg_path, 0, KEY_ALL_ACCESS)
+    DeleteValue(registry_key, value_name)
+    CloseKey(registry_key)
 
 
 def get_registry_connection(key_name):
@@ -139,23 +196,23 @@ def get_registry_connection(key_name):
 
     """
 
-    main_key = get_main_key(key_name)
+    main_key = get_root_key(key_name)
     reg = ConnectRegistry(None, main_key)
     return reg
 
 
-def get_main_key(key_name):
+def get_root_key(key_name):
     # type: (str) -> int
     """
-    >>> result = get_main_key('HKLM/something')
+    >>> result = get_root_key('HKLM/something')
     >>> result > 1
     True
 
-    >>> result = get_main_key('hklm/something')
+    >>> result = get_root_key('hklm/something')
     >>> result > 1
     True
 
-    >>> get_main_key('something/else')  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
+    >>> get_root_key('something/else')  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     Traceback (most recent call last):
     ...
     ValueError: the registry key needs to start with a valid root key
@@ -210,18 +267,18 @@ def split_on_first_appearance(input_string, separator):
     return result
 
 
-def get_key_name_without_hive(key_name):
+def get_reg_path(key_name):
     # type: (str) -> str
     """
     >>> sid='S-1-5-20'
     >>> key = r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)
-    >>> get_key_name_without_hive(key)  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
+    >>> get_reg_path(key)  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     'SOFTWARE\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\ProfileList\\\\S-1-5-20'
     >>> key = r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)
-    >>> get_key_name_without_hive(key)  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
+    >>> get_reg_path(key)  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     'SOFTWARE\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\ProfileList\\\\S-1-5-20'
     >>> key = r'HKEY_LOCAL_MACHINE/SOFTWARE/Microsoft/Windows NT/CurrentVersion/ProfileList/{}'.format(sid)
-    >>> get_key_name_without_hive(key)  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
+    >>> get_reg_path(key)  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     'SOFTWARE/Microsoft/Windows NT/CurrentVersion/ProfileList/S-1-5-20'
     """
 
@@ -244,7 +301,7 @@ def key_exist(key_name):
 
     """
     reg = get_registry_connection(key_name)
-    key_without_hive = get_key_name_without_hive(key_name)
+    key_without_hive = get_reg_path(key_name)
     # noinspection PyBroadException
     try:
         OpenKey(reg, key_without_hive)
