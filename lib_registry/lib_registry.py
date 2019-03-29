@@ -206,9 +206,8 @@ def split_on_first_appearance(input_string, separator):
     >>> split_on_first_appearance('test/something','/')
     'test'
     """
-    if separator in input_string:
-        input_string = input_string.split(separator, 1)[0]
-    return input_string
+    result = input_string.split(separator, 1)[0]
+    return result
 
 
 def get_key_name_without_hive(key_name):
