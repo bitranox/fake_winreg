@@ -1,7 +1,7 @@
 lib_registry
 ============
 
-|Build Status| |Pypi Status| |Codecov Status| |Better Code| |snyk security|
+|Build Status| |Codecov Status| |Better Code| |snyk security|
 
 some convenience functions to access the windows registry - to be extended.
 
@@ -90,6 +90,7 @@ Requirements
 ------------
 
 PYTEST, see : https://github.com/pytest-dev/pytest
+
 TYPING, see : https://pypi.org/project/typing/
 
 Acknowledgement
@@ -112,8 +113,6 @@ See `License file <https://github.com/bitranox/wrapt-timeout-decorator/blob/mast
 
 .. |Build Status| image:: https://travis-ci.org/bitranox/lib_registry.svg?branch=master
    :target: https://travis-ci.org/bitranox/lib_registry
-.. |Pypi Status| image:: https://badge.fury.io/py/lib_registry.svg
-   :target: https://badge.fury.io/py/lib_registry
 .. |Codecov Status| image:: https://codecov.io/gh/bitranox/lib_registry/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/bitranox/lib_registry
 .. |Better Code| image:: https://bettercodehub.com/edge/badge/bitranox/lib_registry?branch=master

@@ -139,7 +139,7 @@ def get_registry_connection(key_name):
 
 
 def get_main_key(key_name):
-    # type: (str) -> HKEYType
+    # type: (str) -> int
     """
     >>> result = get_main_key('HKLM/something')
     >>> result > 1
@@ -209,13 +209,13 @@ def get_key_name_without_hive(key_name):
     # type: (str) -> str
     """
     >>> sid='S-1-5-20'
-    >>> key = 'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)
+    >>> key = r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)
     >>> get_key_name_without_hive(key)  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     'SOFTWARE\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\ProfileList\\\\S-1-5-20'
-    >>> key = 'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)
+    >>> key = r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)
     >>> get_key_name_without_hive(key)  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     'SOFTWARE\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\ProfileList\\\\S-1-5-20'
-    >>> key = 'HKEY_LOCAL_MACHINE/SOFTWARE/Microsoft/Windows NT/CurrentVersion/ProfileList/{}'.format(sid)
+    >>> key = r'HKEY_LOCAL_MACHINE/SOFTWARE/Microsoft/Windows NT/CurrentVersion/ProfileList/{}'.format(sid)
     >>> get_key_name_without_hive(key)  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     'SOFTWARE/Microsoft/Windows NT/CurrentVersion/ProfileList/S-1-5-20'
     """
@@ -232,14 +232,15 @@ def key_exist(key_name):
     # type: (str) -> bool
     """
     >>> sid='S-1-5-20'
-    >>> key_exist('HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid))
+    >>> key_exist(r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid))
     True
-    >>> key_exist('HKEY_LOCAL_MACHINE\\Software\\Wine')
+    >>> key_exist(r'HKEY_LOCAL_MACHINE\\Software\\Wine')
     False
 
     """
     reg = get_registry_connection(key_name)
     key_without_hive = get_key_name_without_hive(key_name)
+    # noinspection PyBroadException
     try:
         OpenKey(reg, key_without_hive)
         return True
