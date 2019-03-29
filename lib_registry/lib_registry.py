@@ -11,15 +11,15 @@ if is_platform_windows:
     else:
         from winreg import *
 
-
-main_key_hashed_by_name = {'hkey_classes_root': HKEY_CLASSES_ROOT, 'hkcr': HKEY_CLASSES_ROOT,
-                           'hkey_current_config': HKEY_CURRENT_CONFIG, 'hkcc': HKEY_CURRENT_CONFIG,
-                           'hkey_current_user': HKEY_CURRENT_USER, 'hkcu': HKEY_CURRENT_USER,
-                           'hkey_dyn_data': HKEY_DYN_DATA, 'hkdd': HKEY_DYN_DATA,
-                           'hkey_local_machine': HKEY_LOCAL_MACHINE, 'hklm': HKEY_LOCAL_MACHINE,
-                           'hkey_performance_data': HKEY_PERFORMANCE_DATA, 'hkpd': HKEY_PERFORMANCE_DATA,
-                           'hkey_users': HKEY_USERS, 'hku': HKEY_USERS
-                           }
+if is_platform_windows:
+    main_key_hashed_by_name = {'hkey_classes_root': HKEY_CLASSES_ROOT, 'hkcr': HKEY_CLASSES_ROOT,
+                               'hkey_current_config': HKEY_CURRENT_CONFIG, 'hkcc': HKEY_CURRENT_CONFIG,
+                               'hkey_current_user': HKEY_CURRENT_USER, 'hkcu': HKEY_CURRENT_USER,
+                               'hkey_dyn_data': HKEY_DYN_DATA, 'hkdd': HKEY_DYN_DATA,
+                               'hkey_local_machine': HKEY_LOCAL_MACHINE, 'hklm': HKEY_LOCAL_MACHINE,
+                               'hkey_performance_data': HKEY_PERFORMANCE_DATA, 'hkpd': HKEY_PERFORMANCE_DATA,
+                               'hkey_users': HKEY_USERS, 'hku': HKEY_USERS
+                               }
 
 l_hive_names = ['HKEY_LOCAL_MACHINE', 'HKLM', 'HKEY_CURRENT_USER', 'HKCU', 'HKEY_CLASSES_ROOT',
                 'HKCR', 'HKEY_CURRENT_CONFIG', 'HKCC', 'HKEY_DYN_DATA', 'HKDD', 'HKEY_USERS',
