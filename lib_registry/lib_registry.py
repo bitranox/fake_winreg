@@ -136,7 +136,8 @@ def set_value(key_name, value_name, value, value_type=REG_SZ):
     REG_DWORD_BIG_ENDIAN	    A 32-bit number in big-endian format.
     REG_EXPAND_SZ	            Null-terminated string containing references to environment variables (%PATH%).
     REG_LINK	                A Unicode symbolic link.
-    REG_MULTI_SZ	            A sequence of null-terminated strings, terminated by two null characters. (Python handles this termination automatically.)
+    REG_MULTI_SZ	            A sequence of null-terminated strings, terminated by two null characters.
+                                (Python handles this termination automatically.)
     REG_NONE	                No defined value type.
     REG_RESOURCE_LIST	        A device-driver resource list.
     REG_SZ	                    A null-terminated string.
