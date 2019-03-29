@@ -77,12 +77,12 @@ def get_value(key_name, subkey_name):
     """
     >>> ### key and subkey exist
     >>> sid = 'S-1-5-20'
-    >>> key = 'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)
+    >>> key = r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)
     >>> get_value(key, 'ProfileImagePath')
     '%systemroot%\\\\ServiceProfiles\\\\NetworkService'
 
     >>> ### key does not exist
-    >>> key = 'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft_XXX\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)
+    >>> key = r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft_XXX\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)
     >>> get_value(key, 'ProfileImagePath')  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     Traceback (most recent call last):
     ...
@@ -90,7 +90,7 @@ def get_value(key_name, subkey_name):
 
     >>> ### subkey does not exist
     >>> sid = 'S-1-5-20'
-    >>> key = 'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)
+    >>> key = r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)
     >>> get_value(key, 'does_not_exist')  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     Traceback (most recent call last):
     ...
