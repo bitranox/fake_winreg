@@ -27,7 +27,7 @@ long_description = (
 
 setup(
     name='lib_registry',
-    version='1.0.0',
+    version='1.0.1',
     description='Windows Registry related',
     long_description=long_description,
     author='Robert Nowotny',
