@@ -1,10 +1,16 @@
+import platform
 from typing import Any, List
 import sys
 
-if sys.version_info < (3, 0):
-    from _winreg import *
-else:
-    from winreg import *
+is_python2 = sys.version_info < (3, 0)
+is_platform_windows = platform.system().lower() == 'windows'
+
+if is_platform_windows:
+    if is_python2:
+        from _winreg import *
+    else:
+        from winreg import *
+
 
 main_key_hashed_by_name = {'hkey_classes_root': HKEY_CLASSES_ROOT, 'hkcr': HKEY_CLASSES_ROOT,
                            'hkey_current_config': HKEY_CURRENT_CONFIG, 'hkcc': HKEY_CURRENT_CONFIG,
