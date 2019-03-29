@@ -142,10 +142,10 @@ def get_main_key(key_name):
     # type: (str) -> HKEYType
     """
     >>> result = get_main_key('HKLM/something')
-    >>> assert isinstance(result, int)
+    >>> assert(isinstance(result, int))
 
     >>> result = get_main_key('hklm/something')
-    >>> assert isinstance(result, int)
+    >>> assert(isinstance(result, int))
 
     >>> get_main_key('something/else')  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     Traceback (most recent call last):
