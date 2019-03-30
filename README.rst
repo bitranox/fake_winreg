@@ -104,14 +104,14 @@ Basic Usage
 Requirements
 ------------
 
-PYTEST, see : https://github.com/pytest-dev/pytest
+pytest, see : https://github.com/pytest-dev/pytest
 
-TYPING, see : https://pypi.org/project/typing/
+typing, see : https://pypi.org/project/typing/
 
 Acknowledgement
 ---------------
 
-special thanks to Robert C. Martin, especially for his books on "clean code" and "clean architecture"
+and special thanks to "uncle bob" Robert C. Martin, especially for his books on "clean code" and "clean architecture"
 
 Contribute
 ----------
