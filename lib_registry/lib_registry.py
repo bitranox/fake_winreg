@@ -20,6 +20,8 @@ if is_platform_windows:
                                'hkey_performance_data': HKEY_PERFORMANCE_DATA, 'hkpd': HKEY_PERFORMANCE_DATA,
                                'hkey_users': HKEY_USERS, 'hku': HKEY_USERS
                                }
+else:
+    REG_SZ = 0  # avoid Import Error on Linux on function set_value
 
 l_hive_names = ['HKEY_LOCAL_MACHINE', 'HKLM', 'HKEY_CURRENT_USER', 'HKCU', 'HKEY_CLASSES_ROOT',
                 'HKCR', 'HKEY_CURRENT_CONFIG', 'HKCC', 'HKEY_DYN_DATA', 'HKDD', 'HKEY_USERS',
