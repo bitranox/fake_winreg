@@ -124,7 +124,7 @@ License
 
 This software is licensed under the `MIT license <http://en.wikipedia.org/wiki/MIT_License>`_
 
-See `License file <https://github.com/bitranox/wrapt-timeout-decorator/blob/master/LICENSE.txt>`_
+See `License file <https://github.com/bitranox/lib_registry/blob/master/LICENSE.txt>`_
 
 .. |Build Status| image:: https://travis-ci.org/bitranox/lib_registry.svg?branch=master
    :target: https://travis-ci.org/bitranox/lib_registry
