@@ -29,30 +29,29 @@ Installation and Upgrade
 
 From source code:
 
-::
+.. code-block:: bash
 
     python setup.py install
     python setup.py test
 
 via pip (preferred):
 
-::
+.. code-block:: bash
 
     pip install --upgrade https://github.com/bitranox/lib_registry/archive/master.zip
 
 via requirements.txt:
 
-::
+.. code-block:: bash
 
-    Insert following line in Your requirements.txt:
-    https://github.com/bitranox/lib_registry/archive/master.zip
-
-    to install and upgrade all modules mentioned in requirements.txt:
+    # Insert following line in Your requirements.txt:
+    # https://github.com/bitranox/lib_registry/archive/master.zip
+    # to install and upgrade all modules mentioned in requirements.txt:
     pip install --upgrade -r /<path>/requirements.txt
 
 via python:
 
-::
+.. code-block:: bash
 
     python -m pip install --upgrade https://github.com/bitranox/lib_registry/archive/master.zip
 
@@ -60,7 +59,7 @@ via python:
 Basic Usage
 -----------
 
-::
+.. code-block:: py
 
     >>> from lib_registry import *
 
