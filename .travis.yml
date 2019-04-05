@@ -2,11 +2,123 @@ language: python
 group: travis_latest
 dist: xenial
 
-sudo: false
+sudo: true
 
+### install xvfb virtual framebuffer - start commands with xvfb-run <command> - this we need for WINE
+addons:
+  apt:
+    packages:
+      - xvfb
+      - winbind
+
+env:
+  - github_master="https://github.com/bitranox/lib_registry/archive/master.zip"
 
 matrix:
   include:
+
+  - os: linux
+    language: sh
+    name: "WINE32 Python 2.7.16"
+    env:
+      - WINEARCH="win32"
+      - WINEPREFIX="${HOME}/wine/wine32"
+      - WINEPATH="c:/PortableGit32/cmd;c:/Python27-32;c:/Python27-32/Scripts"
+
+    # services:
+    #   - xvfb    # this does not work 2019-04-04
+
+    before_install:
+      - chmod 755 ./*.sh    # make shell scripts executable, just in case.
+      - ./install_wine.sh
+      - ./install_wine_machine.sh
+      - ./install_wine_python2_preinstalled.sh
+      - ./install_wine_git_portable.sh
+    install:
+      - wine python -m pip install --upgrade pip
+      - wine pip install codecov pytest pytest-pep8 pytest-cov dill
+      - wine pip install -e .
+    script:
+      - wine pip install ${github_master} --install-option test # test setup.py test option
+      - wine python -m pytest --pep8 --cov
+    after_success:
+      - wine coverage report
+      - wine codecov
+
+  - os: linux
+    language: sh
+    name: "WINE64 Python 2.7.16"
+    env:
+      - WINEPREFIX="${HOME}/wine/wine64"
+      - WINEPATH="c:/PortableGit64/cmd;c:/Python27-64;c:/Python27-64/Scripts"
+
+    before_install:
+      - chmod 755 ./*.sh    # make shell scripts executable, just in case.
+      - ./install_wine.sh
+      - ./install_wine_machine.sh
+      - ./install_wine_python2_preinstalled.sh
+      - ./install_wine_git_portable.sh
+    install:
+      - wine python -m pip install --upgrade pip
+      - wine pip install codecov pytest pytest-pep8 pytest-cov dill
+      - wine pip install -e .
+    script:
+      - wine pip install ${github_master} --install-option test # test setup.py test option
+      - wine python -m pytest --pep8 --cov
+    after_success:
+      - wine coverage report
+      - wine codecov
+
+  - os: linux
+    language: sh
+    name: "WINE32 Python 3.7.3"
+    env:
+      - WINEARCH="win32"
+      - WINEPREFIX="${HOME}/wine/wine32"
+      - WINEPATH="c:/PortableGit32/cmd;c:/Python37-32;c:/Python37-32/Scripts"
+    # services:
+    #   - xvfb    # this does not work 2019-04-04
+
+    before_install:
+      - chmod 755 ./*.sh    # make shell scripts executable, just in case.
+      - ./install_wine.sh
+      - ./install_wine_machine.sh
+      - ./install_wine_python3_preinstalled.sh
+      - ./install_wine_git_portable.sh
+    install:
+      - wine python -m pip install --upgrade pip
+      - wine pip install codecov pytest pytest-pep8 pytest-cov dill
+      - wine pip install -e .
+    script:
+      - wine pip install ${github_master} --install-option test # test setup.py test option
+      - wine python -m pytest --pep8 --cov
+    after_success:
+      - wine coverage report
+      - wine codecov
+
+  - os: linux
+    language: sh
+    name: "WINE64 Python 3.7.3"
+    env:
+      - WINEPREFIX="${HOME}/wine/wine64"
+      - WINEPATH="c:/PortableGit64/cmd;c:/Python37-64;c:/Python37-64/Scripts"
+    before_install:
+      - chmod 755 ./*.sh    # make shell scripts executable, just in case.
+      - ./install_wine.sh
+      - ./install_wine_machine.sh
+      - ./install_wine_python3_preinstalled.sh
+      - ./install_wine_git_portable.sh
+    install:
+      - wine python -m pip install --upgrade pip
+      - wine pip install codecov pytest pytest-pep8 pytest-cov dill
+      - wine pip install -e .
+    script:
+      - wine pip install ${github_master} --install-option test # test setup.py test option
+      - wine python -m pytest --pep8 --cov
+    after_success:
+      - wine coverage report
+      - wine codecov
+
 
   - os: windows
     language: sh
@@ -15,7 +127,7 @@ matrix:
     - choco install python2
     - export PATH="/c/Python27:/c/Python27/Scripts:$PATH"
     - python -m pip install --upgrade pip
-    - pip install codecov pytest-pep8 pytest-cov
+    - pip install codecov pytest-pep8 pytest-cov dill
     - pip install -e .
 
   - os: windows
@@ -25,7 +137,7 @@ matrix:
     - choco install python3
     - export PATH="/c/Python37:/c/Python37/Scripts:$PATH"
     - python -m pip install --upgrade pip
-    - pip install codecov pytest-pep8 pytest-cov
+    - pip install codecov pytest-pep8 pytest-cov dill
     - pip install -e .
 
 # install:
@@ -34,14 +146,9 @@ matrix:
 # - pip install codecov pytest pytest-pep8 pytest-cov
 
 script:
-#  - py.test --pep8 --cov lib_registry
-  - py.test --pep8 --cov lib_registry
-
-# https://stackoverflow.com/questions/49254777/how-to-let-pytest-discover-and-run-doctests-in-installed-modules
-# coverage run -p -m pytest {envsitepackagesdir}/my_package
-# pytest --doctest-modules --doctest-continue-on-failure
+  - pip install ${github_master} --install-option test # test setup.py test option
+  - py.test --pep8 --cov
 
 after_success:
-- pip install -e .
 - coverage report
 - codecov
