@@ -11,9 +11,6 @@ addons:
       - xvfb
       - winbind
 
-env:
-  - github_master="https://github.com/bitranox/lib_registry/archive/master.zip"
-
 matrix:
   include:
 
@@ -39,7 +36,7 @@ matrix:
       - wine pip install codecov pytest pytest-pep8 pytest-cov dill
       - wine pip install -e .
     script:
-      - wine pip install ${github_master} --install-option test # test setup.py test option
+      - wine pip install https://github.com/bitranox/lib_registry/archive/master.zip --install-option test # test setup.py test option
       - wine python -m pytest --pep8 --cov
     after_success:
       - wine coverage report
@@ -63,7 +60,7 @@ matrix:
       - wine pip install codecov pytest pytest-pep8 pytest-cov dill
       - wine pip install -e .
     script:
-      - wine pip install ${github_master} --install-option test # test setup.py test option
+      - wine pip install https://github.com/bitranox/lib_registry/archive/master.zip --install-option test # test setup.py test option
       - wine python -m pytest --pep8 --cov
     after_success:
       - wine coverage report
@@ -90,7 +87,7 @@ matrix:
       - wine pip install codecov pytest pytest-pep8 pytest-cov dill
       - wine pip install -e .
     script:
-      - wine pip install ${github_master} --install-option test # test setup.py test option
+      - wine pip install https://github.com/bitranox/lib_registry/archive/master.zip --install-option test # test setup.py test option
       - wine python -m pytest --pep8 --cov
     after_success:
       - wine coverage report
@@ -113,7 +110,7 @@ matrix:
       - wine pip install codecov pytest pytest-pep8 pytest-cov dill
       - wine pip install -e .
     script:
-      - wine pip install ${github_master} --install-option test # test setup.py test option
+      - wine pip install https://github.com/bitranox/lib_registry/archive/master.zip --install-option test # test setup.py test option
       - wine python -m pytest --pep8 --cov
     after_success:
       - wine coverage report
@@ -146,7 +143,7 @@ matrix:
 # - pip install codecov pytest pytest-pep8 pytest-cov
 
 script:
-  - pip install ${github_master} --install-option test # test setup.py test option
+  - pip install https://github.com/bitranox/lib_registry/archive/master.zip --install-option test # test setup.py test option
   - py.test --pep8 --cov
 
 after_success:
