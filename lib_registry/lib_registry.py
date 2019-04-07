@@ -70,6 +70,7 @@ def get_username_from_sid(sid):
     >>> ls_user_sids = get_ls_user_sids()
     >>> assert len(ls_user_sids) > 1
     >>> get_username_from_sid(ls_user_sids[1])
+    'systemprofile'
 
     """
     reg = get_registry_connection('HKEY_LOCAL_MACHINE')
