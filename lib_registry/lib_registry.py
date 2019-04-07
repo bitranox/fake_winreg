@@ -374,7 +374,7 @@ def get_is_platform_windows_wine():
     """
 
     if is_platform_windows:
-        _is_platform_windows_wine = key_exist(r'HKEY_LOCAL_MACHINE\\Software\\Wine')
+        _is_platform_windows_wine = key_exist(r'HKEY_LOCAL_MACHINE\Software\Wine')
     else:
         _is_platform_windows_wine = False
     return _is_platform_windows_wine
