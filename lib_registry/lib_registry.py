@@ -73,11 +73,25 @@ def get_username_from_sid(sid):
     'systemprofile'
 
     """
+    if get_is_platform_windows_wine():
+        username = _get_username_from_sid_wine(sid)
+    else:
+        username = _get_username_from_sid_windows(sid)
+    return username
+
+
+def _get_username_from_sid_windows(sid):
     reg = get_registry_connection('HKEY_LOCAL_MACHINE')
     key = OpenKey(reg, r'SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid))
-    # value types see https://docs.python.org/3.4/library/winreg.html#value-types
     val, value_type = QueryValueEx(key, 'ProfileImagePath')
     username = val.rsplit('\\', 1)[1]
+    return username
+
+
+def _get_username_from_sid_wine(sid):
+    reg = get_registry_connection('HKEY_USERS')
+    key = OpenKey(reg, r'{}\\Volatile_Environment\\'.format(sid))
+    username, value_type = QueryValueEx(key, 'USERNAME')
     return username
 
 
@@ -350,3 +364,17 @@ def remove_prefix_including_first_slash_or_backslash(input_str):
     elif '/' in input_str:
         result = input_str.split('/', 1)[1]
     return result
+
+
+def get_is_platform_windows_wine():
+    # type: () -> bool
+    """
+    >>> result = get_is_platform_windows_wine()
+
+    """
+
+    if is_platform_windows:
+        _is_platform_windows_wine = key_exist(r'HKEY_LOCAL_MACHINE\\Software\\Wine')
+    else:
+        _is_platform_windows_wine = False
+    return _is_platform_windows_wine
