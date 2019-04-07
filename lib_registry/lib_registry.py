@@ -67,11 +67,8 @@ def get_ls_user_sids():
 def get_username_from_sid(sid):
     # type: (str) -> str
     """
-    >>> # ls_user_sids = get_ls_user_sids()
-    >>> # assert get_username_from_sid(ls_user_sids[1]) == 'systemprofile'
-    >>> get_ls_user_sids()
     >>> ls_user_sids = get_ls_user_sids()
-
+    >>> assert len(ls_user_sids) > 1
     >>> get_username_from_sid(ls_user_sids[1])
 
     """
