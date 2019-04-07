@@ -82,7 +82,7 @@ def get_username_from_sid(sid):
 
 def _get_username_from_sid_windows(sid):
     reg = get_registry_connection('HKEY_LOCAL_MACHINE')
-    key = OpenKey(reg, r'SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid))
+    key = OpenKey(reg, r'SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\{}'.format(sid))
     val, value_type = QueryValueEx(key, 'ProfileImagePath')
     username = val.rsplit('\\', 1)[1]
     return username
@@ -90,7 +90,7 @@ def _get_username_from_sid_windows(sid):
 
 def _get_username_from_sid_wine(sid):
     reg = get_registry_connection('HKEY_USERS')
-    key = OpenKey(reg, r'{}\\Volatile_Environment\\'.format(sid))
+    key = OpenKey(reg, r'{}\Volatile_Environment'.format(sid))
     username, value_type = QueryValueEx(key, 'USERNAME')
     return username
 
