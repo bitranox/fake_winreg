@@ -7,7 +7,7 @@ some convenience functions to access the windows registry - to be extended.
 
 supports python 2.7 - python 3.7 and possibly other dialects.
 
-`100% code coverage <https://codecov.io/gh/bitranox/lib_registry>`_, tested under `Windows <https://travis-ci.org/bitranox/lib_registry>`_
+`100% code coverage <https://codecov.io/gh/bitranox/lib_registry>`_, tested under `Windows and Wine <https://travis-ci.org/bitranox/lib_registry>`_
 
 -----
 
