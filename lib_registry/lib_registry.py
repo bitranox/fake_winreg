@@ -49,8 +49,11 @@ def get_number_of_subkeys(key):
 def get_ls_user_sids():
     # type: () -> List[str]
     """
-    >>> get_ls_user_sids()  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
-    ['.DEFAULT', 'S-1-5-18', 'S-1-5-19', 'S-1-5-20', ...]
+    >>> ls_user_sids = get_ls_user_sids()
+    >>> assert len(ls_user_sids) > 1
+    >>> assert ls_user_sids[0].lower() == '.default'
+    >>> # Windows: ['.DEFAULT', 'S-1-5-18', 'S-1-5-19', 'S-1-5-20', ...]
+    >>> # Wine: ['.Default', 'S-1-5-21-0-0-0-1000']
 
     """
     ls_user_sids = []
@@ -64,8 +67,9 @@ def get_ls_user_sids():
 def get_username_from_sid(sid):
     # type: (str) -> str
     """
-    >>> get_username_from_sid(sid='S-1-5-20')
-    'NetworkService'
+    >>> ls_user_sids = get_ls_user_sids()
+    >>> assert get_username_from_sid(ls_user_sids[1]) == 'systemprofile'
+
     """
     reg = get_registry_connection('HKEY_LOCAL_MACHINE')
     key = OpenKey(reg, r'SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\{}'.format(sid))
@@ -79,10 +83,10 @@ def get_value(key_name, value_name):
     # type: (str, str) -> Any
     """
     >>> ### key and subkey exist
-    >>> sid = 'S-1-5-20'
+    >>> sid = get_ls_user_sids()[1]
     >>> key = r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)
     >>> get_value(key, 'ProfileImagePath')
-    '%systemroot%\\\\ServiceProfiles\\\\NetworkService'
+    '%systemroot%\\\\system32\\\\config\\\\systemprofile'
 
     >>> ### key does not exist
     >>> key = r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft_XXX\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)
