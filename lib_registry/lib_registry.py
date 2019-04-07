@@ -67,8 +67,12 @@ def get_ls_user_sids():
 def get_username_from_sid(sid):
     # type: (str) -> str
     """
+    >>> # ls_user_sids = get_ls_user_sids()
+    >>> # assert get_username_from_sid(ls_user_sids[1]) == 'systemprofile'
+    >>> get_ls_user_sids()
     >>> ls_user_sids = get_ls_user_sids()
-    >>> assert get_username_from_sid(ls_user_sids[1]) == 'systemprofile'
+
+    >>> get_username_from_sid(ls_user_sids[1])
 
     """
     reg = get_registry_connection('HKEY_LOCAL_MACHINE')
@@ -308,10 +312,9 @@ def get_reg_path(key_name):
 def key_exist(key_name):
     # type: (str) -> bool
     """
-    >>> sid='S-1-5-20'
-    >>> key_exist(r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid))
+    >>> key_exist(r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion')
     True
-    >>> key_exist(r'HKEY_LOCAL_MACHINE\\Software\\Wine')
+    >>> key_exist(r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\DoesNotExist')
     False
 
     """
