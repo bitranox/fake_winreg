@@ -74,7 +74,7 @@ def get_username_from_sid(sid):
 
     """
     reg = get_registry_connection('HKEY_LOCAL_MACHINE')
-    key = OpenKey(reg, r'SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\{}'.format(sid))
+    key = OpenKey(reg, r'SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid))
     # value types see https://docs.python.org/3.4/library/winreg.html#value-types
     val, value_type = QueryValueEx(key, 'ProfileImagePath')
     username = val.rsplit('\\', 1)[1]
