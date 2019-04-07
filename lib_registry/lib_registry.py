@@ -90,7 +90,7 @@ def _get_username_from_sid_windows(sid):
 
 def _get_username_from_sid_wine(sid):
     reg = get_registry_connection('HKEY_USERS')
-    key = OpenKey(reg, r'{}\Volatile_Environment'.format(sid))
+    key = OpenKey(reg, r'{}\Volatile Environment'.format(sid))
     username, value_type = QueryValueEx(key, 'USERNAME')
     return username
 
