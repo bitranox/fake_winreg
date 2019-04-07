@@ -1,151 +1,110 @@
 language: python
 group: travis_latest
 dist: xenial
-
 sudo: true
+
+env:
+    global:
+        - github_master="https://github.com/${TRAVIS_REPO_SLUG}/archive/master.zip"
 
 ### install xvfb virtual framebuffer - start commands with xvfb-run <command> - this we need for WINE
 addons:
-  apt:
-    packages:
-      - xvfb
-      - winbind
-
+    apt:
+        packages:
+            - xvfb
+            - winbind
+    #################################################################################
+    #################################################################################
 matrix:
-  include:
+    include:
+    #################################################################################
+    - os: linux
+      language: sh
+      name: "WINE 32 Bit Python 2.7.16"
+      env:
+          - WINEARCH="win32"
+          - WINEPREFIX="${HOME}/wine/wine32"
+          - WINEPATH="c:/PortableGit32/cmd;c:/Python27-32;c:/Python27-32/Scripts"
+          - CMDPREFIX="wine"
+      # services:
+      #   - xvfb    # this does not work 2019-04-04
+      before_install:
+          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
+          - ./install_wine.sh
+          - ./install_wine_machine.sh
+          - ./install_wine_python2_preinstalled.sh
+          - ./install_wine_git_portable.sh
+    #################################################################################
+    - os: linux
+      language: sh
+      name: "WINE 64 Bit Python 2.7.16"
+      env:
+          - WINEPREFIX="${HOME}/wine/wine64"
+          - WINEPATH="c:/PortableGit64/cmd;c:/Python27-64;c:/Python27-64/Scripts"
+          - CMDPREFIX="wine"
+      before_install:
+          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
+          - ./install_wine.sh
+          - ./install_wine_machine.sh
+          - ./install_wine_python2_preinstalled.sh
+          - ./install_wine_git_portable.sh
+    #################################################################################
+    - os: linux
+      language: sh
+      name: "WINE 32 Bit Python 3.7.3"
+      env:
+          - WINEARCH="win32"
+          - WINEPREFIX="${HOME}/wine/wine32"
+          - WINEPATH="c:/PortableGit32/cmd;c:/Python37-32;c:/Python37-32/Scripts"
+          - CMDPREFIX="wine"
+      # services:
+      #   - xvfb    # this does not work 2019-04-04
+      before_install:
+          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
+          - ./install_wine.sh
+          - ./install_wine_machine.sh
+          - ./install_wine_python3_preinstalled.sh
+          - ./install_wine_git_portable.sh
+    #################################################################################
+    - os: linux
+      language: sh
+      name: "WINE 64 Bit Python 3.7.3"
+      env:
+          - WINEPREFIX="${HOME}/wine/wine64"
+          - WINEPATH="c:/PortableGit64/cmd;c:/Python37-64;c:/Python37-64/Scripts"
+          - CMDPREFIX="wine"
+      before_install:
+          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
+          - ./install_wine.sh
+          - ./install_wine_machine.sh
+          - ./install_wine_python3_preinstalled.sh
+          - ./install_wine_git_portable.sh
+    #################################################################################
+    - os: windows
+      language: sh
+      name: "Windows Python 2.7"
+      before_install:
+          - choco install python2
+          - export PATH="/c/Python27:/c/Python27/Scripts:$PATH"
+    #################################################################################
+    - os: windows
+      language: sh
+      name: "Windows Python 3.7"
+      before_install:
+        - choco install python3
+        - export PATH="/c/Python37:/c/Python37/Scripts:$PATH"
+    #################################################################################
+    #################################################################################
 
-  - os: linux
-    language: sh
-    name: "WINE32 Python 2.7.16"
-    env:
-      - WINEARCH="win32"
-      - WINEPREFIX="${HOME}/wine/wine32"
-      - WINEPATH="c:/PortableGit32/cmd;c:/Python27-32;c:/Python27-32/Scripts"
-
-    # services:
-    #   - xvfb    # this does not work 2019-04-04
-
-    before_install:
-      - chmod 755 ./*.sh    # make shell scripts executable, just in case.
-      - ./install_wine.sh
-      - ./install_wine_machine.sh
-      - ./install_wine_python2_preinstalled.sh
-      - ./install_wine_git_portable.sh
-    install:
-      - wine python -m pip install --upgrade pip
-      - wine pip install codecov pytest pytest-pep8 pytest-cov dill
-      - wine pip install -e .
-    script:
-      - wine pip install https://github.com/bitranox/lib_registry/archive/master.zip --install-option test # test setup.py test option
-      - wine python -m pytest --pep8 --cov
-    after_success:
-      - wine coverage report
-      - wine codecov
-
-  - os: linux
-    language: sh
-    name: "WINE64 Python 2.7.16"
-    env:
-      - WINEPREFIX="${HOME}/wine/wine64"
-      - WINEPATH="c:/PortableGit64/cmd;c:/Python27-64;c:/Python27-64/Scripts"
-
-    before_install:
-      - chmod 755 ./*.sh    # make shell scripts executable, just in case.
-      - ./install_wine.sh
-      - ./install_wine_machine.sh
-      - ./install_wine_python2_preinstalled.sh
-      - ./install_wine_git_portable.sh
-    install:
-      - wine python -m pip install --upgrade pip
-      - wine pip install codecov pytest pytest-pep8 pytest-cov dill
-      - wine pip install -e .
-    script:
-      - wine pip install https://github.com/bitranox/lib_registry/archive/master.zip --install-option test # test setup.py test option
-      - wine python -m pytest --pep8 --cov
-    after_success:
-      - wine coverage report
-      - wine codecov
-
-  - os: linux
-    language: sh
-    name: "WINE32 Python 3.7.3"
-    env:
-      - WINEARCH="win32"
-      - WINEPREFIX="${HOME}/wine/wine32"
-      - WINEPATH="c:/PortableGit32/cmd;c:/Python37-32;c:/Python37-32/Scripts"
-    # services:
-    #   - xvfb    # this does not work 2019-04-04
-
-    before_install:
-      - chmod 755 ./*.sh    # make shell scripts executable, just in case.
-      - ./install_wine.sh
-      - ./install_wine_machine.sh
-      - ./install_wine_python3_preinstalled.sh
-      - ./install_wine_git_portable.sh
-    install:
-      - wine python -m pip install --upgrade pip
-      - wine pip install codecov pytest pytest-pep8 pytest-cov dill
-      - wine pip install -e .
-    script:
-      - wine pip install https://github.com/bitranox/lib_registry/archive/master.zip --install-option test # test setup.py test option
-      - wine python -m pytest --pep8 --cov
-    after_success:
-      - wine coverage report
-      - wine codecov
-
-  - os: linux
-    language: sh
-    name: "WINE64 Python 3.7.3"
-    env:
-      - WINEPREFIX="${HOME}/wine/wine64"
-      - WINEPATH="c:/PortableGit64/cmd;c:/Python37-64;c:/Python37-64/Scripts"
-    before_install:
-      - chmod 755 ./*.sh    # make shell scripts executable, just in case.
-      - ./install_wine.sh
-      - ./install_wine_machine.sh
-      - ./install_wine_python3_preinstalled.sh
-      - ./install_wine_git_portable.sh
-    install:
-      - wine python -m pip install --upgrade pip
-      - wine pip install codecov pytest pytest-pep8 pytest-cov dill
-      - wine pip install -e .
-    script:
-      - wine pip install https://github.com/bitranox/lib_registry/archive/master.zip --install-option test # test setup.py test option
-      - wine python -m pytest --pep8 --cov
-    after_success:
-      - wine coverage report
-      - wine codecov
-
-
-  - os: windows
-    language: sh
-    name: "Windows Python 2.7"
-    before_install:
-    - choco install python2
-    - export PATH="/c/Python27:/c/Python27/Scripts:$PATH"
-    - python -m pip install --upgrade pip
-    - pip install codecov pytest-pep8 pytest-cov dill
-    - pip install -e .
-
-  - os: windows
-    language: sh
-    name: "Windows Python 3.7"
-    before_install:
-    - choco install python3
-    - export PATH="/c/Python37:/c/Python37/Scripts:$PATH"
-    - python -m pip install --upgrade pip
-    - pip install codecov pytest-pep8 pytest-cov dill
-    - pip install -e .
-
-# install:
-# - pip install --upgrade pip
-# - if [[ $TRAVIS_PYTHON_VERSION == pypy3.5-6.0 ]]; then pip install "pytest-cov==2.6.0"; fi
-# - pip install codecov pytest pytest-pep8 pytest-cov
+install:
+    - ${CMDPREFIX} python -m pip install --upgrade pip
+    - if [[ $TRAVIS_PYTHON_VERSION == pypy3.5-6.0 ]]; then ${CMDPREFIX} pip install "pytest-cov==2.6.0"; fi
+    - ${CMDPREFIX} pip install codecov pytest pytest-pep8 pytest-cov dill
+    - ${CMDPREFIX} pip install -e .
 
 script:
-  - pip install https://github.com/bitranox/lib_registry/archive/master.zip --install-option test # test setup.py test option
-  - py.test --pep8 --cov
-
+    - ${CMDPREFIX} pip install ${github_master} --install-option test # test setup.py test option
+    - ${CMDPREFIX} python -m pytest --pep8 --cov
 after_success:
-- coverage report
-- codecov
+    - ${CMDPREFIX} coverage report
+    - ${CMDPREFIX} codecov
