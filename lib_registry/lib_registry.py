@@ -83,13 +83,20 @@ def get_value(key_name, value_name):
     # type: (str, str) -> Any
     """
     >>> ### key and subkey exist
-    >>> sid = get_ls_user_sids()[1]
-    >>> key = r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)
-    >>> get_value(key, 'ProfileImagePath')
-    '%systemroot%\\\\system32\\\\config\\\\systemprofile'
+    >>> key = r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion'
+    >>> build_str = get_value(key, 'CurrentBuild')
+    >>> assert int(build_str) > 1
+
+    >>> ### slashes are NOT supported
+    >>> key = 'HKEY_LOCAL_MACHINE/SOFTWARE/Microsoft/Windows NT/CurrentVersion'
+    >>> build_str = get_value(key, 'CurrentBuild')  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
+    Traceback (most recent call last):
+    ...
+    OSError: key or subkey not found
+
 
     >>> ### key does not exist
-    >>> key = r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft_XXX\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)
+    >>> key = r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\DoesNotExist'
     >>> get_value(key, 'ProfileImagePath')  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     Traceback (most recent call last):
     ...
@@ -97,7 +104,7 @@ def get_value(key_name, value_name):
 
     >>> ### subkey does not exist
     >>> sid = 'S-1-5-20'
-    >>> key = r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)
+    >>> key = r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion'
     >>> get_value(key, 'does_not_exist')  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     Traceback (most recent call last):
     ...
