@@ -14,7 +14,6 @@ addons:
             - xvfb
             - winbind
     #################################################################################
-    #################################################################################
 matrix:
     include:
     #################################################################################
@@ -30,14 +29,7 @@ matrix:
           - CMDPREFIX="wine"
           - wine_windows_version="winxp"
           - wine_version="stable"
-      # services:
-      #   - xvfb    # this does not work 2019-04-04
-      before_install:
-          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
-          - ./install_wine.sh
-          - ./install_wine_machine.sh
-          - ./install_wine_python2_preinstalled.sh
-          - ./install_wine_git_portable.sh
+          - wine_python_version="python2"
     #################################################################################
     - os: linux
       language: sh
@@ -48,12 +40,7 @@ matrix:
           - CMDPREFIX="wine"
           - wine_windows_version="winxp"
           - wine_version="stable"
-      before_install:
-          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
-          - ./install_wine.sh
-          - ./install_wine_machine.sh
-          - ./install_wine_python2_preinstalled.sh
-          - ./install_wine_git_portable.sh
+          - wine_python_version="python2"
     #################################################################################
     - os: linux
       language: sh
@@ -65,14 +52,7 @@ matrix:
           - CMDPREFIX="wine"
           - wine_windows_version="winxp"
           - wine_version="stable"
-      # services:
-      #   - xvfb    # this does not work 2019-04-04
-      before_install:
-          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
-          - ./install_wine.sh
-          - ./install_wine_machine.sh
-          - ./install_wine_python3_preinstalled.sh
-          - ./install_wine_git_portable.sh
+          - wine_python_version="python3"
     #################################################################################
     - os: linux
       language: sh
@@ -83,12 +63,7 @@ matrix:
           - CMDPREFIX="wine"
           - wine_windows_version="winxp"
           - wine_version="stable"
-      before_install:
-          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
-          - ./install_wine.sh
-          - ./install_wine_machine.sh
-          - ./install_wine_python3_preinstalled.sh
-          - ./install_wine_git_portable.sh
+          - wine_python_version="python3"
     #################################################################################
     # WINE Stable WIN10
     #################################################################################
@@ -102,14 +77,7 @@ matrix:
           - CMDPREFIX="wine"
           - wine_windows_version="win10"
           - wine_version="stable"
-      # services:
-      #   - xvfb    # this does not work 2019-04-04
-      before_install:
-          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
-          - ./install_wine.sh
-          - ./install_wine_machine.sh
-          - ./install_wine_python2_preinstalled.sh
-          - ./install_wine_git_portable.sh
+          - wine_python_version="python2"
     #################################################################################
     - os: linux
       language: sh
@@ -120,12 +88,7 @@ matrix:
           - CMDPREFIX="wine"
           - wine_windows_version="win10"
           - wine_version="stable"
-      before_install:
-          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
-          - ./install_wine.sh
-          - ./install_wine_machine.sh
-          - ./install_wine_python2_preinstalled.sh
-          - ./install_wine_git_portable.sh
+          - wine_python_version="python2"
     #################################################################################
     - os: linux
       language: sh
@@ -137,14 +100,7 @@ matrix:
           - CMDPREFIX="wine"
           - wine_windows_version="win10"
           - wine_version="stable"
-      # services:
-      #   - xvfb    # this does not work 2019-04-04
-      before_install:
-          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
-          - ./install_wine.sh
-          - ./install_wine_machine.sh
-          - ./install_wine_python3_preinstalled.sh
-          - ./install_wine_git_portable.sh
+          - wine_python_version="python3"
     #################################################################################
     - os: linux
       language: sh
@@ -155,14 +111,7 @@ matrix:
           - CMDPREFIX="wine"
           - wine_windows_version="win10"
           - wine_version="stable"
-      before_install:
-          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
-          - ./install_wine.sh
-          - ./install_wine_machine.sh
-          - ./install_wine_python3_preinstalled.sh
-          - ./install_wine_git_portable.sh
-    #################################################################################
-
+          - wine_python_version="python3"
     #################################################################################
     # WINE Develop XP
     #################################################################################
@@ -176,14 +125,7 @@ matrix:
           - CMDPREFIX="wine"
           - wine_windows_version="winxp"
           - wine_version="devel"
-      # services:
-      #   - xvfb    # this does not work 2019-04-04
-      before_install:
-          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
-          - ./install_wine.sh
-          - ./install_wine_machine.sh
-          - ./install_wine_python2_preinstalled.sh
-          - ./install_wine_git_portable.sh
+          - wine_python_version="python2"
     #################################################################################
     - os: linux
       language: sh
@@ -194,12 +136,7 @@ matrix:
           - CMDPREFIX="wine"
           - wine_windows_version="winxp"
           - wine_version="devel"
-      before_install:
-          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
-          - ./install_wine.sh
-          - ./install_wine_machine.sh
-          - ./install_wine_python2_preinstalled.sh
-          - ./install_wine_git_portable.sh
+          - wine_python_version="python2"
     #################################################################################
     - os: linux
       language: sh
@@ -211,14 +148,7 @@ matrix:
           - CMDPREFIX="wine"
           - wine_windows_version="winxp"
           - wine_version="devel"
-      # services:
-      #   - xvfb    # this does not work 2019-04-04
-      before_install:
-          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
-          - ./install_wine.sh
-          - ./install_wine_machine.sh
-          - ./install_wine_python3_preinstalled.sh
-          - ./install_wine_git_portable.sh
+          - wine_python_version="python3"
     #################################################################################
     - os: linux
       language: sh
@@ -229,12 +159,7 @@ matrix:
           - CMDPREFIX="wine"
           - wine_windows_version="winxp"
           - wine_version="devel"
-      before_install:
-          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
-          - ./install_wine.sh
-          - ./install_wine_machine.sh
-          - ./install_wine_python3_preinstalled.sh
-          - ./install_wine_git_portable.sh
+          - wine_python_version="python3"
     #################################################################################
     # WINE Develop WIN10
     #################################################################################
@@ -248,14 +173,7 @@ matrix:
           - CMDPREFIX="wine"
           - wine_windows_version="win10"
           - wine_version="devel"
-      # services:
-      #   - xvfb    # this does not work 2019-04-04
-      before_install:
-          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
-          - ./install_wine.sh
-          - ./install_wine_machine.sh
-          - ./install_wine_python2_preinstalled.sh
-          - ./install_wine_git_portable.sh
+          - wine_python_version="python2"
     #################################################################################
     - os: linux
       language: sh
@@ -266,12 +184,7 @@ matrix:
           - CMDPREFIX="wine"
           - wine_windows_version="win10"
           - wine_version="devel"
-      before_install:
-          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
-          - ./install_wine.sh
-          - ./install_wine_machine.sh
-          - ./install_wine_python2_preinstalled.sh
-          - ./install_wine_git_portable.sh
+          - wine_python_version="python2"
     #################################################################################
     - os: linux
       language: sh
@@ -283,14 +196,7 @@ matrix:
           - CMDPREFIX="wine"
           - wine_windows_version="win10"
           - wine_version="devel"
-      # services:
-      #   - xvfb    # this does not work 2019-04-04
-      before_install:
-          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
-          - ./install_wine.sh
-          - ./install_wine_machine.sh
-          - ./install_wine_python3_preinstalled.sh
-          - ./install_wine_git_portable.sh
+          - wine_python_version="python3"
     #################################################################################
     - os: linux
       language: sh
@@ -301,13 +207,7 @@ matrix:
           - CMDPREFIX="wine"
           - wine_windows_version="win10"
           - wine_version="devel"
-      before_install:
-          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
-          - ./install_wine.sh
-          - ./install_wine_machine.sh
-          - ./install_wine_python3_preinstalled.sh
-          - ./install_wine_git_portable.sh
-
+          - wine_python_version="python3"
     #################################################################################
     # WINE Staging XP
     #################################################################################
@@ -321,14 +221,7 @@ matrix:
           - CMDPREFIX="wine"
           - wine_windows_version="winxp"
           - wine_version="staging"
-      # services:
-      #   - xvfb    # this does not work 2019-04-04
-      before_install:
-          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
-          - ./install_wine.sh
-          - ./install_wine_machine.sh
-          - ./install_wine_python2_preinstalled.sh
-          - ./install_wine_git_portable.sh
+          - wine_python_version="python2"
     #################################################################################
     - os: linux
       language: sh
@@ -339,12 +232,7 @@ matrix:
           - CMDPREFIX="wine"
           - wine_windows_version="winxp"
           - wine_version="staging"
-      before_install:
-          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
-          - ./install_wine.sh
-          - ./install_wine_machine.sh
-          - ./install_wine_python2_preinstalled.sh
-          - ./install_wine_git_portable.sh
+          - wine_python_version="python2"
     #################################################################################
     - os: linux
       language: sh
@@ -356,14 +244,7 @@ matrix:
           - CMDPREFIX="wine"
           - wine_windows_version="winxp"
           - wine_version="staging"
-      # services:
-      #   - xvfb    # this does not work 2019-04-04
-      before_install:
-          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
-          - ./install_wine.sh
-          - ./install_wine_machine.sh
-          - ./install_wine_python3_preinstalled.sh
-          - ./install_wine_git_portable.sh
+          - wine_python_version="python3"
     #################################################################################
     - os: linux
       language: sh
@@ -374,12 +255,7 @@ matrix:
           - CMDPREFIX="wine"
           - wine_windows_version="winxp"
           - wine_version="staging"
-      before_install:
-          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
-          - ./install_wine.sh
-          - ./install_wine_machine.sh
-          - ./install_wine_python3_preinstalled.sh
-          - ./install_wine_git_portable.sh
+          - wine_python_version="python3"
     #################################################################################
     # WINE Develop WIN10
     #################################################################################
@@ -393,14 +269,7 @@ matrix:
           - CMDPREFIX="wine"
           - wine_windows_version="win10"
           - wine_version="staging"
-      # services:
-      #   - xvfb    # this does not work 2019-04-04
-      before_install:
-          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
-          - ./install_wine.sh
-          - ./install_wine_machine.sh
-          - ./install_wine_python2_preinstalled.sh
-          - ./install_wine_git_portable.sh
+          - wine_python_version="python2"
     #################################################################################
     - os: linux
       language: sh
@@ -411,12 +280,7 @@ matrix:
           - CMDPREFIX="wine"
           - wine_windows_version="win10"
           - wine_version="staging"
-      before_install:
-          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
-          - ./install_wine.sh
-          - ./install_wine_machine.sh
-          - ./install_wine_python2_preinstalled.sh
-          - ./install_wine_git_portable.sh
+          - wine_python_version="python2"
     #################################################################################
     - os: linux
       language: sh
@@ -428,14 +292,7 @@ matrix:
           - CMDPREFIX="wine"
           - wine_windows_version="win10"
           - wine_version="staging"
-      # services:
-      #   - xvfb    # this does not work 2019-04-04
-      before_install:
-          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
-          - ./install_wine.sh
-          - ./install_wine_machine.sh
-          - ./install_wine_python3_preinstalled.sh
-          - ./install_wine_git_portable.sh
+          - wine_python_version="python3"
     #################################################################################
     - os: linux
       language: sh
@@ -446,13 +303,13 @@ matrix:
           - CMDPREFIX="wine"
           - wine_windows_version="win10"
           - wine_version="staging"
-      before_install:
-          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
-          - ./install_wine.sh
-          - ./install_wine_machine.sh
-          - ./install_wine_python3_preinstalled.sh
-          - ./install_wine_git_portable.sh
+          - wine_python_version="python3"
 
+    #################################################################################
+    #################################################################################
+    #################################################################################
+    #################################################################################
+    #################################################################################
     #################################################################################
     - os: windows
       language: sh
@@ -468,9 +325,16 @@ matrix:
         - choco install python3
         - export PATH="/c/Python37:/c/Python37/Scripts:$PATH"
     #################################################################################
-    #################################################################################
+
 
 install:
+    - if [[ ${CMDPREFIX} == "wine" ]]; then chmod 755 ./*.sh ; fi
+    - if [[ ${CMDPREFIX} == "wine" ]]; then ./install_wine.sh ; fi
+    - if [[ ${CMDPREFIX} == "wine" ]]; then ./install_wine_machine.sh ; fi
+    - if [[ ${wine_python_version} == "python2" ]]; then ./install_wine_python2_preinstalled.sh ; fi
+    - if [[ ${wine_python_version} == "python3" ]]; then ./install_wine_python3_preinstalled.sh ; fi
+    - if [[ ${CMDPREFIX} == "wine" ]]; then ./install_wine_git_portable.sh ; fi
+
     - ${CMDPREFIX} python -m pip install --upgrade pip
     - if [[ $TRAVIS_PYTHON_VERSION == pypy3.5-6.0 ]]; then ${CMDPREFIX} pip install "pytest-cov==2.6.0"; fi
     - ${CMDPREFIX} pip install codecov pytest pytest-pep8 pytest-cov dill
