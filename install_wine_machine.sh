@@ -23,7 +23,7 @@ winetricks -q ${wine_windows_version}
 
 echo "Install common Packets"
 winetricks -q msxml6
-winetricks -q dotnet462
+# winetricks -q dotnet462
 winetricks -q allfonts
 winetricks -q windowscodecs
 
