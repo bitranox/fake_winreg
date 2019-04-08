@@ -18,14 +18,18 @@ addons:
 matrix:
     include:
     #################################################################################
+    # WINE Stable XP
+    #################################################################################
     - os: linux
       language: sh
-      name: "WINE 32 Bit Python 2.7.16"
+      name: "WINE stable 32 Bit Python 2.7.16, Windows XP"
       env:
           - WINEARCH="win32"
           - WINEPREFIX="${HOME}/wine/wine32"
           - WINEPATH="c:/PortableGit32/cmd;c:/Python27-32;c:/Python27-32/Scripts"
           - CMDPREFIX="wine"
+          - wine_windows_version="winxp"
+          - wine_version="stable"
       # services:
       #   - xvfb    # this does not work 2019-04-04
       before_install:
@@ -37,11 +41,13 @@ matrix:
     #################################################################################
     - os: linux
       language: sh
-      name: "WINE 64 Bit Python 2.7.16"
+      name: "WINE stable 64 Bit Python 2.7.16, Windows XP"
       env:
           - WINEPREFIX="${HOME}/wine/wine64"
           - WINEPATH="c:/PortableGit64/cmd;c:/Python27-64;c:/Python27-64/Scripts"
           - CMDPREFIX="wine"
+          - wine_windows_version="winxp"
+          - wine_version="stable"
       before_install:
           - chmod 755 ./*.sh    # make shell scripts executable, just in case.
           - ./install_wine.sh
@@ -51,12 +57,14 @@ matrix:
     #################################################################################
     - os: linux
       language: sh
-      name: "WINE 32 Bit Python 3.7.3"
+      name: "WINE stable 32 Bit Python 3.7.3, Windows XP"
       env:
           - WINEARCH="win32"
           - WINEPREFIX="${HOME}/wine/wine32"
           - WINEPATH="c:/PortableGit32/cmd;c:/Python37-32;c:/Python37-32/Scripts"
           - CMDPREFIX="wine"
+          - wine_windows_version="winxp"
+          - wine_version="stable"
       # services:
       #   - xvfb    # this does not work 2019-04-04
       before_install:
@@ -68,17 +76,383 @@ matrix:
     #################################################################################
     - os: linux
       language: sh
-      name: "WINE 64 Bit Python 3.7.3"
+      name: "WINE stable 64 Bit Python 3.7.3, Windows XP"
       env:
           - WINEPREFIX="${HOME}/wine/wine64"
           - WINEPATH="c:/PortableGit64/cmd;c:/Python37-64;c:/Python37-64/Scripts"
           - CMDPREFIX="wine"
+          - wine_windows_version="winxp"
+          - wine_version="stable"
       before_install:
           - chmod 755 ./*.sh    # make shell scripts executable, just in case.
           - ./install_wine.sh
           - ./install_wine_machine.sh
           - ./install_wine_python3_preinstalled.sh
           - ./install_wine_git_portable.sh
+    #################################################################################
+    # WINE Stable WIN10
+    #################################################################################
+    - os: linux
+      language: sh
+      name: "WINE stable 32 Bit Python 2.7.16, Windows 10"
+      env:
+          - WINEARCH="win32"
+          - WINEPREFIX="${HOME}/wine/wine32"
+          - WINEPATH="c:/PortableGit32/cmd;c:/Python27-32;c:/Python27-32/Scripts"
+          - CMDPREFIX="wine"
+          - wine_windows_version="win10"
+          - wine_version="stable"
+      # services:
+      #   - xvfb    # this does not work 2019-04-04
+      before_install:
+          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
+          - ./install_wine.sh
+          - ./install_wine_machine.sh
+          - ./install_wine_python2_preinstalled.sh
+          - ./install_wine_git_portable.sh
+    #################################################################################
+    - os: linux
+      language: sh
+      name: "WINE stable 64 Bit Python 2.7.16, Windows 10"
+      env:
+          - WINEPREFIX="${HOME}/wine/wine64"
+          - WINEPATH="c:/PortableGit64/cmd;c:/Python27-64;c:/Python27-64/Scripts"
+          - CMDPREFIX="wine"
+          - wine_windows_version="win10"
+          - wine_version="stable"
+      before_install:
+          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
+          - ./install_wine.sh
+          - ./install_wine_machine.sh
+          - ./install_wine_python2_preinstalled.sh
+          - ./install_wine_git_portable.sh
+    #################################################################################
+    - os: linux
+      language: sh
+      name: "WINE stable 32 Bit Python 3.7.3, Windows 10"
+      env:
+          - WINEARCH="win32"
+          - WINEPREFIX="${HOME}/wine/wine32"
+          - WINEPATH="c:/PortableGit32/cmd;c:/Python37-32;c:/Python37-32/Scripts"
+          - CMDPREFIX="wine"
+          - wine_windows_version="win10"
+          - wine_version="stable"
+      # services:
+      #   - xvfb    # this does not work 2019-04-04
+      before_install:
+          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
+          - ./install_wine.sh
+          - ./install_wine_machine.sh
+          - ./install_wine_python3_preinstalled.sh
+          - ./install_wine_git_portable.sh
+    #################################################################################
+    - os: linux
+      language: sh
+      name: "WINE stable 64 Bit Python 3.7.3, Windows 10"
+      env:
+          - WINEPREFIX="${HOME}/wine/wine64"
+          - WINEPATH="c:/PortableGit64/cmd;c:/Python37-64;c:/Python37-64/Scripts"
+          - CMDPREFIX="wine"
+          - wine_windows_version="win10"
+          - wine_version="stable"
+      before_install:
+          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
+          - ./install_wine.sh
+          - ./install_wine_machine.sh
+          - ./install_wine_python3_preinstalled.sh
+          - ./install_wine_git_portable.sh
+    #################################################################################
+
+    #################################################################################
+    # WINE Develop XP
+    #################################################################################
+    - os: linux
+      language: sh
+      name: "WINE devel 32 Bit Python 2.7.16, Windows XP"
+      env:
+          - WINEARCH="win32"
+          - WINEPREFIX="${HOME}/wine/wine32"
+          - WINEPATH="c:/PortableGit32/cmd;c:/Python27-32;c:/Python27-32/Scripts"
+          - CMDPREFIX="wine"
+          - wine_windows_version="winxp"
+          - wine_version="devel"
+      # services:
+      #   - xvfb    # this does not work 2019-04-04
+      before_install:
+          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
+          - ./install_wine.sh
+          - ./install_wine_machine.sh
+          - ./install_wine_python2_preinstalled.sh
+          - ./install_wine_git_portable.sh
+    #################################################################################
+    - os: linux
+      language: sh
+      name: "WINE devel 64 Bit Python 2.7.16, Windows XP"
+      env:
+          - WINEPREFIX="${HOME}/wine/wine64"
+          - WINEPATH="c:/PortableGit64/cmd;c:/Python27-64;c:/Python27-64/Scripts"
+          - CMDPREFIX="wine"
+          - wine_windows_version="winxp"
+          - wine_version="devel"
+      before_install:
+          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
+          - ./install_wine.sh
+          - ./install_wine_machine.sh
+          - ./install_wine_python2_preinstalled.sh
+          - ./install_wine_git_portable.sh
+    #################################################################################
+    - os: linux
+      language: sh
+      name: "WINE devel 32 Bit Python 3.7.3, Windows XP"
+      env:
+          - WINEARCH="win32"
+          - WINEPREFIX="${HOME}/wine/wine32"
+          - WINEPATH="c:/PortableGit32/cmd;c:/Python37-32;c:/Python37-32/Scripts"
+          - CMDPREFIX="wine"
+          - wine_windows_version="winxp"
+          - wine_version="devel"
+      # services:
+      #   - xvfb    # this does not work 2019-04-04
+      before_install:
+          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
+          - ./install_wine.sh
+          - ./install_wine_machine.sh
+          - ./install_wine_python3_preinstalled.sh
+          - ./install_wine_git_portable.sh
+    #################################################################################
+    - os: linux
+      language: sh
+      name: "WINE devel 64 Bit Python 3.7.3, Windows XP"
+      env:
+          - WINEPREFIX="${HOME}/wine/wine64"
+          - WINEPATH="c:/PortableGit64/cmd;c:/Python37-64;c:/Python37-64/Scripts"
+          - CMDPREFIX="wine"
+          - wine_windows_version="winxp"
+          - wine_version="devel"
+      before_install:
+          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
+          - ./install_wine.sh
+          - ./install_wine_machine.sh
+          - ./install_wine_python3_preinstalled.sh
+          - ./install_wine_git_portable.sh
+    #################################################################################
+    # WINE Develop WIN10
+    #################################################################################
+    - os: linux
+      language: sh
+      name: "WINE devel 32 Bit Python 2.7.16, Windows 10"
+      env:
+          - WINEARCH="win32"
+          - WINEPREFIX="${HOME}/wine/wine32"
+          - WINEPATH="c:/PortableGit32/cmd;c:/Python27-32;c:/Python27-32/Scripts"
+          - CMDPREFIX="wine"
+          - wine_windows_version="win10"
+          - wine_version="devel"
+      # services:
+      #   - xvfb    # this does not work 2019-04-04
+      before_install:
+          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
+          - ./install_wine.sh
+          - ./install_wine_machine.sh
+          - ./install_wine_python2_preinstalled.sh
+          - ./install_wine_git_portable.sh
+    #################################################################################
+    - os: linux
+      language: sh
+      name: "WINE devel 64 Bit Python 2.7.16, Windows 10"
+      env:
+          - WINEPREFIX="${HOME}/wine/wine64"
+          - WINEPATH="c:/PortableGit64/cmd;c:/Python27-64;c:/Python27-64/Scripts"
+          - CMDPREFIX="wine"
+          - wine_windows_version="win10"
+          - wine_version="devel"
+      before_install:
+          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
+          - ./install_wine.sh
+          - ./install_wine_machine.sh
+          - ./install_wine_python2_preinstalled.sh
+          - ./install_wine_git_portable.sh
+    #################################################################################
+    - os: linux
+      language: sh
+      name: "WINE devel 32 Bit Python 3.7.3, Windows 10"
+      env:
+          - WINEARCH="win32"
+          - WINEPREFIX="${HOME}/wine/wine32"
+          - WINEPATH="c:/PortableGit32/cmd;c:/Python37-32;c:/Python37-32/Scripts"
+          - CMDPREFIX="wine"
+          - wine_windows_version="win10"
+          - wine_version="devel"
+      # services:
+      #   - xvfb    # this does not work 2019-04-04
+      before_install:
+          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
+          - ./install_wine.sh
+          - ./install_wine_machine.sh
+          - ./install_wine_python3_preinstalled.sh
+          - ./install_wine_git_portable.sh
+    #################################################################################
+    - os: linux
+      language: sh
+      name: "WINE devel 64 Bit Python 3.7.3, Windows 10"
+      env:
+          - WINEPREFIX="${HOME}/wine/wine64"
+          - WINEPATH="c:/PortableGit64/cmd;c:/Python37-64;c:/Python37-64/Scripts"
+          - CMDPREFIX="wine"
+          - wine_windows_version="win10"
+          - wine_version="devel"
+      before_install:
+          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
+          - ./install_wine.sh
+          - ./install_wine_machine.sh
+          - ./install_wine_python3_preinstalled.sh
+          - ./install_wine_git_portable.sh
+
+    #################################################################################
+    # WINE Staging XP
+    #################################################################################
+    - os: linux
+      language: sh
+      name: "WINE staging 32 Bit Python 2.7.16, Windows XP"
+      env:
+          - WINEARCH="win32"
+          - WINEPREFIX="${HOME}/wine/wine32"
+          - WINEPATH="c:/PortableGit32/cmd;c:/Python27-32;c:/Python27-32/Scripts"
+          - CMDPREFIX="wine"
+          - wine_windows_version="winxp"
+          - wine_version="staging"
+      # services:
+      #   - xvfb    # this does not work 2019-04-04
+      before_install:
+          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
+          - ./install_wine.sh
+          - ./install_wine_machine.sh
+          - ./install_wine_python2_preinstalled.sh
+          - ./install_wine_git_portable.sh
+    #################################################################################
+    - os: linux
+      language: sh
+      name: "WINE staging 64 Bit Python 2.7.16, Windows XP"
+      env:
+          - WINEPREFIX="${HOME}/wine/wine64"
+          - WINEPATH="c:/PortableGit64/cmd;c:/Python27-64;c:/Python27-64/Scripts"
+          - CMDPREFIX="wine"
+          - wine_windows_version="winxp"
+          - wine_version="staging"
+      before_install:
+          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
+          - ./install_wine.sh
+          - ./install_wine_machine.sh
+          - ./install_wine_python2_preinstalled.sh
+          - ./install_wine_git_portable.sh
+    #################################################################################
+    - os: linux
+      language: sh
+      name: "WINE staging 32 Bit Python 3.7.3, Windows XP"
+      env:
+          - WINEARCH="win32"
+          - WINEPREFIX="${HOME}/wine/wine32"
+          - WINEPATH="c:/PortableGit32/cmd;c:/Python37-32;c:/Python37-32/Scripts"
+          - CMDPREFIX="wine"
+          - wine_windows_version="winxp"
+          - wine_version="staging"
+      # services:
+      #   - xvfb    # this does not work 2019-04-04
+      before_install:
+          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
+          - ./install_wine.sh
+          - ./install_wine_machine.sh
+          - ./install_wine_python3_preinstalled.sh
+          - ./install_wine_git_portable.sh
+    #################################################################################
+    - os: linux
+      language: sh
+      name: "WINE staging 64 Bit Python 3.7.3, Windows XP"
+      env:
+          - WINEPREFIX="${HOME}/wine/wine64"
+          - WINEPATH="c:/PortableGit64/cmd;c:/Python37-64;c:/Python37-64/Scripts"
+          - CMDPREFIX="wine"
+          - wine_windows_version="winxp"
+          - wine_version="staging"
+      before_install:
+          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
+          - ./install_wine.sh
+          - ./install_wine_machine.sh
+          - ./install_wine_python3_preinstalled.sh
+          - ./install_wine_git_portable.sh
+    #################################################################################
+    # WINE Develop WIN10
+    #################################################################################
+    - os: linux
+      language: sh
+      name: "WINE staging 32 Bit Python 2.7.16, Windows 10"
+      env:
+          - WINEARCH="win32"
+          - WINEPREFIX="${HOME}/wine/wine32"
+          - WINEPATH="c:/PortableGit32/cmd;c:/Python27-32;c:/Python27-32/Scripts"
+          - CMDPREFIX="wine"
+          - wine_windows_version="win10"
+          - wine_version="staging"
+      # services:
+      #   - xvfb    # this does not work 2019-04-04
+      before_install:
+          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
+          - ./install_wine.sh
+          - ./install_wine_machine.sh
+          - ./install_wine_python2_preinstalled.sh
+          - ./install_wine_git_portable.sh
+    #################################################################################
+    - os: linux
+      language: sh
+      name: "WINE staging 64 Bit Python 2.7.16, Windows 10"
+      env:
+          - WINEPREFIX="${HOME}/wine/wine64"
+          - WINEPATH="c:/PortableGit64/cmd;c:/Python27-64;c:/Python27-64/Scripts"
+          - CMDPREFIX="wine"
+          - wine_windows_version="win10"
+          - wine_version="staging"
+      before_install:
+          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
+          - ./install_wine.sh
+          - ./install_wine_machine.sh
+          - ./install_wine_python2_preinstalled.sh
+          - ./install_wine_git_portable.sh
+    #################################################################################
+    - os: linux
+      language: sh
+      name: "WINE staging 32 Bit Python 3.7.3, Windows 10"
+      env:
+          - WINEARCH="win32"
+          - WINEPREFIX="${HOME}/wine/wine32"
+          - WINEPATH="c:/PortableGit32/cmd;c:/Python37-32;c:/Python37-32/Scripts"
+          - CMDPREFIX="wine"
+          - wine_windows_version="win10"
+          - wine_version="staging"
+      # services:
+      #   - xvfb    # this does not work 2019-04-04
+      before_install:
+          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
+          - ./install_wine.sh
+          - ./install_wine_machine.sh
+          - ./install_wine_python3_preinstalled.sh
+          - ./install_wine_git_portable.sh
+    #################################################################################
+    - os: linux
+      language: sh
+      name: "WINE staging 64 Bit Python 3.7.3, Windows 10"
+      env:
+          - WINEPREFIX="${HOME}/wine/wine64"
+          - WINEPATH="c:/PortableGit64/cmd;c:/Python37-64;c:/Python37-64/Scripts"
+          - CMDPREFIX="wine"
+          - wine_windows_version="win10"
+          - wine_version="staging"
+      before_install:
+          - chmod 755 ./*.sh    # make shell scripts executable, just in case.
+          - ./install_wine.sh
+          - ./install_wine_machine.sh
+          - ./install_wine_python3_preinstalled.sh
+          - ./install_wine_git_portable.sh
+
     #################################################################################
     - os: windows
       language: sh
