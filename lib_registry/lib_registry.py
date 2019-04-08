@@ -69,9 +69,8 @@ def get_username_from_sid(sid):
     """
     >>> ls_user_sids = get_ls_user_sids()
     >>> assert len(ls_user_sids) > 1
-    >>> get_username_from_sid(ls_user_sids[1])
-    'systemprofile'
-
+    >>> username = get_username_from_sid(ls_user_sids[1])
+    >>> assert len(username) > 1        # 'systemprofile' on windows, '<username>' on wine
     """
     if get_is_platform_windows_wine():
         username = _get_username_from_sid_wine(sid)
