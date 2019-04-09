@@ -9,3 +9,4 @@ except ImportError:
 
 __title__ = 'lib_registry'
 __version__ = '1.0.1'
+__name__ = 'lib_registry'
