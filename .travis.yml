@@ -40,17 +40,6 @@ matrix:
         # so we put it directly under the deploy section
         - choco install python3
         - export PATH="/c/Python37:/c/Python37/Scripts:$PATH"
-        - export deploy_on_pypi="True"
-
-      # password needs to be created for every repository with ruby gem travis:   travis encrypt pypi_password=******* --org from the project directory
-      # option --org for travis.org
-      # the secure password points to env_variable ${pypi_password}
-      # oddly the secure password under env: global: causes that choco for windows builds fails
-      # so we put it into the matrix
-      # ${pypi_password}
-      #  - secure: "VzzRTHvQZxalECzr7Ce4ewaA7eifVS3Tke5FiitDHWRm5laiEaPtxWfPF0a1nczXKNEY0SHW7dvZlXARoU2qt46g/DDPh/cUBlt0IdD98oui2E40DYA892GVyRZt5Uy7nA5rgNoUdYJz/+4K32a6PYsWZUcN2SGcHRhNvrEyvuMlFQvbOKE06E41ziSUr55QEc9vk36RwFt0sYc+ZFfFpbC6KD2UZcWmiqIXrhevR0KuC8h3q3x2KG0o2ChRl05MmnzPPhADxRqP9RcLtKkK+sm7HFh7342M2DYzyj3kyF+DGuEQs1ZoLgkZaZ3WSv4fDzIqu8BAn2RTBrc5X2a4Qap1kXMcd4ouYnFL4ZWq1AaV7XaoNr58JhqcQ408ioUnE6+6xK17UxjtEnu+4X+LjrnRjspVDPi2PRE2mxrm7zQ9dHpj0yHLNuwescpKQRSqSfCqZZvAwR4R+m60x3JMfrMPwC6l4VJaf9OU2yxsUeiHabh03OAj6uZDtk2oxcrurM+x9mieiQ+3R/ttZ9z6lbES74BkC47f/MOZV7+ahTQRbij0mYdcXSFahwzH7Ou5+k+/6dF+0ZTVhf1A1t/MVFnp5I2JwTR3DPdyT5WB2v36CIcxVG/pDculY9s0IVwfBjSxg4MAfUqEfYxz6bSj4+SqeWhfXcXw4QE9Gmc2f+Q="
-      env:
-        - secure: "VzzRTHvQZxalECzr7Ce4ewaA7eifVS3Tke5FiitDHWRm5laiEaPtxWfPF0a1nczXKNEY0SHW7dvZlXARoU2qt46g/DDPh/cUBlt0IdD98oui2E40DYA892GVyRZt5Uy7nA5rgNoUdYJz/+4K32a6PYsWZUcN2SGcHRhNvrEyvuMlFQvbOKE06E41ziSUr55QEc9vk36RwFt0sYc+ZFfFpbC6KD2UZcWmiqIXrhevR0KuC8h3q3x2KG0o2ChRl05MmnzPPhADxRqP9RcLtKkK+sm7HFh7342M2DYzyj3kyF+DGuEQs1ZoLgkZaZ3WSv4fDzIqu8BAn2RTBrc5X2a4Qap1kXMcd4ouYnFL4ZWq1AaV7XaoNr58JhqcQ408ioUnE6+6xK17UxjtEnu+4X+LjrnRjspVDPi2PRE2mxrm7zQ9dHpj0yHLNuwescpKQRSqSfCqZZvAwR4R+m60x3JMfrMPwC6l4VJaf9OU2yxsUeiHabh03OAj6uZDtk2oxcrurM+x9mieiQ+3R/ttZ9z6lbES74BkC47f/MOZV7+ahTQRbij0mYdcXSFahwzH7Ou5+k+/6dF+0ZTVhf1A1t/MVFnp5I2JwTR3DPdyT5WB2v36CIcxVG/pDculY9s0IVwfBjSxg4MAfUqEfYxz6bSj4+SqeWhfXcXw4QE9Gmc2f+Q="
 
     - os: linux
       language: sh
@@ -74,6 +63,15 @@ matrix:
           - wine_windows_version="winxp"
           - wine_version="stable"
           - wine_python_version="python2"
+          - deploy_on_pypi="True"
+          # password needs to be created for every repository with ruby gem travis:   travis encrypt pypi_password=******* --org from the project directory
+          # option --org for travis.org
+          # the secure password points to env_variable ${pypi_password}
+          # oddly the secure password under env: global: causes that choco for windows builds fails
+          # so we put it into the matrix
+          # ${pypi_password}
+          #  - secure: "VzzRTHvQZxalECzr7Ce4ewaA7eifVS3Tke5FiitDHWRm5laiEaPtxWfPF0a1nczXKNEY0SHW7dvZlXARoU2qt46g/DDPh/cUBlt0IdD98oui2E40DYA892GVyRZt5Uy7nA5rgNoUdYJz/+4K32a6PYsWZUcN2SGcHRhNvrEyvuMlFQvbOKE06E41ziSUr55QEc9vk36RwFt0sYc+ZFfFpbC6KD2UZcWmiqIXrhevR0KuC8h3q3x2KG0o2ChRl05MmnzPPhADxRqP9RcLtKkK+sm7HFh7342M2DYzyj3kyF+DGuEQs1ZoLgkZaZ3WSv4fDzIqu8BAn2RTBrc5X2a4Qap1kXMcd4ouYnFL4ZWq1AaV7XaoNr58JhqcQ408ioUnE6+6xK17UxjtEnu+4X+LjrnRjspVDPi2PRE2mxrm7zQ9dHpj0yHLNuwescpKQRSqSfCqZZvAwR4R+m60x3JMfrMPwC6l4VJaf9OU2yxsUeiHabh03OAj6uZDtk2oxcrurM+x9mieiQ+3R/ttZ9z6lbES74BkC47f/MOZV7+ahTQRbij0mYdcXSFahwzH7Ou5+k+/6dF+0ZTVhf1A1t/MVFnp5I2JwTR3DPdyT5WB2v36CIcxVG/pDculY9s0IVwfBjSxg4MAfUqEfYxz6bSj4+SqeWhfXcXw4QE9Gmc2f+Q="
+          - secure: "VzzRTHvQZxalECzr7Ce4ewaA7eifVS3Tke5FiitDHWRm5laiEaPtxWfPF0a1nczXKNEY0SHW7dvZlXARoU2qt46g/DDPh/cUBlt0IdD98oui2E40DYA892GVyRZt5Uy7nA5rgNoUdYJz/+4K32a6PYsWZUcN2SGcHRhNvrEyvuMlFQvbOKE06E41ziSUr55QEc9vk36RwFt0sYc+ZFfFpbC6KD2UZcWmiqIXrhevR0KuC8h3q3x2KG0o2ChRl05MmnzPPhADxRqP9RcLtKkK+sm7HFh7342M2DYzyj3kyF+DGuEQs1ZoLgkZaZ3WSv4fDzIqu8BAn2RTBrc5X2a4Qap1kXMcd4ouYnFL4ZWq1AaV7XaoNr58JhqcQ408ioUnE6+6xK17UxjtEnu+4X+LjrnRjspVDPi2PRE2mxrm7zQ9dHpj0yHLNuwescpKQRSqSfCqZZvAwR4R+m60x3JMfrMPwC6l4VJaf9OU2yxsUeiHabh03OAj6uZDtk2oxcrurM+x9mieiQ+3R/ttZ9z6lbES74BkC47f/MOZV7+ahTQRbij0mYdcXSFahwzH7Ou5+k+/6dF+0ZTVhf1A1t/MVFnp5I2JwTR3DPdyT5WB2v36CIcxVG/pDculY9s0IVwfBjSxg4MAfUqEfYxz6bSj4+SqeWhfXcXw4QE9Gmc2f+Q="
 
     - os: linux
       language: sh
