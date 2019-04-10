@@ -347,6 +347,7 @@ after_success:
     - ${CMDPREFIX} coverage report
     - ${CMDPREFIX} codecov
 
+
     # This works for sure - lets do it our self and not rely on travis deploy: , because its buggy
     - if [[ ${deploy_on_pypi} == "True" ]] && [[ -n ${TRAVIS_TAG} ]]; then ${CMDPREFIX} ${pip_command} install -U twine ; fi
     - if [[ ${deploy_on_pypi} == "True" ]] && [[ -n ${TRAVIS_TAG} ]]; then ${CMDPREFIX} ${pip_command} install wheel ; fi
