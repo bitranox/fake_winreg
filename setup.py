@@ -30,6 +30,7 @@ setup(
     version='1.0.1',
     description='Windows Registry related',
     long_description=long_description,
+    long_description_content_type='text/x-rst',
     author='Robert Nowotny',
     author_email='rnowotny1966@gmail.com',
     url='https://github.com/bitranox/lib_registry',
