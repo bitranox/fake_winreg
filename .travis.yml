@@ -6,19 +6,52 @@ sudo: true
 env:
     global:
         - github_master="https://github.com/${TRAVIS_REPO_SLUG}/archive/master.zip"
+        - pip_command="pip"
+        - python_command="python"
+        # password needs to be created for every repository with ruby gem travis:   travis encrypt pypi_password=******* --org from the project directory
+        # option --org for travis.org
+        # the secure password points to env_variable ${pypi_password}
+        # oddly the secure password under env: global: causes that choco for windows builds fails
+        # so we put it into the matrix
 
-### install xvfb virtual framebuffer - start commands with xvfb-run <command> - this we need for WINE
+# install xvfb virtual framebuffer - start commands with xvfb-run <command> - this we need for WINE
 addons:
     apt:
         packages:
             - xvfb
             - winbind
-    #################################################################################
+
 matrix:
     include:
-    #################################################################################
-    # WINE Stable XP
-    #################################################################################
+    - os: windows
+      language: sh
+      name: "Windows Python 2.7"
+      before_install:
+          # oddly the secure password under env: global: causes that choco fails
+          # so we put it directly under the deploy section
+          - choco install python2
+          - export PATH="/c/Python27:/c/Python27/Scripts:$PATH"
+
+    - os: windows
+      language: sh
+      name: "Windows Python 3.7"
+      before_install:
+        # oddly the secure password under env: global: causes that choco fails
+        # so we put it directly under the deploy section
+        - choco install python3
+        - export PATH="/c/Python37:/c/Python37/Scripts:$PATH"
+        - export deploy_on_pypi="True"
+
+      # password needs to be created for every repository with ruby gem travis:   travis encrypt pypi_password=******* --org from the project directory
+      # option --org for travis.org
+      # the secure password points to env_variable ${pypi_password}
+      # oddly the secure password under env: global: causes that choco for windows builds fails
+      # so we put it into the matrix
+      # ${pypi_password}
+      #  - secure: "VzzRTHvQZxalECzr7Ce4ewaA7eifVS3Tke5FiitDHWRm5laiEaPtxWfPF0a1nczXKNEY0SHW7dvZlXARoU2qt46g/DDPh/cUBlt0IdD98oui2E40DYA892GVyRZt5Uy7nA5rgNoUdYJz/+4K32a6PYsWZUcN2SGcHRhNvrEyvuMlFQvbOKE06E41ziSUr55QEc9vk36RwFt0sYc+ZFfFpbC6KD2UZcWmiqIXrhevR0KuC8h3q3x2KG0o2ChRl05MmnzPPhADxRqP9RcLtKkK+sm7HFh7342M2DYzyj3kyF+DGuEQs1ZoLgkZaZ3WSv4fDzIqu8BAn2RTBrc5X2a4Qap1kXMcd4ouYnFL4ZWq1AaV7XaoNr58JhqcQ408ioUnE6+6xK17UxjtEnu+4X+LjrnRjspVDPi2PRE2mxrm7zQ9dHpj0yHLNuwescpKQRSqSfCqZZvAwR4R+m60x3JMfrMPwC6l4VJaf9OU2yxsUeiHabh03OAj6uZDtk2oxcrurM+x9mieiQ+3R/ttZ9z6lbES74BkC47f/MOZV7+ahTQRbij0mYdcXSFahwzH7Ou5+k+/6dF+0ZTVhf1A1t/MVFnp5I2JwTR3DPdyT5WB2v36CIcxVG/pDculY9s0IVwfBjSxg4MAfUqEfYxz6bSj4+SqeWhfXcXw4QE9Gmc2f+Q="
+      env:
+        - secure: "VzzRTHvQZxalECzr7Ce4ewaA7eifVS3Tke5FiitDHWRm5laiEaPtxWfPF0a1nczXKNEY0SHW7dvZlXARoU2qt46g/DDPh/cUBlt0IdD98oui2E40DYA892GVyRZt5Uy7nA5rgNoUdYJz/+4K32a6PYsWZUcN2SGcHRhNvrEyvuMlFQvbOKE06E41ziSUr55QEc9vk36RwFt0sYc+ZFfFpbC6KD2UZcWmiqIXrhevR0KuC8h3q3x2KG0o2ChRl05MmnzPPhADxRqP9RcLtKkK+sm7HFh7342M2DYzyj3kyF+DGuEQs1ZoLgkZaZ3WSv4fDzIqu8BAn2RTBrc5X2a4Qap1kXMcd4ouYnFL4ZWq1AaV7XaoNr58JhqcQ408ioUnE6+6xK17UxjtEnu+4X+LjrnRjspVDPi2PRE2mxrm7zQ9dHpj0yHLNuwescpKQRSqSfCqZZvAwR4R+m60x3JMfrMPwC6l4VJaf9OU2yxsUeiHabh03OAj6uZDtk2oxcrurM+x9mieiQ+3R/ttZ9z6lbES74BkC47f/MOZV7+ahTQRbij0mYdcXSFahwzH7Ou5+k+/6dF+0ZTVhf1A1t/MVFnp5I2JwTR3DPdyT5WB2v36CIcxVG/pDculY9s0IVwfBjSxg4MAfUqEfYxz6bSj4+SqeWhfXcXw4QE9Gmc2f+Q="
+
     - os: linux
       language: sh
       name: "WINE stable 32 Bit Python 2.7.16, Windows XP"
@@ -30,7 +63,7 @@ matrix:
           - wine_windows_version="winxp"
           - wine_version="stable"
           - wine_python_version="python2"
-    #################################################################################
+
     - os: linux
       language: sh
       name: "WINE stable 64 Bit Python 2.7.16, Windows XP"
@@ -41,7 +74,7 @@ matrix:
           - wine_windows_version="winxp"
           - wine_version="stable"
           - wine_python_version="python2"
-    #################################################################################
+
     - os: linux
       language: sh
       name: "WINE stable 32 Bit Python 3.7.3, Windows XP"
@@ -53,7 +86,7 @@ matrix:
           - wine_windows_version="winxp"
           - wine_version="stable"
           - wine_python_version="python3"
-    #################################################################################
+
     - os: linux
       language: sh
       name: "WINE stable 64 Bit Python 3.7.3, Windows XP"
@@ -64,9 +97,7 @@ matrix:
           - wine_windows_version="winxp"
           - wine_version="stable"
           - wine_python_version="python3"
-    #################################################################################
-    # WINE Stable WIN10
-    #################################################################################
+
     - os: linux
       language: sh
       name: "WINE stable 32 Bit Python 2.7.16, Windows 10"
@@ -78,7 +109,7 @@ matrix:
           - wine_windows_version="win10"
           - wine_version="stable"
           - wine_python_version="python2"
-    #################################################################################
+
     - os: linux
       language: sh
       name: "WINE stable 64 Bit Python 2.7.16, Windows 10"
@@ -89,7 +120,7 @@ matrix:
           - wine_windows_version="win10"
           - wine_version="stable"
           - wine_python_version="python2"
-    #################################################################################
+
     - os: linux
       language: sh
       name: "WINE stable 32 Bit Python 3.7.3, Windows 10"
@@ -101,7 +132,7 @@ matrix:
           - wine_windows_version="win10"
           - wine_version="stable"
           - wine_python_version="python3"
-    #################################################################################
+
     - os: linux
       language: sh
       name: "WINE stable 64 Bit Python 3.7.3, Windows 10"
@@ -112,9 +143,7 @@ matrix:
           - wine_windows_version="win10"
           - wine_version="stable"
           - wine_python_version="python3"
-    #################################################################################
-    # WINE Develop XP
-    #################################################################################
+
     - os: linux
       language: sh
       name: "WINE devel 32 Bit Python 2.7.16, Windows XP"
@@ -126,7 +155,7 @@ matrix:
           - wine_windows_version="winxp"
           - wine_version="devel"
           - wine_python_version="python2"
-    #################################################################################
+
     - os: linux
       language: sh
       name: "WINE devel 64 Bit Python 2.7.16, Windows XP"
@@ -137,7 +166,7 @@ matrix:
           - wine_windows_version="winxp"
           - wine_version="devel"
           - wine_python_version="python2"
-    #################################################################################
+
     - os: linux
       language: sh
       name: "WINE devel 32 Bit Python 3.7.3, Windows XP"
@@ -149,7 +178,7 @@ matrix:
           - wine_windows_version="winxp"
           - wine_version="devel"
           - wine_python_version="python3"
-    #################################################################################
+
     - os: linux
       language: sh
       name: "WINE devel 64 Bit Python 3.7.3, Windows XP"
@@ -160,9 +189,7 @@ matrix:
           - wine_windows_version="winxp"
           - wine_version="devel"
           - wine_python_version="python3"
-    #################################################################################
-    # WINE Develop WIN10
-    #################################################################################
+
     - os: linux
       language: sh
       name: "WINE devel 32 Bit Python 2.7.16, Windows 10"
@@ -174,7 +201,7 @@ matrix:
           - wine_windows_version="win10"
           - wine_version="devel"
           - wine_python_version="python2"
-    #################################################################################
+
     - os: linux
       language: sh
       name: "WINE devel 64 Bit Python 2.7.16, Windows 10"
@@ -185,7 +212,7 @@ matrix:
           - wine_windows_version="win10"
           - wine_version="devel"
           - wine_python_version="python2"
-    #################################################################################
+
     - os: linux
       language: sh
       name: "WINE devel 32 Bit Python 3.7.3, Windows 10"
@@ -197,7 +224,7 @@ matrix:
           - wine_windows_version="win10"
           - wine_version="devel"
           - wine_python_version="python3"
-    #################################################################################
+
     - os: linux
       language: sh
       name: "WINE devel 64 Bit Python 3.7.3, Windows 10"
@@ -208,9 +235,7 @@ matrix:
           - wine_windows_version="win10"
           - wine_version="devel"
           - wine_python_version="python3"
-    #################################################################################
-    # WINE Staging XP
-    #################################################################################
+
     - os: linux
       language: sh
       name: "WINE staging 32 Bit Python 2.7.16, Windows XP"
@@ -222,7 +247,7 @@ matrix:
           - wine_windows_version="winxp"
           - wine_version="staging"
           - wine_python_version="python2"
-    #################################################################################
+
     - os: linux
       language: sh
       name: "WINE staging 64 Bit Python 2.7.16, Windows XP"
@@ -233,7 +258,7 @@ matrix:
           - wine_windows_version="winxp"
           - wine_version="staging"
           - wine_python_version="python2"
-    #################################################################################
+
     - os: linux
       language: sh
       name: "WINE staging 32 Bit Python 3.7.3, Windows XP"
@@ -245,7 +270,7 @@ matrix:
           - wine_windows_version="winxp"
           - wine_version="staging"
           - wine_python_version="python3"
-    #################################################################################
+
     - os: linux
       language: sh
       name: "WINE staging 64 Bit Python 3.7.3, Windows XP"
@@ -256,9 +281,7 @@ matrix:
           - wine_windows_version="winxp"
           - wine_version="staging"
           - wine_python_version="python3"
-    #################################################################################
-    # WINE Develop WIN10
-    #################################################################################
+
     - os: linux
       language: sh
       name: "WINE staging 32 Bit Python 2.7.16, Windows 10"
@@ -270,7 +293,7 @@ matrix:
           - wine_windows_version="win10"
           - wine_version="staging"
           - wine_python_version="python2"
-    #################################################################################
+
     - os: linux
       language: sh
       name: "WINE staging 64 Bit Python 2.7.16, Windows 10"
@@ -281,7 +304,7 @@ matrix:
           - wine_windows_version="win10"
           - wine_version="staging"
           - wine_python_version="python2"
-    #################################################################################
+
     - os: linux
       language: sh
       name: "WINE staging 32 Bit Python 3.7.3, Windows 10"
@@ -293,7 +316,7 @@ matrix:
           - wine_windows_version="win10"
           - wine_version="staging"
           - wine_python_version="python3"
-    #################################################################################
+
     - os: linux
       language: sh
       name: "WINE staging 64 Bit Python 3.7.3, Windows 10"
@@ -305,28 +328,6 @@ matrix:
           - wine_version="staging"
           - wine_python_version="python3"
 
-    #################################################################################
-    #################################################################################
-    #################################################################################
-    #################################################################################
-    #################################################################################
-    #################################################################################
-    - os: windows
-      language: sh
-      name: "Windows Python 2.7"
-      before_install:
-          - choco install python2
-          - export PATH="/c/Python27:/c/Python27/Scripts:$PATH"
-    #################################################################################
-    - os: windows
-      language: sh
-      name: "Windows Python 3.7"
-      before_install:
-        - choco install python3
-        - export PATH="/c/Python37:/c/Python37/Scripts:$PATH"
-    #################################################################################
-
-
 install:
     - if [[ ${CMDPREFIX} == "wine" ]]; then chmod 755 ./*.sh ; fi
     - if [[ ${CMDPREFIX} == "wine" ]]; then ./install_wine.sh ; fi
@@ -335,14 +336,21 @@ install:
     - if [[ ${wine_python_version} == "python3" ]]; then ./install_wine_python3_preinstalled.sh ; fi
     - if [[ ${CMDPREFIX} == "wine" ]]; then ./install_wine_git_portable.sh ; fi
 
-    - ${CMDPREFIX} python -m pip install --upgrade pip
-    - if [[ $TRAVIS_PYTHON_VERSION == pypy3.5-6.0 ]]; then ${CMDPREFIX} pip install "pytest-cov==2.6.0"; fi
-    - ${CMDPREFIX} pip install codecov pytest pytest-pep8 pytest-cov dill
-    - ${CMDPREFIX} pip install -e .
+    - ${CMDPREFIX} ${python_command} -m pip install --upgrade pip
+    - if [[ $TRAVIS_PYTHON_VERSION == pypy3.5-6.0 ]]; then ${CMDPREFIX} ${pip_command} install "pytest-cov==2.6.0"; fi
+    - ${CMDPREFIX} ${pip_command} install codecov pytest pytest-pep8 pytest-cov dill
+    - ${CMDPREFIX} ${pip_command} install -e .
 
 script:
-    - ${CMDPREFIX} pip install ${github_master} --install-option test # test setup.py test option
-    - ${CMDPREFIX} python -m pytest --pep8 --cov
+    - ${CMDPREFIX} ${pip_command} install ${github_master} --install-option test # test setup.py test option
+    - ${CMDPREFIX} ${python_command} -m pytest --pep8 --cov
+
 after_success:
     - ${CMDPREFIX} coverage report
     - ${CMDPREFIX} codecov
+
+    # This works for sure - lets do it our self and not rely on travis deploy: , because its buggy
+    - if [[ ${deploy_on_pypi} == "True" ]] && [[ -n ${TRAVIS_TAG} ]]; then ${CMDPREFIX} ${pip_command} install -U twine ; fi
+    - if [[ ${deploy_on_pypi} == "True" ]] && [[ -n ${TRAVIS_TAG} ]]; then ${CMDPREFIX} ${pip_command} install wheel ; fi
+    - if [[ ${deploy_on_pypi} == "True" ]] && [[ -n ${TRAVIS_TAG} ]]; then ${CMDPREFIX} ${python_command} setup.py sdist bdist_wheel ; fi
+    - if [[ ${deploy_on_pypi} == "True" ]] && [[ -n ${TRAVIS_TAG} ]]; then ${CMDPREFIX} twine upload --repository-url https://upload.pypi.org/legacy/ -u bitranox -p ${pypi_password} dist/* ; fi

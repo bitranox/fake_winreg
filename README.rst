@@ -1,7 +1,7 @@
 lib_registry
 ============
 
-|Build Status| |Codecov Status| |Better Code| |snyk security|
+|Build Status| |Pypi Status| |Codecov Status| |Better Code| |snyk security|
 
 some convenience functions to access the windows registry - to be extended.
 
@@ -36,7 +36,14 @@ From source code:
     # test without installing
     python setup.py test
 
-via pip (preferred):
+via pip latest Release:
+
+.. code-block:: bash
+
+    # latest Release from pypi
+    pip install lib_registry
+
+via pip latest Development Version:
 
 .. code-block:: bash
 
@@ -52,7 +59,11 @@ via requirements.txt:
 .. code-block:: bash
 
     # Insert following line in Your requirements.txt:
-    # https://github.com/bitranox/lib_registry/archive/master.zip
+    # for the latest Release:
+    lib_registry
+    # for the latest Development Version :
+    https://github.com/bitranox/lib_registry/archive/master.zip
+
     # to install and upgrade all modules mentioned in requirements.txt:
     pip install --upgrade -r /<path>/requirements.txt
 
@@ -60,7 +71,7 @@ via python:
 
 .. code-block:: bash
 
-    python -m pip install --upgrade https://github.com/bitranox/lib_registry/archive/master.zip
+    python -m pip install --upgrade lib_registry
 
 
 Basic Usage
@@ -134,6 +145,9 @@ See `License file <https://github.com/bitranox/lib_registry/blob/master/LICENSE.
 
 .. |Build Status| image:: https://travis-ci.org/bitranox/lib_registry.svg?branch=master
    :target: https://travis-ci.org/bitranox/lib_registry
+.. for the pypi status link note the dashes, not the underscore !
+.. |Pypi Status| image:: https://badge.fury.io/py/lib-registry.svg
+   :target: https://badge.fury.io/py/lib_registry
 .. |Codecov Status| image:: https://codecov.io/gh/bitranox/lib_registry/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/bitranox/lib_registry
 .. |Better Code| image:: https://bettercodehub.com/edge/badge/bitranox/lib_registry?branch=master

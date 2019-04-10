@@ -27,7 +27,7 @@ long_description = (
 
 setup(
     name='lib_registry',
-    version='1.0.1',
+    version='1.0.2',
     description='Windows Registry related',
     long_description=long_description,
     long_description_content_type='text/x-rst',
