@@ -17,10 +17,13 @@ wget -nc https://dl.winehq.org/wine-builds/winehq.key
 sudo apt-key add winehq.key
 sudo apt-add-repository 'deb https://dl.winehq.org/wine-builds/ubuntu/ xenial main'
 echo "Wine Packages Update"
-sudo apt-get -y update
-sudo apt-get install -y cabextract
+sudo apt-get update
 echo "Wine Packages Install"
 sudo apt-get install --install-recommends winehq-${wine_version}
+sudo apt-get install -y cabextract
+sudo apt-get install -y libxml2
+sudo apt-get install -y libpng
+
 echo "Install latest Winetricks"
 cd /usr/bin
 sudo rm -f winetricks
@@ -30,3 +33,8 @@ sudo winetricks -q --self-update
 echo "Install latest Winetricks - done"
 
 cd ${save_path}
+
+echo "******************************************************************************************************************"
+echo "******************************************************************************************************************"
+echo "FINISHED installing WINE and WINETRICKS"
+echo "******************************************************************************************************************"
