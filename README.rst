@@ -1,7 +1,7 @@
 lib_registry
 ============
 
-|Build Status| |Pypi Status| |Codecov Status| |Better Code| |snyk security|
+|license| |maintenance| |Build Status| |Pypi Status| |Codecov Status| |Better Code| |snyk security|
 
 some convenience functions to access the windows registry - to be extended.
 
@@ -143,6 +143,9 @@ This software is licensed under the `MIT license <http://en.wikipedia.org/wiki/M
 
 See `License file <https://github.com/bitranox/lib_registry/blob/master/LICENSE.txt>`_
 
+.. |license| image:: https://img.shields.io/github/license/webcomics/pywine.svg
+   :target: http://en.wikipedia.org/wiki/MIT_License
+.. |maintenance| image:: https://img.shields.io/maintenance/yes/2019.svg
 .. |Build Status| image:: https://travis-ci.org/bitranox/lib_registry.svg?branch=master
    :target: https://travis-ci.org/bitranox/lib_registry
 .. for the pypi status link note the dashes, not the underscore !
