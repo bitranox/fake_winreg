@@ -1,7 +1,9 @@
 lib_registry
 ============
 
-|license| |maintenance| |Build Status| |Pypi Status| |Codecov Status| |Better Code| |snyk security|
+|Pypi Status| |license| |maintenance|
+
+|Build Status| |Codecov Status| |Better Code| |code climate| |snyk security|
 
 some convenience functions to access the windows registry - to be extended.
 
@@ -157,3 +159,6 @@ See `License file <https://github.com/bitranox/lib_registry/blob/master/LICENSE.
    :target: https://bettercodehub.com/results/bitranox/lib_registry
 .. |snyk security| image:: https://snyk.io/test/github/bitranox/lib_registry/badge.svg
    :target: https://snyk.io/test/github/bitranox/lib_registry
+.. |code climate| image:: https://api.codeclimate.com/v1/badges/affaa3b099c55c69950c/maintainability
+   :target: https://codeclimate.com/github/bitranox/lib_registry/maintainability
+   :alt: Maintainability
