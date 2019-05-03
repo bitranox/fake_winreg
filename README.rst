@@ -5,26 +5,43 @@ lib_registry
 
 |Build Status| |Codecov Status| |Better Code| |code climate| |snyk security|
 
+.. |license| image:: https://img.shields.io/github/license/webcomics/pywine.svg
+   :target: http://en.wikipedia.org/wiki/MIT_License
+.. |maintenance| image:: https://img.shields.io/maintenance/yes/2019.svg
+.. |Build Status| image:: https://travis-ci.org/bitranox/lib_registry.svg?branch=master
+   :target: https://travis-ci.org/bitranox/lib_registry
+.. for the pypi status link note the dashes, not the underscore !
+.. |Pypi Status| image:: https://badge.fury.io/py/lib-registry.svg
+   :target: https://badge.fury.io/py/lib_registry
+.. |Codecov Status| image:: https://codecov.io/gh/bitranox/lib_registry/branch/master/graph/badge.svg
+   :target: https://codecov.io/gh/bitranox/lib_registry
+.. |Better Code| image:: https://bettercodehub.com/edge/badge/bitranox/lib_registry?branch=master
+   :target: https://bettercodehub.com/results/bitranox/lib_registry
+.. |snyk security| image:: https://snyk.io/test/github/bitranox/lib_registry/badge.svg
+   :target: https://snyk.io/test/github/bitranox/lib_registry
+.. |code climate| image:: https://api.codeclimate.com/v1/badges/affaa3b099c55c69950c/maintainability
+   :target: https://codeclimate.com/github/bitranox/lib_registry/maintainability
+   :alt: Maintainability
+
 some convenience functions to access the windows registry - to be extended.
 
 supports python 2.7 - python 3.7 and possibly other dialects.
 
-`100% code coverage <https://codecov.io/gh/bitranox/lib_registry>`_, tested under `Windows and Wine <https://travis-ci.org/bitranox/lib_registry>`_
+`100% code coverage <https://codecov.io/gh/bitranox/lib_registry>`_, mypy static type checking, tested under `Linux, OsX, Windows and Wine <https://travis-ci.org/bitranox/lib_registry>`_, automatic daily builds  and monitoring
 
------
+----
 
+- `Installation and Upgrade`_
+- `Basic Usage`_
+- `Requirements`_
+- `Acknowledgements`_
+- `Contribute`_
+- `Report Issues <https://github.com/bitranox/lib_registry/blob/master/ISSUE_TEMPLATE.md>`_
+- `Pull Request <https://github.com/bitranox/lib_registry/blob/master/PULL_REQUEST_TEMPLATE.md>`_
+- `Code of Conduct <https://github.com/bitranox/lib_registry/blob/master/CODE_OF_CONDUCT.md>`_
+- `License`_
 
-`Report Issues <https://github.com/bitranox/lib_registry/blob/master/ISSUE_TEMPLATE.md>`_
-
-`Contribute <https://github.com/bitranox/lib_registry/blob/master/CONTRIBUTING.md>`_
-
-`Pull Request <https://github.com/bitranox/lib_registry/blob/master/PULL_REQUEST_TEMPLATE.md>`_
-
-`Code of Conduct <https://github.com/bitranox/lib_registry/blob/master/CODE_OF_CONDUCT.md>`_
-
-
------
-
+----
 
 Installation and Upgrade
 ------------------------
@@ -45,6 +62,9 @@ via pip latest Release:
     # latest Release from pypi
     pip install lib_registry
 
+    # test without installing
+    pip install lib_registry --install-option test
+
 via pip latest Development Version:
 
 .. code-block:: bash
@@ -54,7 +74,7 @@ via pip latest Development Version:
     # normal install
     pip install --upgrade https://github.com/bitranox/lib_registry/archive/master.zip
     # test without installing
-    pip install --upgrade https://github.com/bitranox/lib_registry/archive/master.zip  --install-option test
+    pip install https://github.com/bitranox/lib_registry/archive/master.zip --install-option test
 
 via requirements.txt:
 
@@ -71,10 +91,13 @@ via requirements.txt:
 
 via python:
 
-.. code-block:: bash
+.. code-block:: python
 
-    python -m pip install --upgrade lib_registry
+    # for the latest Release
+    python -m pip install upgrade lib_registry
 
+    # for the latest Development Version
+    python -m pip install upgrade https://github.com/bitranox/lib_registry/archive/master.zip
 
 Basic Usage
 -----------
@@ -111,7 +134,7 @@ Basic Usage
     >>> key_exist('HKEY_LOCAL_MACHINE\\Software\\DoesNotExist')
     False
 
-    >>> # get the SID´s of all Windows users
+    >>> # get the SIDs of all Windows users
     >>> get_ls_user_sids()
     ['.DEFAULT', 'S-1-5-18', 'S-1-5-19', 'S-1-5-20', ...]
 
@@ -119,46 +142,28 @@ Basic Usage
     >>> get_username_from_sid(sid='S-1-5-20')
     'NetworkService'
 
-
 Requirements
 ------------
+following modules will be automatically installed :
 
-pytest, see : https://github.com/pytest-dev/pytest
+.. code-block:: shell
 
-typing, see : https://pypi.org/project/typing/
+    pytest              # see : https://github.com/pytest-dev/pytest
+    typing              # see : https://pypi.org/project/typing/
 
-Acknowledgement
----------------
+Acknowledgements
+----------------
 
-and special thanks to "uncle bob" Robert C. Martin, especially for his books on "clean code" and "clean architecture"
+- special thanks to "uncle bob" Robert C. Martin, especially for his books on "clean code" and "clean architecture"
 
 Contribute
 ----------
 
 I would love for you to fork and send me pull request for this project.
-Please contribute.
+- `please Contribute <https://github.com/bitranox/lib_registry/blob/master/CONTRIBUTING.md>`_
 
 License
 -------
 
 This software is licensed under the `MIT license <http://en.wikipedia.org/wiki/MIT_License>`_
 
-See `License file <https://github.com/bitranox/lib_registry/blob/master/LICENSE.txt>`_
-
-.. |license| image:: https://img.shields.io/github/license/webcomics/pywine.svg
-   :target: http://en.wikipedia.org/wiki/MIT_License
-.. |maintenance| image:: https://img.shields.io/maintenance/yes/2019.svg
-.. |Build Status| image:: https://travis-ci.org/bitranox/lib_registry.svg?branch=master
-   :target: https://travis-ci.org/bitranox/lib_registry
-.. for the pypi status link note the dashes, not the underscore !
-.. |Pypi Status| image:: https://badge.fury.io/py/lib-registry.svg
-   :target: https://badge.fury.io/py/lib_registry
-.. |Codecov Status| image:: https://codecov.io/gh/bitranox/lib_registry/branch/master/graph/badge.svg
-   :target: https://codecov.io/gh/bitranox/lib_registry
-.. |Better Code| image:: https://bettercodehub.com/edge/badge/bitranox/lib_registry?branch=master
-   :target: https://bettercodehub.com/results/bitranox/lib_registry
-.. |snyk security| image:: https://snyk.io/test/github/bitranox/lib_registry/badge.svg
-   :target: https://snyk.io/test/github/bitranox/lib_registry
-.. |code climate| image:: https://api.codeclimate.com/v1/badges/affaa3b099c55c69950c/maintainability
-   :target: https://codeclimate.com/github/bitranox/lib_registry/maintainability
-   :alt: Maintainability

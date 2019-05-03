@@ -1,5 +1,5 @@
 import platform
-from typing import Any, List
+from typing import Any, List, Dict
 import sys
 
 is_python2 = sys.version_info < (3, 0)
@@ -9,19 +9,25 @@ REG_SZ = 1  # avoid Import Error on Linux on function set_value
 
 if is_platform_windows:
     if is_python2:
-        from _winreg import *
+        import _winreg as winreg    # type: ignore
     else:
-        from winreg import *
+        import winreg               # type: ignore
 
-if is_platform_windows:
-    main_key_hashed_by_name = {'hkey_classes_root': HKEY_CLASSES_ROOT, 'hkcr': HKEY_CLASSES_ROOT,
-                               'hkey_current_config': HKEY_CURRENT_CONFIG, 'hkcc': HKEY_CURRENT_CONFIG,
-                               'hkey_current_user': HKEY_CURRENT_USER, 'hkcu': HKEY_CURRENT_USER,
-                               'hkey_dyn_data': HKEY_DYN_DATA, 'hkdd': HKEY_DYN_DATA,
-                               'hkey_local_machine': HKEY_LOCAL_MACHINE, 'hklm': HKEY_LOCAL_MACHINE,
-                               'hkey_performance_data': HKEY_PERFORMANCE_DATA, 'hkpd': HKEY_PERFORMANCE_DATA,
-                               'hkey_users': HKEY_USERS, 'hku': HKEY_USERS
-                               }
+    main_key_hashed_by_name = {'hkey_classes_root': winreg.HKEY_CLASSES_ROOT,
+                               'hkcr': winreg.HKEY_CLASSES_ROOT,
+                               'hkey_current_config': winreg.HKEY_CURRENT_CONFIG,
+                               'hkcc': winreg.HKEY_CURRENT_CONFIG,
+                               'hkey_current_user': winreg.HKEY_CURRENT_USER,
+                               'hkcu': winreg.HKEY_CURRENT_USER,
+                               'hkey_dyn_data': winreg.HKEY_DYN_DATA,
+                               'hkdd': winreg.HKEY_DYN_DATA,
+                               'hkey_local_machine': winreg.HKEY_LOCAL_MACHINE,
+                               'hklm': winreg.HKEY_LOCAL_MACHINE,
+                               'hkey_performance_data': winreg.HKEY_PERFORMANCE_DATA,
+                               'hkpd': winreg.HKEY_PERFORMANCE_DATA,
+                               'hkey_users': winreg.HKEY_USERS,
+                               'hku': winreg.HKEY_USERS
+                               }                                            # type: Dict[str, Any]
 
 
 l_hive_names = ['HKEY_LOCAL_MACHINE', 'HKLM', 'HKEY_CURRENT_USER', 'HKCU', 'HKEY_CLASSES_ROOT',
@@ -31,18 +37,18 @@ l_hive_names = ['HKEY_LOCAL_MACHINE', 'HKLM', 'HKEY_CURRENT_USER', 'HKCU', 'HKEY
 
 
 def get_number_of_subkeys(key):
-    # type: (HKEYType) -> int
+    # type: (winreg.HKEYType) -> int
     """
     param key : one of the winreg HKEY_* constants :
                 HKEY_CLASSES_ROOT, HKEY_CURRENT_CONFIG, HKEY_CURRENT_USER, HKEY_DYN_DATA,
                 HKEY_LOCAL_MACHINE, HKEY_PERFORMANCE_DATA, HKEY_USERS
 
-    >>> result = get_number_of_subkeys(HKEY_USERS)
+    >>> result = get_number_of_subkeys(winreg.HKEY_USERS)
     >>> result > 1
     True
 
     """
-    number_of_subkeys, number_of_values, last_modified_win_timestamp = QueryInfoKey(key)
+    number_of_subkeys, number_of_values, last_modified_win_timestamp = winreg.QueryInfoKey(key)
     return number_of_subkeys
 
 
@@ -57,9 +63,9 @@ def get_ls_user_sids():
 
     """
     ls_user_sids = []
-    n_sub_keys = get_number_of_subkeys(key=HKEY_USERS)
+    n_sub_keys = get_number_of_subkeys(key=winreg.HKEY_USERS)
     for i in range(n_sub_keys):
-        subkey = EnumKey(HKEY_USERS, i)
+        subkey = winreg.EnumKey(winreg.HKEY_USERS, i)
         ls_user_sids.append(subkey)
     return sorted(ls_user_sids)
 
@@ -81,16 +87,16 @@ def get_username_from_sid(sid):
 
 def _get_username_from_sid_windows(sid):
     reg = get_registry_connection('HKEY_LOCAL_MACHINE')
-    key = OpenKey(reg, r'SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\{}'.format(sid))
-    val, value_type = QueryValueEx(key, 'ProfileImagePath')
+    key = winreg.OpenKey(reg, r'SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\{}'.format(sid))
+    val, value_type = winreg.QueryValueEx(key, 'ProfileImagePath')
     username = val.rsplit('\\', 1)[1]
     return username
 
 
 def _get_username_from_sid_wine(sid):
     reg = get_registry_connection('HKEY_USERS')
-    key = OpenKey(reg, r'{}\Volatile Environment'.format(sid))
-    username, value_type = QueryValueEx(key, 'USERNAME')
+    key = winreg.OpenKey(reg, r'{}\Volatile Environment'.format(sid))
+    username, value_type = winreg.QueryValueEx(key, 'USERNAME')
     return username
 
 
@@ -129,8 +135,8 @@ def get_value(key_name, value_name):
     try:
         reg = get_registry_connection(key_name)
         key_without_hive = get_reg_path(key_name)
-        key = OpenKey(reg, key_without_hive)
-        val_type = QueryValueEx(key, value_name)
+        key = winreg.OpenKey(reg, key_without_hive)
+        val_type = winreg.QueryValueEx(key, value_name)
         result = val_type[0]
         return result
     except Exception:
@@ -145,14 +151,14 @@ def create_key(key_name):
     """
     root_key = get_root_key(key_name)
     reg_path = get_reg_path(key_name)
-    CreateKey(root_key, reg_path)
+    winreg.CreateKey(root_key, reg_path)
 
 
 def delete_key(key_name):
     # type: (str) -> None
     root_key = get_root_key(key_name)
     reg_path = get_reg_path(key_name)
-    DeleteKey(root_key, reg_path)
+    winreg.DeleteKey(root_key, reg_path)
 
 
 def set_value(key_name, value_name, value, value_type=REG_SZ):
@@ -181,18 +187,18 @@ def set_value(key_name, value_name, value, value_type=REG_SZ):
     """
     root_key = get_root_key(key_name)
     reg_path = get_reg_path(key_name)
-    registry_key = OpenKey(root_key, reg_path, 0, KEY_WRITE)
-    SetValueEx(registry_key, value_name, 0, value_type, value)
-    CloseKey(registry_key)
+    registry_key = winreg.OpenKey(root_key, reg_path, 0, winreg.KEY_WRITE)
+    winreg.SetValueEx(registry_key, value_name, 0, value_type, value)
+    winreg.CloseKey(registry_key)
 
 
 def delete_value(key_name, value_name):
     # type: (str, str) -> None
     root_key = get_root_key(key_name)
     reg_path = get_reg_path(key_name)
-    registry_key = OpenKey(root_key, reg_path, 0, KEY_ALL_ACCESS)
-    DeleteValue(registry_key, value_name)
-    CloseKey(registry_key)
+    registry_key = winreg.OpenKey(root_key, reg_path, 0, winreg.KEY_ALL_ACCESS)
+    winreg.DeleteValue(registry_key, value_name)
+    winreg.CloseKey(registry_key)
 
 
 def get_registry_connection(key_name):
@@ -227,7 +233,7 @@ def get_registry_connection(key_name):
     """
 
     main_key = get_root_key(key_name)
-    reg = ConnectRegistry(None, main_key)
+    reg = winreg.ConnectRegistry(None, main_key)
     return reg
 
 
@@ -333,7 +339,7 @@ def key_exist(key_name):
     key_without_hive = get_reg_path(key_name)
     # noinspection PyBroadException
     try:
-        OpenKey(reg, key_without_hive)
+        winreg.OpenKey(reg, key_without_hive)
         return True
     except Exception:  # FileNotFoundError does not exist in Python 2.7
         return False
