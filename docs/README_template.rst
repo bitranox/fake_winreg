@@ -22,8 +22,6 @@ supports python 2.7 - python 3.7 and possibly other dialects.
 - `Code of Conduct <https://github.com/{repository_slug}/blob/master/CODE_OF_CONDUCT.md>`_
 - `License`_
 
-.. include:: ./link_to_issues.rst
-
 ----
 
 Installation and Upgrade
