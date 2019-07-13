@@ -2,9 +2,18 @@ import platform
 from typing import Any, List, Dict
 import sys
 
-is_python2 = sys.version_info < (3, 0)
+is_python2 = sys.version_info < (3, 0)  # type: bool
 is_platform_windows = platform.system().lower() == 'windows'
 REG_SZ = 1  # avoid Import Error on Linux on function set_value
+
+
+def is_python_2():
+    # type: () -> bool
+    if sys.version_info < (3, 0):
+        return True
+    else:
+        return False
+
 
 
 if is_platform_windows:
@@ -49,7 +58,7 @@ def get_number_of_subkeys(key):
 
     """
     number_of_subkeys, number_of_values, last_modified_win_timestamp = winreg.QueryInfoKey(key)
-    return number_of_subkeys
+    return int(number_of_subkeys)
 
 
 def get_ls_user_sids():
@@ -86,18 +95,20 @@ def get_username_from_sid(sid):
 
 
 def _get_username_from_sid_windows(sid):
+    # type: (str) -> str
     reg = get_registry_connection('HKEY_LOCAL_MACHINE')
     key = winreg.OpenKey(reg, r'SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\{}'.format(sid))
     val, value_type = winreg.QueryValueEx(key, 'ProfileImagePath')
-    username = val.rsplit('\\', 1)[1]
+    username = str(val.rsplit('\\', 1)[1])
     return username
 
 
 def _get_username_from_sid_wine(sid):
+    # type: (str) -> str
     reg = get_registry_connection('HKEY_USERS')
     key = winreg.OpenKey(reg, r'{}\Volatile Environment'.format(sid))
     username, value_type = winreg.QueryValueEx(key, 'USERNAME')
-    return username
+    return str(username)
 
 
 def get_value(key_name, value_name):
@@ -144,7 +155,7 @@ def get_value(key_name, value_name):
 
 
 def create_key(key_name):
-    # type (str) -> None
+    # type: (str) -> None
     """
     >>> create_key(r'HKCU\\Software\\lib_registry_test')
     >>> delete_key(r'HKCU\\Software\\lib_registry_test')
@@ -202,7 +213,7 @@ def delete_value(key_name, value_name):
 
 
 def get_registry_connection(key_name):
-    # type: (str) -> int
+    # type: (str) -> winreg.HKEYType
     """
     >>> get_registry_connection('HKCR')  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     <PyHKEY object at ...>
@@ -258,7 +269,7 @@ def get_root_key(key_name):
     main_key_name = get_first_part_of_the_key(key_name)
     main_key_name = main_key_name.lower()
     if main_key_name in main_key_hashed_by_name:
-        main_key = main_key_hashed_by_name[main_key_name]
+        main_key = int(main_key_hashed_by_name[main_key_name])
         return main_key
     else:
         raise ValueError('the registry key needs to start with a valid root key')

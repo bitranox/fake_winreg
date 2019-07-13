@@ -22,6 +22,20 @@ services:   # start services
 
 matrix:
     include:
+    - os: windows
+      language: sh
+      name: "Windows Python 2.7"
+
+      # oddly a secure password under env: global: causes that choco fails
+      # so we need to put the option : filter_secrets: false
+      # this can be a security issue, check that You dont leak secrets here !
+      filter_secrets: false
+      before_install:
+          - git clone https://github.com/bitranox/lib_bash.git /usr/local/lib_bash
+          - chmod -R 0755 /usr/local/lib_bash
+          - chmod -R +x /usr/local/lib_bash/*.sh
+          - /usr/local/lib_bash/lib_retry.sh retry choco install python2
+          - export PATH="/c/Python27:/c/Python27/Scripts:$PATH"
 
     - os: windows
       language: sh
@@ -40,7 +54,7 @@ matrix:
 
     - os: linux
       language: python
-      name: "WINE stable 32 Bit Python 3.7.3, Windows XP"
+      name: "WINE stable 32 Bit Python 3.7, Windows XP"
       env:
           - WINEARCH="win32"
           - WINEPREFIX="${HOME}/wine/wine32"
@@ -51,7 +65,7 @@ matrix:
 
     - os: linux
       language: python
-      name: "WINE stable 64 Bit Python 3.7.3, Windows XP"
+      name: "WINE stable 64 Bit Python 3.7, Windows XP"
       env:
           - WINEPREFIX="${HOME}/wine/wine64"
           - CMDPREFIX="wine"
@@ -61,7 +75,7 @@ matrix:
 
     - os: linux
       language: python
-      name: "WINE stable 32 Bit Python 3.7.3, Windows 10"
+      name: "WINE stable 32 Bit Python 3.7, Windows 10"
       env:
           - WINEARCH="win32"
           - WINEPREFIX="${HOME}/wine/wine32"
@@ -72,7 +86,7 @@ matrix:
 
     - os: linux
       language: python
-      name: "WINE stable 64 Bit Python 3.7.3, Windows 10"
+      name: "WINE stable 64 Bit Python 3.7, Windows 10"
       env:
           - WINEPREFIX="${HOME}/wine/wine64"
           - CMDPREFIX="wine"
@@ -86,7 +100,7 @@ matrix:
 
     - os: linux
       language: python
-      name: "WINE devel 32 Bit Python 3.7.3, Windows XP"
+      name: "WINE devel 32 Bit Python 3.7, Windows XP"
       env:
           - WINEARCH="win32"
           - WINEPREFIX="${HOME}/wine/wine32"
@@ -97,7 +111,7 @@ matrix:
 
     - os: linux
       language: python
-      name: "WINE devel 64 Bit Python 3.7.3, Windows XP"
+      name: "WINE devel 64 Bit Python 3.7, Windows XP"
       env:
           - WINEPREFIX="${HOME}/wine/wine64"
           - CMDPREFIX="wine"
@@ -107,7 +121,7 @@ matrix:
 
     - os: linux
       language: python
-      name: "WINE devel 32 Bit Python 3.7.3, Windows 10"
+      name: "WINE devel 32 Bit Python 3.7, Windows 10"
       env:
           - WINEARCH="win32"
           - WINEPREFIX="${HOME}/wine/wine32"
@@ -118,7 +132,7 @@ matrix:
 
     - os: linux
       language: python
-      name: "WINE devel 64 Bit Python 3.7.3, Windows 10"
+      name: "WINE devel 64 Bit Python 3.7, Windows 10"
       env:
           - WINEPREFIX="${HOME}/wine/wine64"
           - CMDPREFIX="wine"
@@ -128,7 +142,7 @@ matrix:
 
     - os: linux
       language: python
-      name: "WINE staging 32 Bit Python 3.7.3, Windows XP"
+      name: "WINE staging 32 Bit Python 3.7, Windows XP"
       env:
           - WINEARCH="win32"
           - WINEPREFIX="${HOME}/wine/wine32"
@@ -139,7 +153,7 @@ matrix:
 
     - os: linux
       language: python
-      name: "WINE staging 64 Bit Python 3.7.3, Windows XP"
+      name: "WINE staging 64 Bit Python 3.7, Windows XP"
       env:
           - WINEPREFIX="${HOME}/wine/wine64"
           - CMDPREFIX="wine"
@@ -149,7 +163,7 @@ matrix:
 
     - os: linux
       language: python
-      name: "WINE staging 32 Bit Python 3.7.3, Windows 10"
+      name: "WINE staging 32 Bit Python 3.7, Windows 10"
       env:
           - WINEARCH="win32"
           - WINEPREFIX="${HOME}/wine/wine32"
@@ -160,7 +174,7 @@ matrix:
 
     - os: linux
       language: python
-      name: "WINE staging 64 Bit Python 3.7.3, Windows 10"
+      name: "WINE staging 64 Bit Python 3.7, Windows 10"
       env:
           - WINEPREFIX="${HOME}/wine/wine64"
           - CMDPREFIX="wine"

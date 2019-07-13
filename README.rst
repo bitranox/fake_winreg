@@ -25,7 +25,7 @@ lib_registry
 
 some convenience functions to access the windows registry - to be extended.
 
-supports python 3.7 and possibly other dialects.
+supports python 2.7 - 3.7 and possibly other dialects.
 
 `100% code coverage <https://codecov.io/gh/bitranox/lib_registry>`_, mypy static type checking, tested under `Linux, OsX, Windows and Wine <https://travis-ci.org/bitranox/lib_registry>`_, automatic daily builds  and monitoring
 
@@ -40,6 +40,7 @@ supports python 3.7 and possibly other dialects.
 - `Pull Request <https://github.com/bitranox/lib_registry/blob/master/PULL_REQUEST_TEMPLATE.md>`_
 - `Code of Conduct <https://github.com/bitranox/lib_registry/blob/master/CODE_OF_CONDUCT.md>`_
 - `License`_
+- `Changelog`_
 
 ----
 
@@ -166,4 +167,25 @@ License
 -------
 
 This software is licensed under the `MIT license <http://en.wikipedia.org/wiki/MIT_License>`_
+
+---
+
+Changelog
+=========
+
+1.0.3
+-----
+2019-04-10: strict mypy type checking
+
+1.0.2
+-----
+2019-04-10: initial PyPi release
+
+1.0.1
+-----
+2019-03-29: prevent import error when importing under linux
+
+1.0.0
+-----
+2019-03-28: Initial public release
 

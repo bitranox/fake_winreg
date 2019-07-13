@@ -5,7 +5,7 @@ lib_registry
 
 some convenience functions to access the windows registry - to be extended.
 
-supports python 3.7 and possibly other dialects.
+supports python 2.7 - 3.7 and possibly other dialects.
 
 
 .. include:: ./tested_under.rst
@@ -21,6 +21,7 @@ supports python 3.7 and possibly other dialects.
 - `Pull Request <https://github.com/{repository_slug}/blob/master/PULL_REQUEST_TEMPLATE.md>`_
 - `Code of Conduct <https://github.com/{repository_slug}/blob/master/CODE_OF_CONDUCT.md>`_
 - `License`_
+- `Changelog`_
 
 ----
 
@@ -51,3 +52,7 @@ Contribute
 License
 -------
 .. include:: ./licence_mit.rst
+
+---
+
+.. include:: ../CHANGES.rst

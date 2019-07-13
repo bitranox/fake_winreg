@@ -22,7 +22,6 @@ description = 'Windows Registry related'
 
 dirname = os.path.dirname(__file__)
 readme_filename = os.path.join(dirname, 'README.rst')
-changes_filename = os.path.join(dirname, 'CHANGES.rst')
 
 long_description = description
 if os.path.exists(readme_filename):
@@ -32,16 +31,9 @@ if os.path.exists(readme_filename):
     except Exception:
         pass
 
-if os.path.exists(changes_filename):
-    try:
-        changes_content = codecs.open(changes_filename, encoding='utf-8').read()
-        long_description = '\n'.join((long_description, changes_content))
-    except Exception:
-        pass
-
 setup(
     name='lib_registry',
-    version='1.0.2',
+    version='1.0.3',
     description=description,
     long_description=long_description,
     long_description_content_type='text/x-rst',
