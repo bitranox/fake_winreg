@@ -220,11 +220,12 @@ script:
     - if [[ ${mypy_static_typecheck} == "True" ]]; then ${lib_bash_banner} "running mypy static typechecks" && ${CMDPREFIX} ${python_command} -m mypy -p ${REPOSITORY_NAME} --strict --no-warn-unused-ignores; else ${lib_bash_banner_warning} "static typechecking disabled on this build" ;  fi
     - if [[ -f build_docs.py ]] && [[ "${build_docs}" == "True" ]]; then ${lib_bash_banner} "Building Docs" && ${CMDPREFIX} ${python_command} build_docs.py ${TRAVIS_REPO_SLUG}; else ${lib_bash_banner_warning} "Building Docs disabled on this build" ;  fi
     # only for non tagged builds if doctest is enabled, to check before we deploy on pypi
-    - if [[ -f setup.py ]] && [[ -z ${TRAVIS_TAG} ]] && [[ -f build_docs.py ]] && [[ "${build_docs}" == "True" ]]; then export check_build="True" ; fi
+    - if [[ -f setup.py ]] && [[ -z ${TRAVIS_TAG} ]] && [[ -f build_docs.py ]] && [[ ${build_docs} == "True" ]]; then export check_build="True" ; fi
+    - if [[ ${check_build} == "True" ]]; then ${lib_bash_banner} "Building Wheels" ; else ${lib_bash_banner_warning} "Building Wheels disabled on this build" ; fi
     - if [[ ${check_build} == "True" ]]; then ${CMDPREFIX} ${pip_command} install readme_renderer > /dev/null 2>&1 ; fi     # to check if long_description (Readme) can be rendered, otherwise PyPy will not accept it
     - if [[ ${check_build} == "True" ]]; then ${CMDPREFIX} ${pip_command} install --upgrade twine > /dev/null 2>&1 ; fi
     - if [[ ${check_build} == "True" ]]; then ${CMDPREFIX} ${pip_command} install wheel > /dev/null 2>&1 ; fi
-    - if [[ ${check_build} == "True" ]]; then ${lib_bash_banner} "Building Wheels" && ${CMDPREFIX} ${python_command} setup.py sdist bdist_wheel || ${lib_bash_banner_warning} "Building Wheels failed" 1>&2 ; fi
+    - if [[ ${check_build} == "True" ]]; then ${CMDPREFIX} ${python_command} setup.py sdist bdist_wheel || ${lib_bash_banner_warning} "Building Wheels failed" 1>&2 ; fi
     - if [[ ${check_build} == "True" ]]; then ${lib_bash_banner} "Testing PyPi Deployment" && ${CMDPREFIX} twine check dist/* && ${lib_bash_color} clr_bold clr_green "PyPi Deployment would be OK" || ${lib_bash_banner_warning} "PyPi Deployment would fail" 1>&2 ; fi
 
 after_success:
