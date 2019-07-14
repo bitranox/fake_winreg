@@ -1,4 +1,4 @@
-|Pypi Status| |pyversion| |license| |maintenance| |jupyter|
+|Pypi Status| |pyversion2| |pyversion3| |license| |maintenance| |jupyter|
 
 |Build Status| |Codecov Status| |Better Code| |code climate| |snyk security|
 
@@ -21,6 +21,9 @@
 .. |code climate| image:: https://api.codeclimate.com/v1/badges/{codeclimate_link_hash}/maintainability
    :target: https://codeclimate.com/github/{repository_slug}/maintainability
    :alt: Maintainability
-.. |pyversion| image:: https://img.shields.io/badge/python-%3E%3D3.6-brightgreen.svg
+.. |pyversion2| image:: https://img.shields.io/badge/python-%3E%3D2.6-brightgreen.svg
+   :target: https://badge.fury.io/py/{repository}
+   :alt: Python Version
+.. |pyversion3| image:: https://img.shields.io/badge/python-%3E%3D3.6-brightgreen.svg
    :target: https://badge.fury.io/py/{repository}
    :alt: Python Version

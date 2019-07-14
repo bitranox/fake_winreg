@@ -54,7 +54,7 @@ def main(args):
     """
 
     logger.info('include the include blocks')
-    rst_inc(source='./docs/README_template.rst',
+    rst_inc(source='./.docs/README_template.rst',
             target='./README.rst')
 
     logger.info('replace repository related strings')
