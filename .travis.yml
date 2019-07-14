@@ -193,22 +193,25 @@ install:
     - export lib_bash_banner_warning="/usr/local/lib_bash/lib_helpers.sh banner_warning"
     - export lib_bash_wine="/usr/local/lib_bash_wine"
 
-    - export REPOSITORY_NAME=${TRAVIS_REPO_SLUG#*/} && ${lib_bash_color} clr_bold clr_green "Export Repository Name ${REPOSITORY_NAME}"
-    - if [[ ${CMDPREFIX} == "wine" ]]; then ${lib_bash_wine}/001_000_install_wine.sh ; fi
-    - if [[ ${CMDPREFIX} == "wine" ]]; then ${lib_bash_wine}/002_000_install_wine_machine.sh ; fi
-    - if [[ ${wine_python_version} == "python3" ]]; then ${lib_bash_wine}/003_000_install_wine_python3_preinstalled.sh ; fi
-    - if [[ ${CMDPREFIX} == "wine" ]]; then ${lib_bash_wine}/004_000_install_wine_git_portable.sh ; fi
-    # - if [[ ${CMDPREFIX} == "wine" ]]; then ${lib_bash_wine}/005_001_install_wine_powershell_core.sh ; fi
+    - $(which sudo) /usr/local/lib_bash_travis/000_001_travis_install.sh
 
-    - ${lib_bash_banner} "upgrading pip"
-    - ${CMDPREFIX} ${python_command} -m pip install --upgrade pip
-    - if [[ ${mypy_static_typecheck} == "True" ]]; then ${lib_bash_banner} "install mypy" && ${CMDPREFIX} ${pip_command} install mypy; fi
-    - if [[ ${build_docs} == "True" ]]; then ${lib_bash_banner} "install rst_include (Building Docs)" && ${CMDPREFIX} ${pip_command} install rst_include; fi
-    - ${lib_bash_banner} "install codecov" && ${CMDPREFIX} ${pip_command} install codecov
-    - ${lib_bash_banner} "install pytest" && ${CMDPREFIX} ${pip_command} install pytest pytest-pep8 pytest-cov
-    - ${lib_bash_banner} "install dill" && ${CMDPREFIX} ${pip_command} install dill
-    - if [[ -f ./setup.py ]]; then ${lib_bash_banner} "setup.py found" ; else ${lib_bash_banner_warning} "no setup.py found, nothing to test" ; fi
-    - if [[ -f ./setup.py ]]; then ${lib_bash_banner} "Installing Application" && ${CMDPREFIX} ${pip_command} install -e . ; fi
+
+    # - export REPOSITORY_NAME=${TRAVIS_REPO_SLUG#*/} && ${lib_bash_color} clr_bold clr_green "Export Repository Name ${REPOSITORY_NAME}"
+    # - if [[ ${CMDPREFIX} == "wine" ]]; then ${lib_bash_wine}/001_000_install_wine.sh ; fi
+    # - if [[ ${CMDPREFIX} == "wine" ]]; then ${lib_bash_wine}/002_000_install_wine_machine.sh ; fi
+    # - if [[ ${wine_python_version} == "python3" ]]; then ${lib_bash_wine}/003_000_install_wine_python3_preinstalled.sh ; fi
+    # - if [[ ${CMDPREFIX} == "wine" ]]; then ${lib_bash_wine}/004_000_install_wine_git_portable.sh ; fi
+    ## - if [[ ${CMDPREFIX} == "wine" ]]; then ${lib_bash_wine}/005_001_install_wine_powershell_core.sh ; fi
+
+    # - ${lib_bash_banner} "upgrading pip"
+    # - ${CMDPREFIX} ${python_command} -m pip install --upgrade pip
+    # - if [[ ${mypy_static_typecheck} == "True" ]]; then ${lib_bash_banner} "install mypy" && ${CMDPREFIX} ${pip_command} install mypy; fi
+    # - if [[ ${build_docs} == "True" ]]; then ${lib_bash_banner} "install rst_include (Building Docs)" && ${CMDPREFIX} ${pip_command} install rst_include; fi
+    # - ${lib_bash_banner} "install codecov" && ${CMDPREFIX} ${pip_command} install codecov
+    # - ${lib_bash_banner} "install pytest" && ${CMDPREFIX} ${pip_command} install pytest pytest-pep8 pytest-cov
+    # - ${lib_bash_banner} "install dill" && ${CMDPREFIX} ${pip_command} install dill
+    # - if [[ -f ./setup.py ]]; then ${lib_bash_banner} "setup.py found" ; else ${lib_bash_banner_warning} "no setup.py found, nothing to test" ; fi
+    # - if [[ -f ./setup.py ]]; then ${lib_bash_banner} "Installing Application" && ${CMDPREFIX} ${pip_command} install -e . ; fi
 
 script:
     - if [[ -f ./setup.py ]]; then ${lib_bash_banner} "running setup.py --install-option test" && ${CMDPREFIX} ${pip_command} install ${github_master} --install-option test ; else ${lib_bash_banner_warning} "no setup.py found, no setup.py --install-option test" ; fi
