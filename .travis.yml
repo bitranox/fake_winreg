@@ -211,10 +211,6 @@ install:
     - if [[ -f ./setup.py ]]; then ${lib_bash_banner} "Installing Application" && ${CMDPREFIX} ${pip_command} install -e . ; fi
 
 script:
-    - export lib_bash_color="/usr/local/lib_bash/lib_color.sh"
-    - export lib_bash_banner="/usr/local/lib_bash/lib_helpers.sh banner"
-    - export lib_bash_banner_warning="/usr/local/lib_bash/lib_helpers.sh banner_warning"
-    - export lib_bash_wine="/usr/local/lib_bash_wine"
     - if [[ -f ./setup.py ]]; then ${lib_bash_banner} "running setup.py --install-option test" && ${CMDPREFIX} ${pip_command} install ${github_master} --install-option test ; else ${lib_bash_banner_warning} "no setup.py found, no setup.py --install-option test" ; fi
     - if [[ -f ./setup.py ]]; then ${lib_bash_banner} "running pytest" && ${CMDPREFIX} ${python_command} -m pytest --pep8 --cov ; else ${lib_bash_banner_warning} "no setup.py found, no pytest" ; fi
     - if [[ ${mypy_static_typecheck} == "True" ]]; then ${lib_bash_banner} "running mypy static typechecks" && ${CMDPREFIX} ${python_command} -m mypy -p ${REPOSITORY_NAME} --strict --no-warn-unused-ignores; else ${lib_bash_banner_warning} "static typechecking disabled on this build" ;  fi

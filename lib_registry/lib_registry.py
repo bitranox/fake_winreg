@@ -15,7 +15,6 @@ def is_python_2():
         return False
 
 
-
 if is_platform_windows:
     if is_python2:
         import _winreg as winreg    # type: ignore
