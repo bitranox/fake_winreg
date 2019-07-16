@@ -184,10 +184,10 @@ matrix:
 
 install:
     # install lib_bash_travis - this installs also lib_bash, lib_bash_wine
-    - $(which sudo) git clone https://github.com/bitranox/lib_bash_travis.git /usr/local/lib_bash_travis
-    - $(which sudo) chmod -R 0755 /usr/local/lib_bash_travis
-    - $(which sudo) chmod -R +x /usr/local/lib_bash_travis/*.sh
-    - $(which sudo) /usr/local/lib_bash_travis/install_or_update.sh
+    - $(command -v sudo 2>/dev/null) git clone https://github.com/bitranox/lib_bash_travis.git /usr/local/lib_bash_travis
+    - $(command -v sudo 2>/dev/null) chmod -R 0755 /usr/local/lib_bash_travis
+    - $(command -v sudo 2>/dev/null) chmod -R +x /usr/local/lib_bash_travis/*.sh
+    - $(command -v sudo 2>/dev/null) /usr/local/lib_bash_travis/install_or_update.sh
     - export lib_bash_color="/usr/local/lib_bash/lib_color.sh"
     - export lib_bash_banner="/usr/local/lib_bash/lib_helpers.sh banner"
     - export lib_bash_banner_warning="/usr/local/lib_bash/lib_helpers.sh banner_warning"
