@@ -59,7 +59,7 @@ matrix:
           - WINEARCH="win32"
           - WINEPREFIX="${HOME}/wine/wine32"
           - CMDPREFIX="wine"
-          - wine_windows_version="winxp"
+          - winetricks_windows_version="winxp"
           - wine_release="stable"
           - wine_python_version="python3"
 
@@ -69,7 +69,7 @@ matrix:
       env:
           - WINEPREFIX="${HOME}/wine/wine64"
           - CMDPREFIX="wine"
-          - wine_windows_version="winxp"
+          - winetricks_windows_version="winxp"
           - wine_release="stable"
           - wine_python_version="python3"
 
@@ -80,7 +80,7 @@ matrix:
           - WINEARCH="win32"
           - WINEPREFIX="${HOME}/wine/wine32"
           - CMDPREFIX="wine"
-          - wine_windows_version="win10"
+          - winetricks_windows_version="win10"
           - wine_release="stable"
           - wine_python_version="python3"
 
@@ -90,7 +90,7 @@ matrix:
       env:
           - WINEPREFIX="${HOME}/wine/wine64"
           - CMDPREFIX="wine"
-          - wine_windows_version="win10"
+          - winetricks_windows_version="win10"
           - wine_release="stable"
           - wine_python_version="python3"
       before_install:
@@ -105,7 +105,7 @@ matrix:
           - WINEARCH="win32"
           - WINEPREFIX="${HOME}/wine/wine32"
           - CMDPREFIX="wine"
-          - wine_windows_version="winxp"
+          - winetricks_windows_version="winxp"
           - wine_release="devel"
           - wine_python_version="python3"
 
@@ -115,7 +115,7 @@ matrix:
       env:
           - WINEPREFIX="${HOME}/wine/wine64"
           - CMDPREFIX="wine"
-          - wine_windows_version="winxp"
+          - winetricks_windows_version="winxp"
           - wine_release="devel"
           - wine_python_version="python3"
 
@@ -126,7 +126,7 @@ matrix:
           - WINEARCH="win32"
           - WINEPREFIX="${HOME}/wine/wine32"
           - CMDPREFIX="wine"
-          - wine_windows_version="win10"
+          - winetricks_windows_version="win10"
           - wine_release="devel"
           - wine_python_version="python3"
 
@@ -136,7 +136,7 @@ matrix:
       env:
           - WINEPREFIX="${HOME}/wine/wine64"
           - CMDPREFIX="wine"
-          - wine_windows_version="win10"
+          - winetricks_windows_version="win10"
           - wine_release="devel"
           - wine_python_version="python3"
 
@@ -147,7 +147,7 @@ matrix:
           - WINEARCH="win32"
           - WINEPREFIX="${HOME}/wine/wine32"
           - CMDPREFIX="wine"
-          - wine_windows_version="winxp"
+          - winetricks_windows_version="winxp"
           - wine_release="staging"
           - wine_python_version="python3"
 
@@ -157,7 +157,7 @@ matrix:
       env:
           - WINEPREFIX="${HOME}/wine/wine64"
           - CMDPREFIX="wine"
-          - wine_windows_version="winxp"
+          - winetricks_windows_version="winxp"
           - wine_release="staging"
           - wine_python_version="python3"
 
@@ -168,7 +168,7 @@ matrix:
           - WINEARCH="win32"
           - WINEPREFIX="${HOME}/wine/wine32"
           - CMDPREFIX="wine"
-          - wine_windows_version="win10"
+          - winetricks_windows_version="win10"
           - wine_release="staging"
           - wine_python_version="python3"
 
@@ -178,7 +178,7 @@ matrix:
       env:
           - WINEPREFIX="${HOME}/wine/wine64"
           - CMDPREFIX="wine"
-          - wine_windows_version="win10"
+          - winetricks_windows_version="win10"
           - wine_release="staging"
           - wine_python_version="python3"
 
