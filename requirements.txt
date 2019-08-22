@@ -1,1 +1,1 @@
-typing      # needed for python 2.7
+# None - keep this line for Readme includes

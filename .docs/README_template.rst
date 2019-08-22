@@ -5,7 +5,7 @@ lib_registry
 
 some convenience functions to access the windows registry - to be extended.
 
-supports python 2.7 - 3.7 and possibly other dialects.
+supports python 3.6 - 3.7 and possibly other dialects.
 
 
 .. include:: ./tested_under.rst

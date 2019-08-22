@@ -25,7 +25,7 @@ lib_registry
 
 some convenience functions to access the windows registry - to be extended.
 
-supports python 2.7 - 3.7 and possibly other dialects.
+supports python 3.6 - 3.7 and possibly other dialects.
 
 `100% code coverage <https://codecov.io/gh/bitranox/lib_registry>`_, mypy static type checking, tested under `Linux, OsX, Windows and Wine <https://travis-ci.org/bitranox/lib_registry>`_, automatic daily builds  and monitoring
 
