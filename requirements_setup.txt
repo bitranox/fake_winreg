@@ -1,0 +1,14 @@
+mypy ; platform_python_implementation != "PyPy"         # mypy @ git+https://github.com/python/mypy.git ; platform_python_implementation != "PyPy"
+git+https://github.com/PyCQA/pycodestyle.git            # git+https://github.com/PyCQA/pycodestyle.git
+codecov                                                 # git+https://github.com/codecov/codecov-python.git
+
+pytest                                                  # git+https://github.com/pytest-dev/pytest.git
+git+https://github.com/henry0312/pytest-codestyle.git   # git+https://github.com/henry0312/pytest-codestyle.git
+pytest-cov                                              # git+https://github.com/pytest-dev/pytest-cov.git
+pytest-mypy ; platform_python_implementation != "PyPy"  # pytest-mypy @ git+https://github.com/dbader/pytest-mypy.git ; platform_python_implementation != "PyPy"
+pytest-runner                                           # git+https://github.com/pytest-dev/pytest-runner.git
+# pytest-xdist                                          # git+https://github.com/pytest-dev/pytest-xdist.git    # run tests parallel - unfortunately does not work with codecov
+
+
+# clean :
+# sudo pip uninstall mypy pycodestyle codecov pytest pytest-codestyle pytest-cov pytest-mypy pytest-runner pytest-xdist pytest-forked

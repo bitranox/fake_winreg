@@ -39,7 +39,7 @@ Requirements
 following modules will be automatically installed :
 
 .. include:: ../requirements.txt
-        :code: shell
+        :code: bash
 
 Acknowledgements
 ----------------
