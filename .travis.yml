@@ -39,7 +39,7 @@ matrix:
           - export PATH="/c/Python27:/c/Python27/Scripts:$PATH"
           # we need to install pytest and typing on Python 2.7, it does not work from setup.py
           - ${pip_command} install pytest
-          - ${pip_command} install typing
+          # - ${pip_command} install typing
 
     - os: windows
       language: sh

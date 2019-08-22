@@ -52,5 +52,5 @@ setup(name='lib_registry',
       classifiers=CLASSIFIERS,
       install_requires=[],
       setup_requires=['pytest-runner'],
-      tests_require=['pytest']
+      tests_require=['pytest', 'typing']    # we need to put typing here for python 2.7
       )
