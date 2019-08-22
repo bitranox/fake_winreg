@@ -38,8 +38,8 @@ matrix:
           - /usr/local/lib_bash/lib_retry.sh retry choco install python2
           - export PATH="/c/Python27:/c/Python27/Scripts:$PATH"
           # we need to install pytest and typing on Python 2.7, it does not work from setup.py
-          - ${pip_command} install pytest
-          - ${pip_command} install typing
+          - ${pip_command} install -r ./requirements_setup.txt
+          # - ${pip_command} install pytest typing
 
     - os: windows
       language: sh
