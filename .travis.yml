@@ -22,6 +22,23 @@ services:   # start services
 
 matrix:
     include:
+    # wen need python 2.7 support here for lib_platform !
+    - os: windows
+      language: sh
+      name: "Windows Python 2.7"
+
+      # oddly a secure password under env: global: causes that choco fails
+      # so we need to put the option : filter_secrets: false
+      # this can be a security issue, check that You dont leak secrets here !
+      filter_secrets: false
+      before_install:
+          - git clone https://github.com/bitranox/lib_bash.git /usr/local/lib_bash
+          - chmod -R 0755 /usr/local/lib_bash
+          - chmod -R +x /usr/local/lib_bash/*.sh
+          - /usr/local/lib_bash/lib_retry.sh retry choco install python2
+          - export PATH="/c/Python27:/c/Python27/Scripts:$PATH"
+          # we need to install pytest on Python2.7, it does not work from setup.py
+          - ${pip_command} install pytest
 
     - os: windows
       language: sh
