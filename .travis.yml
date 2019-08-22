@@ -36,6 +36,8 @@ matrix:
           - chmod -R +x /usr/local/lib_bash/*.sh
           - /usr/local/lib_bash/lib_retry.sh retry choco install python2
           - export PATH="/c/Python27:/c/Python27/Scripts:$PATH"
+          # we need to install pytest on Python2.7, it does not work from setup.py
+          - ${pip_command} install pytest
 
     - os: windows
       language: sh
