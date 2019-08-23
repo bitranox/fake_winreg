@@ -6,8 +6,17 @@ import sys
 
 
 def install_requirements_when_using_setup_py():
-    result = subprocess.check_output([sys.executable, "-m", "pip", "install", '--upgrade', '-r', './requirements_setup.txt'])
-    print(result)
+    proc = subprocess.Popen([sys.executable, "-m", "pip", "install", '--upgrade', '-r', './requirements_setup.txt'],
+                            stdin=subprocess.PIPE,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE)
+    stdout, stderr = proc.communicate()
+    encoding = sys.getdefaultencoding()
+    print(stdout.decode(encoding))
+    print(stderr.decode(encoding))
+
+    if proc.returncode != 0:
+        raise RuntimeError('Error installing requirements_setup.txt')
 
 
 try:
