@@ -5,7 +5,7 @@ sudo: true
 
 env:
     global:
-        - github_master="https://github.com/${TRAVIS_REPO_SLUG}/archive/master.zip"
+        - github_master="git+https://github.com/${TRAVIS_REPO_SLUG}.git"
         - pip_command="pip"
         - python_command="python"
         - WINEDEBUG=fixme-all       # switch off wine fix me messages
