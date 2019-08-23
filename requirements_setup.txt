@@ -3,8 +3,8 @@ git+https://github.com/PyCQA/pycodestyle.git                                    
 codecov                                                                             # git+https://github.com/codecov/codecov-python.git
 
 pytest                                                                              # git+https://github.com/pytest-dev/pytest.git
-git+https://github.com/henry0312/pytest-codestyle.git ; python_version > "3.0"      # git+https://github.com/henry0312/pytest-codestyle.git
-pytest-pep8 ; python_version < "3.0"                                                # for python 2.7 use pytest-pep8 instead of pytest-codestyle
+git+https://github.com/henry0312/pytest-codestyle.git ; python_version >= "3.5"     # git+https://github.com/henry0312/pytest-codestyle.git
+pytest-pep8 ; python_version < "3.5"                                                # for python 2.7 use pytest-pep8 instead of pytest-codestyle
 pytest-cov                                                                          # git+https://github.com/pytest-dev/pytest-cov.git
 pytest-mypy ; platform_python_implementation != "PyPy" and python_version > "3.0"   # pytest-mypy @ git+https://github.com/dbader/pytest-mypy.git ; platform_python_implementation != "PyPy"
 pytest-runner                                                                       # git+https://github.com/pytest-dev/pytest-runner.git

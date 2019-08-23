@@ -22,7 +22,7 @@ def pytest_cmdline_preparse(args):
         args[:] = ["--mypy"] + args
 
     # for python 3.x use --codestyle, for python 2.7 use --pep8
-    if sys.version_info >= (3, 0):
-        args[:] = ["--codestyle"] + args
-    else:
+    if sys.version_info < (3, 5):
         args[:] = ["--pep8"] + args
+    else:
+        args[:] = ["--codestyle"] + args
