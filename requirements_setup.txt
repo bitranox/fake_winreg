@@ -1,12 +1,12 @@
-mypy ; platform_python_implementation != "PyPy" and python_version > "3.0"          # mypy @ git+https://github.com/python/mypy.git ; platform_python_implementation != "PyPy"
+mypy ; platform_python_implementation != "PyPy" and python_version >= "3.5"         # mypy @ git+https://github.com/python/mypy.git ; platform_python_implementation != "PyPy"
 git+https://github.com/PyCQA/pycodestyle.git                                        # git+https://github.com/PyCQA/pycodestyle.git
 codecov                                                                             # git+https://github.com/codecov/codecov-python.git
 
 pytest                                                                              # git+https://github.com/pytest-dev/pytest.git
-git+https://github.com/henry0312/pytest-codestyle.git ; python_version >= "3.5"      # git+https://github.com/henry0312/pytest-codestyle.git
+git+https://github.com/henry0312/pytest-codestyle.git ; python_version >= "3.5"     # git+https://github.com/henry0312/pytest-codestyle.git
 pytest-pep8 ; python_version < "3.5"                                                # for python 2.7 use pytest-pep8 instead of pytest-codestyle
 pytest-cov                                                                          # git+https://github.com/pytest-dev/pytest-cov.git
-pytest-mypy ; platform_python_implementation != "PyPy" and python_version > "3.0"   # pytest-mypy @ git+https://github.com/dbader/pytest-mypy.git ; platform_python_implementation != "PyPy"
+pytest-mypy ; platform_python_implementation != "PyPy" and python_version >= "3.5"  # pytest-mypy @ git+https://github.com/dbader/pytest-mypy.git ; platform_python_implementation != "PyPy"
 pytest-runner                                                                       # git+https://github.com/pytest-dev/pytest-runner.git
 # pytest-xdist                                                                      # git+https://github.com/pytest-dev/pytest-xdist.git    # run tests parallel - unfortunately does not work with codecov
 typing ; python_version < "3.5"                                                     # we need this for python 2.7
