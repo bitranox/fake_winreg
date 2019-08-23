@@ -6,7 +6,7 @@ import sys
 
 
 def install_requirements_when_using_setup_py():
-    subprocess.call([sys.executable, "-m", "pip", "install", '--upgrade', '-r', './requirements_setup.txt'])
+    subprocess.call([sys.executable, "-m", "pip", "install", '--upgrade', '-r', './requirements_setup.txt'], stdout=sys.stdout, stderr=sys.stderr)
 
 
 try:
