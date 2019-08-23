@@ -9,6 +9,3 @@ pytest-mypy ; platform_python_implementation != "PyPy" and python_version > "3.0
 pytest-runner                                                                       # git+https://github.com/pytest-dev/pytest-runner.git
 # pytest-xdist                                                                      # git+https://github.com/pytest-dev/pytest-xdist.git    # run tests parallel - unfortunately does not work with codecov
 typing ; python_version < "3.5"                                                     # we need this for python 2.7
-
-# clean :
-# sudo pip uninstall mypy pycodestyle codecov pytest pytest-codestyle pytest-cov pytest-mypy pytest-runner pytest-xdist pytest-forked
