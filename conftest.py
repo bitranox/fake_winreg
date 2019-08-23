@@ -20,3 +20,9 @@ def pytest_cmdline_preparse(args):
     # add mypy only on 3.x versions
     if platform.python_implementation() != "PyPy" and sys.version_info >= (3, 0):
         args[:] = ["--mypy"] + args
+
+    # for python 3.x use --codestyle, for python 2.7 use --pep8
+    if sys.version_info >= (3, 0):
+        args[:] = ["--codestyle"] + args
+    else:
+        args[:] = ["--pep8"] + args
