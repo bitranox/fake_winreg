@@ -1,2 +1,2 @@
 # None - keep this line for Readme includes
-typing  # we need this for python 2.7
+typing ; python_version < "3.6"
