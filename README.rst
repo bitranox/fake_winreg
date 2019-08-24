@@ -150,6 +150,7 @@ following modules will be automatically installed :
 .. code-block:: bash
 
     # None - keep this line for Readme includes
+    typing ; python_version < "3.6"
 
 Acknowledgements
 ----------------
