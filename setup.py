@@ -60,7 +60,7 @@ setup(name='lib_registry',
       url='https://github.com/bitranox/lib_registry',
       packages=['lib_registry'],
       classifiers=CLASSIFIERS,
-      install_requires=[],
+      install_requires=['typing'],        # we need typing for python 2.7
       setup_requires=['pytest-runner'],
       tests_require=['pytest', 'typing']  # we need typing for python 2.7
       )
