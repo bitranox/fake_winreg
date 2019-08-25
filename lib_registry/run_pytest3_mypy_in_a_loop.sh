@@ -4,12 +4,6 @@ sudo_askpass="$(command -v ssh-askpass)"
 export SUDO_ASKPASS="${sudo_askpass}"
 export NO_AT_BRIDGE=1  # get rid of (ssh-askpass:25930): dbind-WARNING **: 18:46:12.019: Couldn't register with accessibility bus: Did not receive a reply.
 
-
-# git+https://github.com/python/mypy.git
-# git+https://github.com/PyCQA/pycodestyle.git
-# git+https://github.com/henry0312/pytest-codestyle.git
-
-
 function install_or_update_lib_bash {
     if [[ ! -f /usr/local/lib_bash/install_or_update.sh ]]; then
         "$(command -v sudo 2>/dev/null)" git clone https://github.com/bitranox/lib_bash.git /usr/local/lib_bash 2>/dev/null
@@ -20,9 +14,6 @@ function install_or_update_lib_bash {
         /usr/local/lib_bash/install_or_update.sh
     fi
 }
-
-
-
 
 install_or_update_lib_bash
 
@@ -48,7 +39,7 @@ function pytest_loop {
     my_dir="$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )"
     while true; do
         clr_green "*** PYTEST **************************************************************************************"
-        python3 -m pytest "${my_dir}" --codestyle --disable-warnings
+        python3 -m pytest "${my_dir}" --disable-warnings
         # shellcheck disable=SC2181  # Check Exit Code directly
         if [[ "${?}" -gt 0 ]]; then
             clr_red "PYTEST Error"
