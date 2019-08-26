@@ -1,3 +1,4 @@
+# STDLIB
 import argparse
 import errno
 import logging
@@ -5,15 +6,17 @@ import os
 import sys
 import subprocess
 
+# OWN
+import lib_log_utils
+
 if sys.version_info < (3, 6):
-    logging.basicConfig(level=logging.INFO)
+    lib_log_utils.setup_console_logger()
     main_logger = logging.getLogger('init')
     main_logger.error('only Python Versions from 3.6 are supported')
     sys.exit(1)
 else:
-    # Project Imports
+    # OWN
     from rst_include import *
-    from rst_include.libs import lib_log
 
 # CONSTANTS & PROJECT SPECIFIC FUNCTIONS
 codeclimate_link_hash = "affaa3b099c55c69950c"
@@ -84,7 +87,7 @@ def main(args):
 
 
 if __name__ == '__main__':
-    lib_log.setup_logger()
+    lib_log_utils.setup_console_logger()
     main_logger = logging.getLogger('main')
     try:
         _args, _parser = parse_args()
