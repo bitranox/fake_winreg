@@ -9,5 +9,5 @@ def get_version():      # type: ignore
 
 
 __title__ = 'lib_registry'
-__version__ = get_version()
+__version__ = get_version()    # type: ignore
 __name__ = 'lib_registry'
