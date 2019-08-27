@@ -1,7 +1,7 @@
 """Setuptools entry point."""
 import codecs
 import os
-
+# we can not import typing or pathlib here - because of Python 2.7 - lib_registry is needed for lib_platform
 
 try:
     from setuptools import setup
@@ -9,13 +9,14 @@ except ImportError:
     from distutils.core import setup
 
 package_name = 'lib_registry'
-required = list()         # type: ignore
-entry_points = dict()     # type: ignore
+required = list()         # type: ignore   # no typing here because of Python 2.7 - lib_registry is needed for lib_platform
+entry_points = dict()     # type: ignore   # no typing here because of Python 2.7 - lib_registry is needed for lib_platform
 
 
 def get_version(dist_directory):
     # type: (str) -> str
-    path_version_file = os.path.join(os.path.dirname(__file__), [dist_directory, 'version.txt'])
+    # PYTHON 2.7 compatible version - lib_registry is needed for lib_platform
+    path_version_file = os.path.join(os.path.dirname(__file__), dist_directory, 'version.txt')
     with open(path_version_file, mode='r') as version_file:
         version = version_file.readline()
     return version
@@ -32,6 +33,7 @@ CLASSIFIERS = [
 ]
 
 
+# PYTHON 2.7 compatible version - lib_registry is needed for lib_platform
 long_description = package_name
 path_readme = os.path.join(os.path.dirname(__file__), 'README.rst')
 if os.path.exists(path_readme):
