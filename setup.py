@@ -8,9 +8,10 @@ try:
 except ImportError:
     from distutils.core import setup
 
-package_name = 'lib_registry'   # type: ignore   # no typing here because of Python 2.7 - lib_registry is needed for lib_platform
-required = list()               # type: ignore   # no typing here because of Python 2.7 - lib_registry is needed for lib_platform
-entry_points = dict()           # type: ignore   # no typing here because of Python 2.7 - lib_registry is needed for lib_platform
+# no typing here because of Python 2.7 - lib_registry is needed for lib_platform
+package_name = 'lib_registry'   # type: ignore
+required = list()               # type: ignore
+entry_points = dict()           # type: ignore
 
 
 def get_version(dist_directory):
