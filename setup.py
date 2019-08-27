@@ -1,7 +1,7 @@
 """Setuptools entry point."""
 import codecs
 import os
-from typing import Dict, List
+
 
 try:
     from setuptools import setup
@@ -9,8 +9,8 @@ except ImportError:
     from distutils.core import setup
 
 package_name = 'lib_registry'
-required = list()         # type: List
-entry_points = dict()     # type: Dict
+required = list()         # type: ignore
+entry_points = dict()     # type: ignore
 
 
 def get_version(dist_directory):
