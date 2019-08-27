@@ -10,8 +10,8 @@ except ImportError:
     from distutils.core import setup
 
 package_name = 'lib_registry'
-required: List = list()
-entry_points: Dict = dict()
+required = list()         # type: List
+entry_points = dict()     # type: Dict
 
 
 def get_version(dist_directory: str) -> str:
