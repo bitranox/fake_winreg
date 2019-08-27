@@ -1,6 +1,6 @@
 """Setuptools entry point."""
 import codecs
-import pathlib
+import os
 from typing import Dict, List
 
 try:
@@ -15,7 +15,8 @@ entry_points = dict()     # type: Dict
 
 def get_version(dist_directory):
     # type: (str) -> str
-    with open(pathlib.Path(__file__).parent / '{dist_directory}/version.txt'.format(dist_directory=dist_directory), mode='r') as version_file:
+    path_version_file = os.path.join(os.path.dirname(__file__), [dist_directory, 'version.txt'])
+    with open(path_version_file, mode='r') as version_file:
         version = version_file.readline()
     return version
 
@@ -30,10 +31,10 @@ CLASSIFIERS = [
     'Topic :: Software Development :: Libraries :: Python Modules'
 ]
 
-path_readme = pathlib.Path(__file__).parent / 'README.rst'  # type: pathlib.Path
 
 long_description = package_name
-if path_readme.exists():
+path_readme = os.path.join(os.path.dirname(__file__), 'README.rst')
+if os.path.exists(path_readme):
     # noinspection PyBroadException
     try:
         readme_content = codecs.open(path_readme, encoding='utf-8').read()
