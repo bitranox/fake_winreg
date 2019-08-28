@@ -11,7 +11,7 @@ except ImportError:
 # no typing here because of Python 2.7 - lib_registry is needed for lib_platform
 package_name = 'lib_registry'   # type: ignore
 required = list()               # type: ignore
-required_for_tests = list()         # type: ignore
+required_for_tests = list()     # type: ignore
 entry_points = dict()           # type: ignore
 
 
