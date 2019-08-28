@@ -69,7 +69,7 @@ setup(name=package_name,
                      ] + required_for_tests,
 
       # specify what a project minimally needs to run correctly
-      install_requires=['typing', 'pathlib'] + required,
+      install_requires=['typing', 'pathlib'] + required + required_for_tests,
       # minimally needs to run the setup script, dependencies needs also to put here for setup.py install test
       setup_requires=['typing',
                       'pathlib',
