@@ -19,7 +19,7 @@ def get_version(dist_directory):
     # type: (str) -> str
     # PYTHON 2.7 compatible version - lib_registry is needed for lib_platform
     path_version_file = os.path.join(os.path.dirname(__file__), dist_directory, 'version.txt')
-    with open(path_version_file, mode='r') as version_file:
+    with open(str(path_version_file), mode='r') as version_file:
         version = version_file.readline()
     return version
 
@@ -41,7 +41,7 @@ path_readme = os.path.join(os.path.dirname(__file__), 'README.rst')
 if os.path.exists(path_readme):
     # noinspection PyBroadException
     try:
-        readme_content = codecs.open(path_readme, encoding='utf-8').read()
+        readme_content = codecs.open(str(path_readme), encoding='utf-8').read()
         long_description = readme_content
     except Exception:
         pass
@@ -70,8 +70,8 @@ setup(name=package_name,
 
       # specify what a project minimally needs to run correctly
       install_requires=['typing', 'pathlib'] + required + required_for_tests,
-      # minimally needs to run the setup script, dependencies needs also to put here for setup.py install test
+      # minimally needs to run the setup script, dependencies must not put here
       setup_requires=['typing',
                       'pathlib',
-                      'pytest-runner'] + required
+                      'pytest-runner']
       )
