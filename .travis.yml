@@ -231,7 +231,7 @@ install:
 script:
     - if [[ -f ./setup.py ]]; then
           ${lib_bash_banner} "Installing Pytest requirements";
-          ${CMDPREFIX} ${pip_command} install -r ./requirements.txt;
+          ${CMDPREFIX} ${pip_command} install -r ./requirements_pytest.txt;
           ${CMDPREFIX} ${pip_command} install codecov;
           ${CMDPREFIX} ${pip_command} install pytest-cov;
 
