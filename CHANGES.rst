@@ -3,7 +3,7 @@ Changelog
 
 1.0.3
 -----
-2019-04-10: strict mypy type checking
+2019-09-02: strict mypy type checking, housekeeping
 
 1.0.2
 -----
