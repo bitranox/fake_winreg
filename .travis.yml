@@ -9,6 +9,14 @@ env:
         - pip_command="pip"
         - python_command="python"
         - WINEDEBUG=fixme-all       # switch off wine fix me messages
+        # pypi_password for lib_registry
+        # This works for sure - the Travis deploy is somehow buggy.
+        # create the secret :
+        # cd /<repository>
+        # travis encrypt -r bitranox/lib_registry pypi_password=*****
+        # copy and paste the encrypted password here
+        - secure: "F6REHdAOCTEicl8s9aiTNNJ5S6xLAoOyLF7qL3m1LkV5c46+FNyiOg8XsUOO1DocO6oT9nhsKnjp8KkSZa2gO83IRGsfwt+2TfzPm+ISiwpfb7Vqznlt91R0hqNjXUe96Sno4CZSVnCg/wNyaHmI8qP16axojgYIsWy1Nh5UXQOYMN4L+dkBbzGTmh8HR/imhmLMbSZXnRZ2TcY9UftIBLMCqkqOOit8q+C8K5cFbonqxSvLaVX+DtaU2Llbro4MgJB6rIT5bqIFoSEWFi8X8cJDiRSsi9ugsblhB5BTjE/CBLQKStao2kpJ3FvNnrFozO/b7rZLbHyysv8+JAuk3t8zTz1CJyN2Md+takZr7mvMKkECiBgRCP4HDjDCwhsIkgiHr58e9LYJif4cI7Ph9eYuMdcZFVG5H7oIsde5XJBde+MKRGPfe9c/4j8tpduwpSrUq1VI3E/DbMT+yBuW76yIEP6fn39jqZwskLm1Zu4AQKNfXqXJ8FYCUlfrbso6cp+kjX8Qop1LKLC7wWD8Q6SaSV/iXAXKN2MC7L3rkvtMQKydG++LWpH+wiAyynhyKghF638VjGDVXw6Wbx07iiO2hgcv87tlXUTnRvuAPznPoMkwFIkGBkloyzQr5/2dWu99vHKA8O3L6iIj8cDPuiyFEguOnotiOXjO003xLjY="
+
 
         ## to check if commandline is correctly installed (if applies)
         # - commandline_registration_check="<command> --version"
