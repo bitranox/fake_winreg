@@ -20,8 +20,34 @@ def get_version(dist_directory):
     # PYTHON 2.7 compatible version - lib_registry is needed for lib_platform
     path_version_file = os.path.join(os.path.dirname(__file__), dist_directory, 'version.txt')
     with open(str(path_version_file), mode='r') as version_file:
-        version = version_file.readline()
+        version = version_file.readline().strip()
     return version
+
+
+def is_travis_deploy():
+    # type: () -> bool
+    if 'travis_deploy' in os.environ:
+        if os.environ['travis_deploy'] == 'True':
+            return True
+    return False
+
+
+def strip_links_from_required(l_required):
+    # type: ignore
+    """
+    >>> required = ['lib_regexp @ git+https://github.com/bitranox/lib_regexp.git', 'test']
+    >>> assert strip_links_from_required(required) == ['lib_regexp', 'test']
+
+    """
+    l_req_stripped = list()                                        # type: ignore
+    for req in l_required:
+        req_stripped = req.split('@')[0].strip()
+        l_req_stripped.append(req_stripped)
+    return l_req_stripped
+
+
+if is_travis_deploy():
+    required = strip_links_from_required(required)
 
 
 CLASSIFIERS = [

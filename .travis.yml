@@ -65,6 +65,9 @@ matrix:
           - chmod -R +x /usr/local/lib_bash/*.sh
           - /usr/local/lib_bash/lib_retry.sh retry choco install python3
           - export PATH="/c/Python37:/c/Python37/Scripts:$PATH"
+          - export mypy_static_typecheck="True"
+          - export build_docs="True"
+          - export deploy_on_pypi="True"
 
     - os: linux
       language: python
@@ -107,10 +110,6 @@ matrix:
           - winetricks_windows_version="win10"
           - wine_release="stable"
           - wine_python_version="python3"
-      before_install:
-          - export mypy_static_typecheck="True"
-          - export build_docs="True"
-          - export deploy_on_pypi="True"
 
     - os: linux
       language: python
@@ -350,6 +349,7 @@ after_success:
     #     -secure: *******
     - if [[ ${deploy_on_pypi} == "True" ]] && [[ -n ${TRAVIS_TAG} ]]; then
           ${lib_bash_banner} "Deploy on PyPi";
+          export travis_deploy="True";
           ${CMDPREFIX} ${pip_command} install readme_renderer;
           ${CMDPREFIX} ${pip_command} install --upgrade twine;
           ${CMDPREFIX} ${pip_command} install wheel;
