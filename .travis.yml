@@ -65,9 +65,6 @@ matrix:
           - chmod -R +x /usr/local/lib_bash/*.sh
           - /usr/local/lib_bash/lib_retry.sh retry choco install python3
           - export PATH="/c/Python37:/c/Python37/Scripts:$PATH"
-          - export mypy_static_typecheck="True"
-          - export build_docs="True"
-          - export deploy_on_pypi="True"
 
     - os: linux
       language: python
@@ -110,6 +107,10 @@ matrix:
           - winetricks_windows_version="win10"
           - wine_release="stable"
           - wine_python_version="python3"
+      before_install:
+          - export mypy_static_typecheck="True"
+          - export build_docs="True"
+          - export deploy_on_pypi="True"
 
     - os: linux
       language: python
