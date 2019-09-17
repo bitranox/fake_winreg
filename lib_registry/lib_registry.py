@@ -1,18 +1,12 @@
+# STDLIB
 import platform
-from typing import Any, List, Dict
 import sys
+from typing import Any, List, Dict
+
 
 is_python2 = sys.version_info < (3, 0)  # type: bool
 is_platform_windows = platform.system().lower() == 'windows'
 REG_SZ = 1  # avoid Import Error on Linux on function set_value
-
-
-def is_python_2():
-    # type: () -> bool
-    if sys.version_info < (3, 0):
-        return True
-    else:
-        return False
 
 
 if is_platform_windows:
