@@ -53,7 +53,7 @@ matrix:
 
     - os: windows
       language: sh
-      name: "Windows Python 3.7"
+      name: "Windows Python 3.8"
 
       # oddly a secure password under env: global: causes that choco fails
       # so we need to put the option : filter_secrets: false
@@ -64,7 +64,7 @@ matrix:
           - chmod -R 0755 /usr/local/lib_bash
           - chmod -R +x /usr/local/lib_bash/*.sh
           - /usr/local/lib_bash/lib_retry.sh retry choco install python3
-          - export PATH="/c/Python37:/c/Python37/Scripts:$PATH"
+          - export PATH="/c/Python38:/c/Python38/Scripts:$PATH"
 
     - os: linux
       language: python
