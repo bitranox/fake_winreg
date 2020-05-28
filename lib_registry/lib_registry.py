@@ -3,18 +3,11 @@ import platform
 import sys
 from typing import Any, List, Dict
 
-
-is_python2 = sys.version_info < (3, 0)  # type: bool
 is_platform_windows = platform.system().lower() == 'windows'
 REG_SZ = 1  # avoid Import Error on Linux on function set_value
 
-
 if is_platform_windows:
-    if is_python2:
-        import _winreg as winreg    # type: ignore
-    else:
-        import winreg               # type: ignore
-
+    import winreg               # type: ignore
     main_key_hashed_by_name = {'hkey_classes_root': winreg.HKEY_CLASSES_ROOT,
                                'hkcr': winreg.HKEY_CLASSES_ROOT,
                                'hkey_current_config': winreg.HKEY_CURRENT_CONFIG,
@@ -38,16 +31,14 @@ l_hive_names = ['HKEY_LOCAL_MACHINE', 'HKLM', 'HKEY_CURRENT_USER', 'HKCU', 'HKEY
                 ]
 
 
-def get_number_of_subkeys(key):
-    # type: (winreg.HKEYType) -> int
+def get_number_of_subkeys(key: winreg.HKEYType) -> int:
     """
     param key : one of the winreg HKEY_* constants :
                 HKEY_CLASSES_ROOT, HKEY_CURRENT_CONFIG, HKEY_CURRENT_USER, HKEY_DYN_DATA,
                 HKEY_LOCAL_MACHINE, HKEY_PERFORMANCE_DATA, HKEY_USERS
 
     >>> result = get_number_of_subkeys(winreg.HKEY_USERS)
-    >>> result > 1
-    True
+    >>> assert result > 1
 
     """
     number_of_subkeys, number_of_values, last_modified_win_timestamp = winreg.QueryInfoKey(key)
