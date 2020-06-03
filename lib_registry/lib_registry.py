@@ -1,8 +1,9 @@
 # STDLIB
 import platform
-import sys
-from typing import Any, List, Dict
+from typing import Any, List, Dict, Union
 
+# EXT
+from docopt import docopt
 is_platform_windows = platform.system().lower() == 'windows'
 REG_SZ = 1  # avoid Import Error on Linux on function set_value
 
@@ -23,6 +24,15 @@ if is_platform_windows:
                                'hkey_users': winreg.HKEY_USERS,
                                'hku': winreg.HKEY_USERS
                                }                                            # type: Dict[str, Any]
+
+# PROJ
+try:
+    from .__doc__ import __doc__
+    from . import __init__conf__
+except ImportError:                 # pragma: no cover
+    # imports for doctest
+    from __doc__ import __doc__     # type: ignore  # pragma: no cover
+    import __init__conf__           # type: ignore  # pragma: no cover
 
 
 l_hive_names = ['HKEY_LOCAL_MACHINE', 'HKLM', 'HKEY_CURRENT_USER', 'HKCU', 'HKEY_CLASSES_ROOT',
@@ -45,8 +55,7 @@ def get_number_of_subkeys(key: winreg.HKEYType) -> int:
     return int(number_of_subkeys)
 
 
-def get_ls_user_sids():
-    # type: () -> List[str]
+def get_ls_user_sids() -> List[str]:
     """
     >>> ls_user_sids = get_ls_user_sids()
     >>> assert len(ls_user_sids) > 1
@@ -63,8 +72,7 @@ def get_ls_user_sids():
     return sorted(ls_user_sids)
 
 
-def get_username_from_sid(sid):
-    # type: (str) -> str
+def get_username_from_sid(sid: str) -> str:
     """
     >>> ls_user_sids = get_ls_user_sids()
     >>> assert len(ls_user_sids) > 1
@@ -78,8 +86,7 @@ def get_username_from_sid(sid):
     return username
 
 
-def _get_username_from_sid_windows(sid):
-    # type: (str) -> str
+def _get_username_from_sid_windows(sid: str) -> str:
     reg = get_registry_connection('HKEY_LOCAL_MACHINE')
     key = winreg.OpenKey(reg, r'SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\{}'.format(sid))
     val, value_type = winreg.QueryValueEx(key, 'ProfileImagePath')
@@ -87,16 +94,14 @@ def _get_username_from_sid_windows(sid):
     return username
 
 
-def _get_username_from_sid_wine(sid):
-    # type: (str) -> str
+def _get_username_from_sid_wine(sid: str) -> str:
     reg = get_registry_connection('HKEY_USERS')
     key = winreg.OpenKey(reg, r'{}\Volatile Environment'.format(sid))
     username, value_type = winreg.QueryValueEx(key, 'USERNAME')
     return str(username)
 
 
-def get_value(key_name, value_name):
-    # type: (str, str) -> Any
+def get_value(key_name: str, value_name: str) -> Any:
     """
     >>> ### key and subkey exist
     >>> key = r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion'
@@ -138,8 +143,7 @@ def get_value(key_name, value_name):
         raise OSError('key or subkey not found')  # FileNotFoundError does not exist in Python 2.7
 
 
-def create_key(key_name):
-    # type: (str) -> None
+def create_key(key_name: str) -> None:
     """
     >>> create_key(r'HKCU\\Software\\lib_registry_test')
     >>> delete_key(r'HKCU\\Software\\lib_registry_test')
@@ -149,15 +153,13 @@ def create_key(key_name):
     winreg.CreateKey(root_key, reg_path)
 
 
-def delete_key(key_name):
-    # type: (str) -> None
+def delete_key(key_name: str) -> None:
     root_key = get_root_key(key_name)
     reg_path = get_reg_path(key_name)
     winreg.DeleteKey(root_key, reg_path)
 
 
-def set_value(key_name, value_name, value, value_type=REG_SZ):
-    # type: (str, str, Any, int) -> None
+def set_value(key_name: str, value_name: str, value: Any, value_type: int = REG_SZ) -> None:
     """
     value_type:
     REG_BINARY	                Binary data in any form.
@@ -187,8 +189,7 @@ def set_value(key_name, value_name, value, value_type=REG_SZ):
     winreg.CloseKey(registry_key)
 
 
-def delete_value(key_name, value_name):
-    # type: (str, str) -> None
+def delete_value(key_name: str, value_name: str) -> None:
     root_key = get_root_key(key_name)
     reg_path = get_reg_path(key_name)
     registry_key = winreg.OpenKey(root_key, reg_path, 0, winreg.KEY_ALL_ACCESS)
@@ -196,8 +197,7 @@ def delete_value(key_name, value_name):
     winreg.CloseKey(registry_key)
 
 
-def get_registry_connection(key_name):
-    # type: (str) -> winreg.HKEYType
+def get_registry_connection(key_name: str) -> winreg.HKEYType:
     """
     >>> get_registry_connection('HKCR')  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
     <PyHKEY object at ...>
@@ -232,8 +232,7 @@ def get_registry_connection(key_name):
     return reg
 
 
-def get_root_key(key_name):
-    # type: (str) -> int
+def get_root_key(key_name: str) -> int:
     """
     >>> result = get_root_key('HKLM/something')
     >>> result > 1
@@ -259,8 +258,7 @@ def get_root_key(key_name):
         raise ValueError('the registry key needs to start with a valid root key')
 
 
-def strip_leading_and_trailing_slashes(input_string):
-    # type: (str) -> str
+def strip_leading_and_trailing_slashes(input_string: str) -> str:
     """
     >>> strip_leading_and_trailing_slashes('//test\\\\')
     'test'
@@ -270,8 +268,7 @@ def strip_leading_and_trailing_slashes(input_string):
     return input_string
 
 
-def get_first_part_of_the_key(key_name):
-    # type: (str) -> str
+def get_first_part_of_the_key(key_name: str) -> str:
     """
     >>> get_first_part_of_the_key('')
     ''
@@ -284,8 +281,7 @@ def get_first_part_of_the_key(key_name):
     return key_name
 
 
-def split_on_first_appearance(input_string, separator):
-    # type: (str, str) -> str
+def split_on_first_appearance(input_string: str, separator: str) -> str:
     """
     >>> split_on_first_appearance('test','/')
     'test'
@@ -298,8 +294,7 @@ def split_on_first_appearance(input_string, separator):
     return result
 
 
-def get_reg_path(key_name):
-    # type: (str) -> str
+def get_reg_path(key_name: str) -> str:
     """
     >>> sid='S-1-5-20'
     >>> key = r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\{}'.format(sid)
@@ -321,8 +316,7 @@ def get_reg_path(key_name):
     return result
 
 
-def key_exist(key_name):
-    # type: (str) -> bool
+def key_exist(key_name: str) -> bool:
     """
     >>> key_exist(r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion')
     True
@@ -340,8 +334,7 @@ def key_exist(key_name):
         return False
 
 
-def remove_prefix_including_first_slash_or_backslash(input_str):
-    # type: (str) -> str
+def remove_prefix_including_first_slash_or_backslash(input_str: str) -> str:
     """
     >>> remove_prefix_including_first_slash_or_backslash('test')
     'test'
@@ -366,8 +359,7 @@ def remove_prefix_including_first_slash_or_backslash(input_str):
     return result
 
 
-def get_is_platform_windows_wine():
-    # type: () -> bool
+def get_is_platform_windows_wine() -> bool:
     """
     >>> result = get_is_platform_windows_wine()
 
@@ -375,3 +367,48 @@ def get_is_platform_windows_wine():
 
     _is_platform_windows_wine = key_exist(r'HKEY_LOCAL_MACHINE\Software\Wine')
     return _is_platform_windows_wine
+
+
+# we might import this module and call main from another program and pass docopt args manually
+def main(docopt_args: Dict[str, Union[bool, str]]) -> None:
+    """
+    >>> docopt_args = dict()
+    >>> docopt_args['--version'] = True
+    >>> docopt_args['--info'] = False
+    >>> main(docopt_args)   # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
+    version: ...
+
+
+    >>> docopt_args['--version'] = False
+    >>> docopt_args['--info'] = True
+    >>> main(docopt_args)   # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
+    information for ...
+
+    >>> docopt_args['--version'] = False
+    >>> docopt_args['--info'] = False
+    >>> main(docopt_args)
+
+
+    """
+    if docopt_args['--version']:
+        __init__conf__.print_version()
+    elif docopt_args['--info']:
+        __init__conf__.print_info()
+
+
+# entry point via commandline
+def main_commandline() -> None:
+    """
+    >>> main_commandline()  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
+    Traceback (most recent call last):
+        ...
+    docopt.DocoptExit: ...
+
+    """
+    docopt_args = docopt(__doc__)
+    main(docopt_args)       # pragma: no cover
+
+
+# entry point if main
+if __name__ == '__main__':
+    main_commandline()
