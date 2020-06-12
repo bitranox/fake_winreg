@@ -8,7 +8,7 @@ env:
         - python_command="python"
         - pip_command="python -m pip"
         - WINEDEBUG=fixme-all       # switch off wine fix me messages
-        - CC_TEST_REPORTER_ID="tba"
+        - CC_TEST_REPORTER_ID="7d84b9dce9c99c6cfe5c6c7c212e67aafc8934000cfb73891bdbb15cb311fe63"
         # pypi_password for lib_parameter
         # This works for sure - the Travis deploy is somehow buggy.
         # create the secret :

@@ -1,20 +1,19 @@
 # STDLIB
 import platform
-from typing import Any, List, Dict, Tuple, Union
+from typing import Any, List, Dict, Union
 
 # EXT
-from docopt import docopt
+from docopt import docopt                           # type: ignore
 is_platform_windows = platform.system().lower() == 'windows'
 
 if is_platform_windows:
-    import winreg               # type: ignore
+    import winreg                                   # type: ignore
 else:
     try:
         from .fake_classes import WinRegFake
     except (ImportError, ModuleNotFoundError):
         # import for doctest
-        from fake_classes import WinRegFake
-
+        from fake_classes import WinRegFake         # type: ignore
     winreg = WinRegFake()
 
 # PROJ
