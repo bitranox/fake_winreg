@@ -1,10 +1,10 @@
-name = 'lib_csv'
-title = 'lib_csv: functions to read and write csv files'
+name = 'lib_registry'
+title = 'some convenience functions to access the windows registry - to be extended'
 version = '0.1.0'
-url = 'https://github.com/bitranox/lib_csv'
+url = 'https://github.com/bitranox/lib_registry'
 author = 'Robert Nowotny'
 author_email = 'rnowotny1966@gmail.com'
-shell_command = 'lib_csv'
+shell_command = 'lib_registry'
 
 
 def print_version() -> None:
@@ -12,11 +12,11 @@ def print_version() -> None:
 
 
 def print_info() -> None:
-    print("""information for "lib_csv":
+    print("""information for "lib_registry":
 
-          lib_csv: functions to read and write csv files
+          some convenience functions to access the windows registry - to be extended
 
           Version      : 0.1.0
-          url          : https://github.com/bitranox/lib_csv
+          url          : https://github.com/bitranox/lib_registry
           author       : Robert Nowotny
           author_email : rnowotny1966@gmail.com""")

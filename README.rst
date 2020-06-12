@@ -3,11 +3,11 @@ lib_registry
 
 |Pypi Status| |license| |maintenance|
 
-|Build Status| |Codecov Status| |Better Code| |code climate| |snyk security|
+|Build Status| |Codecov Status| |Better Code| |code climate| |code climate coverage| |snyk security|
 
 .. |license| image:: https://img.shields.io/github/license/webcomics/pywine.svg
    :target: http://en.wikipedia.org/wiki/MIT_License
-.. |maintenance| image:: https://img.shields.io/maintenance/yes/{last_update_yyyy}.svg
+.. |maintenance| image:: https://img.shields.io/maintenance/yes/2021.svg
 .. |Build Status| image:: https://travis-ci.org/bitranox/lib_registry.svg?branch=master
    :target: https://travis-ci.org/bitranox/lib_registry
 .. for the pypi status link note the dashes, not the underscore !
@@ -22,17 +22,27 @@ lib_registry
 .. |code climate| image:: https://api.codeclimate.com/v1/badges/affaa3b099c55c69950c/maintainability
    :target: https://codeclimate.com/github/bitranox/lib_registry/maintainability
    :alt: Maintainability
+.. |code climate coverage| image:: https://api.codeclimate.com/v1/badges/affaa3b099c55c69950c/test_coverage
+   :target: https://codeclimate.com/github/bitranox/lib_registry/test_coverage
+   :alt: Code Coverage
 
 some convenience functions to access the windows registry - to be extended.
 
-supports python 2.7 - 3.7 and possibly other dialects.
+command line interface is prepared - if someone needs to use it via commandline, give me a note.
 
-`100% code coverage <https://codecov.io/gh/bitranox/lib_registry>`_, mypy static type checking, tested under `Linux, OsX, Windows and Wine <https://travis-ci.org/bitranox/lib_registry>`_, automatic daily builds  and monitoring
+automated tests, Travis Matrix, Documentation, Badges for this Project are managed with `lib_travis_template <https://github
+.com/bitranox/lib_travis_template>`_ - check it out
+
+supports python 3.6-3.8, pypy3 and possibly other dialects.
+
+`100% code coverage <https://codecov.io/gh/bitranox/lib_registry>`_, mypy static type checking, tested under `Linux, macOS, Windows and Wine <https://travis-ci
+.org/bitranox/lib_registry>`_, automatic daily builds  and monitoring
 
 ----
 
 - `Installation and Upgrade`_
-- `Basic Usage`_
+- `Usage`_
+- `Usage from Commandline`_
 - `Requirements`_
 - `Acknowledgements`_
 - `Contribute`_
@@ -44,63 +54,103 @@ supports python 2.7 - 3.7 and possibly other dialects.
 
 ----
 
+
+
 Installation and Upgrade
 ------------------------
 
-From source code:
+Before You start, its highly recommended to update pip and setup tools:
+
 
 .. code-block:: bash
 
-    # normal install
-    python setup.py install
-    # test without installing
-    python setup.py test
+    python3 -m pip --upgrade pip
+    python3 -m pip --upgrade setuptools
+    python3 -m pip --upgrade wheel
 
-via pip latest Release:
 
-.. code-block:: bash
-
-    # latest Release from pypi
-    pip install lib_registry
-
-    # test without installing
-    pip install lib_registry --install-option test
-
-via pip latest Development Version:
+install latest version with pip (recommended):
 
 .. code-block:: bash
 
     # upgrade all dependencies regardless of version number (PREFERRED)
-    pip install --upgrade git+https://github.com/bitranox/lib_registry.git --upgrade-strategy eager
-    # normal install
-    pip install --upgrade git+https://github.com/bitranox/lib_registry.git
-    # test without installing
-    pip install git+https://github.com/bitranox/lib_registry.git --install-option test
+    python3 -m pip install --upgrade git+https://github.com/bitranox/lib_registry.git --upgrade-strategy eager
 
-via requirements.txt:
+    # test without installing (can be skipped)
+    python3 -m pip install git+https://github.com/bitranox/lib_registry.git --install-option test
+
+    # normal install
+    python3 -m pip install --upgrade git+https://github.com/bitranox/lib_registry.git
+
+
+install latest pypi Release (if there is any):
+
+.. code-block:: bash
+
+    # latest Release from pypi
+    python3 -m pip install --upgrade lib_registry
+
+    # test without installing (can be skipped)
+    python3 -m pip install lib_registry --install-option test
+
+    # normal install
+    python3 -m pip install --upgrade lib_registry
+
+
+
+include it into Your requirements.txt:
 
 .. code-block:: bash
 
     # Insert following line in Your requirements.txt:
-    # for the latest Release:
+    # for the latest Release on pypi (if any):
     lib_registry
     # for the latest Development Version :
-    git+https://github.com/bitranox/lib_registry.git
+    lib_registry @ git+https://github.com/bitranox/lib_registry.git
 
     # to install and upgrade all modules mentioned in requirements.txt:
-    pip install --upgrade -r /<path>/requirements.txt
+    python3 -m pip install --upgrade -r /<path>/requirements.txt
 
-via python:
 
-.. code-block:: python
+Install from source code:
 
-    # for the latest Release
-    python -m pip install upgrade lib_registry
+.. code-block:: bash
 
-    # for the latest Development Version
-    python -m pip install upgrade git+https://github.com/bitranox/lib_registry.git
+    # cd ~
+    $ git clone https://github.com/bitranox/lib_registry.git
+    $ cd lib_registry
 
-Basic Usage
+    # test without installing (can be skipped)
+    python3 setup.py test
+
+    # normal install
+    python3 setup.py install
+
+
+via makefile:
+
+if You are on linux, makefiles are a very convenient way to install. Here we can do much more, like installing virtual environment, clean caches and so on.
+This is still in development and not recommended / working at the moment:
+
+.. code-block:: shell
+
+    # from Your shell's homedirectory:
+    $ git clone https://github.com/bitranox/lib_registry.git
+    $ cd lib_registry
+
+    # to run the tests:
+    $ make test
+
+    # to install the package
+    $ make install
+
+    # to clean the package
+    $ make clean
+
+    # uninstall the package
+    $ make uninstall
+
+Usage
 -----------
 
 .. code-block:: py
@@ -143,25 +193,29 @@ Basic Usage
     >>> get_username_from_sid(sid='S-1-5-20')
     'NetworkService'
 
+Usage from Commandline
+------------------------
+
+.. code-block:: bash
+
+   Usage:
+       lib_registry (-h | -v | -i)
+
+   Options:
+       -h, --help          show help
+       -v, --version       show version
+       -i, --info          show Info
+
+   this module exposes no other useful functions to the commandline
+
 Requirements
 ------------
 following modules will be automatically installed :
 
 .. code-block:: bash
 
-    ## Test Requirements
-    ## following Requirements will be installed temporarily for
-    ## "setup.py install test" or "pip install <package> --install-option test"
-    typing ; python_version < "3.5"
-    pathlib; python_version < "3.4"
-    mypy ; platform_python_implementation != "PyPy" and python_version >= "3.5"
-    pytest
-    pytest-pep8 ; python_version < "3.5"
-    pytest-pycodestyle ; python_version >= "3.5"
-    pytest-mypy ; platform_python_implementation != "PyPy" and python_version >= "3.5"
-    pytest-runner
-
     ## Project Requirements
+    docopt
 
 Acknowledgements
 ----------------

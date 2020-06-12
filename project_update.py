@@ -114,7 +114,8 @@ def is_ok_to_copy(path_source_file: pathlib.Path) -> bool:
     """ its ok when a file and not in the list """
     files_not_to_copy = ['requirements.txt', 'project_conf.py', '.travis.yml', 'README.rst',
                          'CHANGES.rst', 'description.rst', 'usage.rst', 'installation.rst', 'acknowledgment.rst',
-                         'badges_project.rst', 'badges_with_jupyter.rst', 'badges_without_jupyter.rst', '__doc__.py']
+                         'badges_project.rst', 'badges_with_jupyter.rst', 'badges_without_jupyter.rst', '__doc__.py',
+                         'index.rst', 'index_jupyter.rst', 'try_in_jupyter.rst']
     if path_source_file.is_file():
         if path_source_file.name in files_not_to_copy:
             return False
@@ -183,6 +184,23 @@ def copy_template_files() -> None:
     if not path_targetfile.is_file():
         path_sourcefile = path_source_dir / 'templates/acknowledgment.rst'
         shutil.copy(str(path_sourcefile), str(path_targetfile))
+
+    # copy index.rst template if not there
+    path_targetfile = path_target_dir / '.docs/index.rst'
+    if not path_targetfile.is_file():
+        if project_conf.badges_with_jupiter:
+            path_sourcefile = path_source_dir / 'templates/index_jupyter.rst'
+        else:
+            path_sourcefile = path_source_dir / 'templates/index.rst'
+        shutil.copy(str(path_sourcefile), str(path_targetfile))
+
+    # copy try_in_jupyter.rst template if not there
+    path_targetfile = path_target_dir / '.docs/try_in_jupyter.rst'
+    if project_conf.badges_with_jupiter:
+        path_sourcefile = path_source_dir / 'templates/try_in_jupyter.rst'
+        shutil.copy(str(path_sourcefile), str(path_targetfile))
+    else:
+        path_targetfile.unlink(missing_ok=True)
 
     # overwrite badges template
     if project_conf.badges_with_jupiter:

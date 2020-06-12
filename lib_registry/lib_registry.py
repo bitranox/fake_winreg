@@ -5,7 +5,13 @@ from typing import Any, List, Dict, Union
 # EXT
 from docopt import docopt
 is_platform_windows = platform.system().lower() == 'windows'
-REG_SZ = 1  # avoid Import Error on Linux on function set_value
+
+
+class WinRegFake(object):       # avoid Import Error on Linux
+    def __init__(self):
+        self.REG_SZ: int = 1
+        self.HKEYType: int = 0
+
 
 if is_platform_windows:
     import winreg               # type: ignore
@@ -24,6 +30,9 @@ if is_platform_windows:
                                'hkey_users': winreg.HKEY_USERS,
                                'hku': winreg.HKEY_USERS
                                }                                            # type: Dict[str, Any]
+else:
+    winreg = WinRegFake()
+
 
 # PROJ
 try:
@@ -159,7 +168,7 @@ def delete_key(key_name: str) -> None:
     winreg.DeleteKey(root_key, reg_path)
 
 
-def set_value(key_name: str, value_name: str, value: Any, value_type: int = REG_SZ) -> None:
+def set_value(key_name: str, value_name: str, value: Any, value_type: int = winreg.REG_SZ) -> None:
     """
     value_type:
     REG_BINARY	                Binary data in any form.

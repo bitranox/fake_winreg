@@ -1,41 +1,38 @@
+{repository}
+{double_underline_repository}
+
+.. include:: ./badges_project.rst
+
+.. include:: ./description.rst
 
 
 
-lib_registry
-============
 
-.. include:: ./badges_without_jupyter.rst
-
-some convenience functions to access the windows registry - to be extended.
-
-supports python 2.7 - 3.7 and possibly other dialects.
+automated tests, Travis Matrix, Documentation, Badges for this Project are managed with `lib_travis_template <https://github
+.com/bitranox/lib_travis_template>`_ - check it out
 
 
 .. include:: ./tested_under.rst
 
 ----
 
-- `Installation and Upgrade`_
-- `Basic Usage`_
-- `Requirements`_
-- `Acknowledgements`_
-- `Contribute`_
-- `Report Issues <https://github.com/{repository_slug}/blob/master/ISSUE_TEMPLATE.md>`_
-- `Pull Request <https://github.com/{repository_slug}/blob/master/PULL_REQUEST_TEMPLATE.md>`_
-- `Code of Conduct <https://github.com/{repository_slug}/blob/master/CODE_OF_CONDUCT.md>`_
-- `License`_
-- `Changelog`_
+.. include:: ./index.rst
 
 ----
+
+{try_in_jupyter}
 
 Installation and Upgrade
 ------------------------
 .. include:: ./installation.rst
 
-
-Basic Usage
+Usage
 -----------
-.. include:: ./basic_usage.rst
+.. include:: ./usage.rst
+
+Usage from Commandline
+------------------------
+.. include:: ./commandline_help.txt
 
 Requirements
 ------------

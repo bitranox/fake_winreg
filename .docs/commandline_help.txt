@@ -1,0 +1,11 @@
+.. code-block:: bash
+
+   Usage:
+       lib_registry (-h | -v | -i)
+   
+   Options:
+       -h, --help          show help
+       -v, --version       show version
+       -i, --info          show Info
+   
+   this module exposes no other useful functions to the commandline

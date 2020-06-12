@@ -3,10 +3,7 @@
 from lib_registry import *
 
 if is_platform_windows:
-    if is_python2:
-        import _winreg as winreg    # type: ignore
-    else:
-        import winreg               # type: ignore
+    import winreg               # type: ignore
 
 
 def test_get_number_of_subkeys():

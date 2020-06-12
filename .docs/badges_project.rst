@@ -1,6 +1,6 @@
-|Pypi Status| |pyversion2| |pyversion3| |license| |maintenance| |jupyter|
+|Pypi Status| |license| |maintenance|
 
-|Build Status| |Codecov Status| |Better Code| |code climate| |snyk security|
+|Build Status| |Codecov Status| |Better Code| |code climate| |code climate coverage| |snyk security|
 
 .. |license| image:: https://img.shields.io/github/license/webcomics/pywine.svg
    :target: http://en.wikipedia.org/wiki/MIT_License
@@ -16,14 +16,9 @@
    :target: https://bettercodehub.com/results/{repository_slug}
 .. |snyk security| image:: https://snyk.io/test/github/{repository_slug}/badge.svg
    :target: https://snyk.io/test/github/{repository_slug}
-.. |jupyter| image:: https://mybinder.org/badge.svg
-   :target: https://mybinder.org/v2/gh/{repository_slug}/master?filepath=jupyter_test_{repository}.ipynb
 .. |code climate| image:: https://api.codeclimate.com/v1/badges/{codeclimate_link_hash}/maintainability
    :target: https://codeclimate.com/github/{repository_slug}/maintainability
    :alt: Maintainability
-.. |pyversion2| image:: https://img.shields.io/badge/python-%3E%3D2.6-brightgreen.svg
-   :target: https://badge.fury.io/py/{repository}
-   :alt: Python Version
-.. |pyversion3| image:: https://img.shields.io/badge/python-%3E%3D3.6-brightgreen.svg
-   :target: https://badge.fury.io/py/{repository}
-   :alt: Python Version
+.. |code climate coverage| image:: https://api.codeclimate.com/v1/badges/{codeclimate_link_hash}/test_coverage
+   :target: https://codeclimate.com/github/{repository_slug}/test_coverage
+   :alt: Code Coverage
