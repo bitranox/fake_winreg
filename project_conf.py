@@ -10,7 +10,7 @@ version = '0.1.0'
 codeclimate_link_hash = 'affaa3b099c55c69950c'  # for lib_registry
 
 # cc_test_reporter_id - get it under https://codeclimate.com/github/<user>/<project> and press "test coverage"
-cc_test_reporter_id = 'tba'    # for lib_registry
+cc_test_reporter_id = '7d84b9dce9c99c6cfe5c6c7c212e67aafc8934000cfb73891bdbb15cb311fe63'    # for lib_registry
 
 # pypi_password
 # to create the secret :

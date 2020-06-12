@@ -1,38 +1,21 @@
 # STDLIB
 import platform
-from typing import Any, List, Dict, Union
+from typing import Any, List, Dict, Tuple, Union
 
 # EXT
 from docopt import docopt
 is_platform_windows = platform.system().lower() == 'windows'
 
-
-class WinRegFake(object):       # avoid Import Error on Linux
-    def __init__(self):
-        self.REG_SZ: int = 1
-        self.HKEYType: int = 0
-
-
 if is_platform_windows:
     import winreg               # type: ignore
-    main_key_hashed_by_name = {'hkey_classes_root': winreg.HKEY_CLASSES_ROOT,
-                               'hkcr': winreg.HKEY_CLASSES_ROOT,
-                               'hkey_current_config': winreg.HKEY_CURRENT_CONFIG,
-                               'hkcc': winreg.HKEY_CURRENT_CONFIG,
-                               'hkey_current_user': winreg.HKEY_CURRENT_USER,
-                               'hkcu': winreg.HKEY_CURRENT_USER,
-                               'hkey_dyn_data': winreg.HKEY_DYN_DATA,
-                               'hkdd': winreg.HKEY_DYN_DATA,
-                               'hkey_local_machine': winreg.HKEY_LOCAL_MACHINE,
-                               'hklm': winreg.HKEY_LOCAL_MACHINE,
-                               'hkey_performance_data': winreg.HKEY_PERFORMANCE_DATA,
-                               'hkpd': winreg.HKEY_PERFORMANCE_DATA,
-                               'hkey_users': winreg.HKEY_USERS,
-                               'hku': winreg.HKEY_USERS
-                               }                                            # type: Dict[str, Any]
 else:
-    winreg = WinRegFake()
+    try:
+        from .fake_classes import WinRegFake
+    except (ImportError, ModuleNotFoundError):
+        # import for doctest
+        from fake_classes import WinRegFake
 
+    winreg = WinRegFake()
 
 # PROJ
 try:
@@ -42,6 +25,23 @@ except ImportError:                 # pragma: no cover
     # imports for doctest
     from __doc__ import __doc__     # type: ignore  # pragma: no cover
     import __init__conf__           # type: ignore  # pragma: no cover
+
+
+main_key_hashed_by_name = {'hkey_classes_root': winreg.HKEY_CLASSES_ROOT,
+                           'hkcr': winreg.HKEY_CLASSES_ROOT,
+                           'hkey_current_config': winreg.HKEY_CURRENT_CONFIG,
+                           'hkcc': winreg.HKEY_CURRENT_CONFIG,
+                           'hkey_current_user': winreg.HKEY_CURRENT_USER,
+                           'hkcu': winreg.HKEY_CURRENT_USER,
+                           'hkey_dyn_data': winreg.HKEY_DYN_DATA,
+                           'hkdd': winreg.HKEY_DYN_DATA,
+                           'hkey_local_machine': winreg.HKEY_LOCAL_MACHINE,
+                           'hklm': winreg.HKEY_LOCAL_MACHINE,
+                           'hkey_performance_data': winreg.HKEY_PERFORMANCE_DATA,
+                           'hkpd': winreg.HKEY_PERFORMANCE_DATA,
+                           'hkey_users': winreg.HKEY_USERS,
+                           'hku': winreg.HKEY_USERS
+                           }                                            # type: Dict[str, Any]
 
 
 l_hive_names = ['HKEY_LOCAL_MACHINE', 'HKLM', 'HKEY_CURRENT_USER', 'HKCU', 'HKEY_CLASSES_ROOT',
@@ -184,7 +184,7 @@ def set_value(key_name: str, value_name: str, value: Any, value_type: int = winr
     REG_SZ	                    A null-terminated string.
 
     >>> create_key(r'HKCU\\Software\\lib_registry_test')
-    >>> set_value(key_name=r'HKCU\\Software\\lib_registry_test', value_name='test_name', value='test_string', value_type=REG_SZ)
+    >>> set_value(key_name=r'HKCU\\Software\\lib_registry_test', value_name='test_name', value='test_string', value_type=winreg.REG_SZ)
     >>> result = get_value(key_name=r'HKCU\\Software\\lib_registry_test', value_name='test_name')
     >>> assert result == 'test_string'
     >>> delete_value(key_name=r'HKCU\\Software\\lib_registry_test', value_name='test_name')
