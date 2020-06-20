@@ -26,10 +26,6 @@ travis_pypi_secure_code = 'F6REHdAOCTEicl8s9aiTNNJ5S6xLAoOyLF7qL3m1LkV5c46+FNyiO
                           'QKNfXqXJ8FYCUlfrbso6cp+kjX8Qop1LKLC7wWD8Q6SaSV/iXAXKN2MC7L3rkvtMQKydG++LWpH+wiAyynhyKghF638VjGDVXw6Wbx07iiO2hgcv87tlXUTnRvu'\
                           'APznPoMkwFIkGBkloyzQr5/2dWu99vHKA8O3L6iIj8cDPuiyFEguOnotiOXjO003xLjY='
 
-# include package data files
-# package_data = {package_name: ['some_file_to_include.txt']}
-package_data = dict()       # type: Dict[str, List[str]]
-
 author = 'Robert Nowotny'
 author_email = 'rnowotny1966@gmail.com'
 github_account = 'bitranox'
@@ -40,6 +36,7 @@ pypy_tests = False
 windows_tests = True
 wine_tests = False
 badges_with_jupiter = False
+is_typed_package = True
 
 # a short description of the Package - especially if You deploy on PyPi !
 description = 'some convenience functions to access the windows registry - to be extended'
@@ -57,6 +54,10 @@ init_config_name = package_name
 # we ned to have a function main_commandline in module module_name - see examples
 entry_points = {'console_scripts': ['{shell_command} = {src_dir}.{module_name}:main_commandline'
                 .format(shell_command=shell_command, src_dir=src_dir, module_name=module_name)]}  # type: Dict[str, List[str]]
+
+# include package data files
+# package_data = {package_name: ['some_file_to_include.txt']}
+package_data = dict()       # type: Dict[str, List[str]]
 
 long_description = package_name  # will be overwritten with the content of README.rst if exists
 

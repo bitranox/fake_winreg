@@ -50,20 +50,20 @@ def main(args: Dict[str, str]) -> None:
         """
 
         if project_conf.badges_with_jupiter:
-            rst_include.rst_str_replace(source=rst_template, target=rst_template_tmp, old='{try_in_jupyter}', new='.. include:: ./try_in_jupyter.rst')
+            rst_include.rst_str_replace(source=rst_template, target=rst_template_tmp, str_pattern='{try_in_jupyter}', str_replace='.. include:: ./try_in_jupyter.rst')
         else:
-            rst_include.rst_str_replace(source=rst_template, target=rst_template_tmp, old='{try_in_jupyter}', new='')
+            rst_include.rst_str_replace(source=rst_template, target=rst_template_tmp, str_pattern='{try_in_jupyter}', str_replace='')
 
         lib_log_utils.log_info('include the include blocks')
         rst_include.rst_inc(source=rst_template_tmp, target=rst_target)
 
         lib_log_utils.log_info('replace repository related strings')
-        rst_include.rst_str_replace(source=rst_target, target='', old='{repository_slug}', new=travis_repo_slug, inplace=True)
-        rst_include.rst_str_replace(source=rst_target, target='', old='{repository}', new=repository, inplace=True)
-        rst_include.rst_str_replace(source=rst_target, target='', old='{double_underline_repository}', new='=' * len(repository), inplace=True)
-        rst_include.rst_str_replace(source=rst_target, target='', old='{repository_dashed}', new=repository_dashed, inplace=True)
-        rst_include.rst_str_replace(source=rst_target, target='', old='{last_update_yyyy}', new=str(datetime.date.today().year + 1), inplace=True)
-        rst_include.rst_str_replace(source=rst_target, target='', old='{codeclimate_link_hash}', new=project_conf.codeclimate_link_hash, inplace=True)
+        rst_include.rst_str_replace(source=rst_target, target='', str_pattern='{repository_slug}', str_replace=travis_repo_slug, inplace=True)
+        rst_include.rst_str_replace(source=rst_target, target='', str_pattern='{repository}', str_replace=repository, inplace=True)
+        rst_include.rst_str_replace(source=rst_target, target='', str_pattern='{double_underline_repository}', str_replace='=' * len(repository), inplace=True)
+        rst_include.rst_str_replace(source=rst_target, target='', str_pattern='{repository_dashed}', str_replace=repository_dashed, inplace=True)
+        rst_include.rst_str_replace(source=rst_target, target='', str_pattern='{last_update_yyyy}', str_replace=str(datetime.date.today().year + 1), inplace=True)
+        rst_include.rst_str_replace(source=rst_target, target='', str_pattern='{codeclimate_link_hash}', str_replace=project_conf.codeclimate_link_hash, inplace=True)
 
         lib_log_utils.log_info('done')
         sys.exit(0)
