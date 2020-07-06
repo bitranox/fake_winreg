@@ -12,7 +12,9 @@ if is_platform_windows:
     import winreg                                       # type: ignore
 else:
     import lib_fake_registry
-    winreg = lib_fake_registry.WinRegFake()
+    # an empty Registry at the Moment
+    fake_registry = lib_fake_registry.FakeRegistry()
+    winreg = lib_fake_registry.FakeWinReg(fake_registry)
 
 # PROJ
 try:
