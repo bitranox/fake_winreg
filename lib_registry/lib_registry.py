@@ -84,7 +84,7 @@ class RegistryKeyExistsError(RegistryKeyError):
 def reg_connect(key: Union[str, int], computer_name: Union[None, str] = None) -> winreg.HKEYType:
     """
     Gets the registry handle to the hive of the given key :
-    get_registry_connection('\hklm\software\....') --> reg_handle to hklm
+    get_registry_connection('/hklm/software/....') --> reg_handle to hklm
     get_registry_connection(winreg.HKEY_LOCAL_MACHINE) --> reg_handle to hklm
 
     >>> reg_connect('HKCR')  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
@@ -138,7 +138,6 @@ def create_key(key: Union[str, int, winreg.HKEYType], sub_key: str = '', exist_o
         raise RegistryKeyExistsError('can not create key, it already exists: "{key_string}"'.format(key_string=key_string))
 
     hive_key, sub_key = get_key_components(key, sub_key)
-
 
     if parents:
         pass
