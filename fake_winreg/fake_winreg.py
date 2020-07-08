@@ -97,7 +97,7 @@ class FakeWinReg(object):
         self.py_hkey_handles: Dict[str, PyHKEY] = dict()
 
     @check_for_kwargs
-    def CloseKey(self, hkey: int) -> None:      # noqa
+    def CloseKey(self, hkey: Union[int, PyHKEY]) -> None:      # noqa
         """
         Closes a previously opened registry key. The hkey argument specifies a previously opened hive key.
 
@@ -141,16 +141,32 @@ class FakeWinReg(object):
         >>> winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
         <...PyHKEY object at ...>
 
+        >>> # Computername given
+        >>> winreg.ConnectRegistry('test', winreg.HKEY_LOCAL_MACHINE)
+        Traceback (most recent call last):
+        ...
+        FileNotFoundError: System error 53 has occurred. The network path was not found
+
+        >>> # Invalid Handle
+        >>> winreg.ConnectRegistry(None, 42)
+        Traceback (most recent call last):
+            ...
+        OSError: [WinError 6] The handle is invalid
+
         >>> # must not accept keyword parameters
         >>> winreg.ConnectRegistry(computer_name=None, key=winreg.HKEY_LOCAL_MACHINE)
         Traceback (most recent call last):
             ...
         TypeError: ConnectRegistry() got some positional-only arguments passed as keyword arguments: 'computer_name, key'
 
+
         """
         if computer_name:
-            raise NotImplementedError('we dont support to connect to remote computers on fake_winreg')
-        fake_reg_handle = self.fake_registry.hive[key]
+            raise FileNotFoundError('System error 53 has occurred. The network path was not found')
+        try:
+            fake_reg_handle = self.fake_registry.hive[key]
+        except KeyError:
+            raise OSError('[WinError 6] The handle is invalid')
         reg_handle = PyHKEY(data=fake_reg_handle)
         reg_handle = self.add_handle_to_hash_list_or_return_already_existing_handle(reg_handle)
         return reg_handle
@@ -615,10 +631,13 @@ class FakeWinReg(object):
         >>> assert winreg.QueryValueEx(reg_key, 'CurrentBuild') == ('18363', FakeWinReg.REG_SZ)
         """
 
-        reg_handle = self._resolve_key(key)
-        value = reg_handle.data.values[value_name].value
-        value_type = reg_handle.data.values[value_name].value_type
-        return value, value_type
+        try:
+            reg_handle = self._resolve_key(key)
+            value = reg_handle.data.values[value_name].value
+            value_type = reg_handle.data.values[value_name].value_type
+            return value, value_type
+        except KeyError:
+            raise FileNotFoundError('[WinError 2] The system cannot find the file specified')
 
     @check_for_kwargs
     def SetValue(self, key: Union[PyHKEY, int], sub_key: Union[str, None], type: int, value: str) -> None:      # noqa
