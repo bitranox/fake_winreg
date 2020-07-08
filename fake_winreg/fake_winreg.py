@@ -246,6 +246,12 @@ class FakeWinReg(object):
         >>> reg_handle_sub = winreg.OpenKey(reg_handle, r'SOFTWARE\\xxxx\\yyyy')
         >>> winreg.DeleteKey(reg_handle_sub, '')
 
+        >>> # test with a blank in the key - does not work on jupyter
+        >>> reg_handle = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
+        >>> reg_key = winreg.OpenKey(reg_handle, r'SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion')
+        >>> winreg.DeleteKey(reg_handle, r"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", '')
+
+
         >>> # Teardown
         >>> winreg.DeleteKey(reg_handle, r'SOFTWARE\\xxxx')
 
