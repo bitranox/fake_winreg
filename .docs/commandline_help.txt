@@ -1,0 +1,13 @@
+.. code-block:: bash
+
+   Usage: lib_fake_registry.py [OPTIONS] COMMAND [ARGS]...
+   
+     test winreg functions on a fake registry on windows and linux, without
+     messing up Your real registry
+   
+   Options:
+     --version   Show the version and exit.
+     -h, --help  Show this message and exit.
+   
+   Commands:
+     info  get program informations
