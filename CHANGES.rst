@@ -1,7 +1,18 @@
 Changelog
 =========
 
-put the usage of the project under CHANGES.rst
+- new MAJOR version for incompatible API changes,
+- new MINOR version for added functionality in a backwards compatible manner
+- new PATCH version for backwards compatible bug fixes
+
+0.1.1
+-----
+2020-07-08 : patch release
+    - new click CLI
+    - use PizzaCutter Template
+    - added jupyter notebook
+    - reorganized modules and import
+    - updated documentation
 
 0.1.0
 -----

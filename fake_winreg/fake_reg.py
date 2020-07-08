@@ -1,11 +1,10 @@
 # STDLIB
-from collections import OrderedDict
 import ctypes
 import subprocess
 import pathlib
 import platform
 import time
-from typing import Union
+from typing import Dict, Optional, Union
 
 
 is_windows = platform.system().lower() == 'windows'
@@ -65,6 +64,7 @@ hive_name_hashed_by_int[18446744071562067971] = 'HKEY_USERS'
 
 
 class FakeRegistry(object):
+
     def __init__(self) -> None:
         self.hive = dict()
         self.hive[HKEY_CLASSES_ROOT] = set_fake_reg_key(FakeRegistryKey(), 'HKEY_CLASSES_ROOT')
@@ -84,11 +84,11 @@ class FakeRegistryKey(object):
         # the key name including the hive
         self.full_key: str = ''
         # the parent fake_key
-        self.parent_fake_registry_key: FakeRegistryKey
+        self.parent_fake_registry_key: Optional[FakeRegistryKey] = None
         # the subkeys, hashed by reg_key
-        self.subkeys: OrderedDict[str, FakeRegistryKey] = OrderedDict()
+        self.subkeys: Dict[str, FakeRegistryKey] = dict()
         # the values, hashed by value_name
-        self.values: OrderedDict[str, FakeRegistryValue] = OrderedDict()
+        self.values: Dict[str, FakeRegistryValue] = dict()
         # the time in ns since (Linux)Epoch, of the last modification, some entries dont have timestamp
         self.last_modified_ns: int = 0
         # the default Value of the Key, which is set with SetValue, GetValue
@@ -161,8 +161,7 @@ def get_fake_reg_key(fake_reg_key: FakeRegistryKey, sub_key: str) -> FakeRegistr
     ...     sub_key=r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT').full_key == r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT'
 
     >>> # Test not existing Key
-    >>> get_fake_reg_key(fake_reg_key=fake_reg_root,
-    ...     sub_key=r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\non_existing')  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
+    >>> get_fake_reg_key(fake_reg_key=fake_reg_root, sub_key=r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\non_existing')
     Traceback (most recent call last):
         ...
     FileNotFoundError: subkey not found, key="HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft", subkey="non_existing"
@@ -246,7 +245,7 @@ def dump_windows_registry_branch_to_hive_file(root_key: str, path_hive_file: pat
     if not is_windows:
         raise RuntimeError('you can only dump the registry to a file on windows')
     if is_windows_wine():
-        raise RuntimeError('WINE does not support "reg save", you might use #TODO')  # TODO
+        raise RuntimeError('WINE does not support "reg save"')
     if not is_windows_user_admin():
         raise RuntimeError('You need to run the Program as Administrator to be able to save the Registry')
     subprocess.run(['reg', 'save', root_key, str(path_hive_file), '/y'], check=True)

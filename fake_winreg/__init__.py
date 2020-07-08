@@ -1,9 +1,8 @@
 from .fake_winreg import PyHKEY
 from .fake_winreg import FakeWinReg
-from .fake_winreg import FakeRegistry
-from . import fake_registry
-from .set_fake_registry_testvalues import set_fake_test_registry_windows
-from .set_fake_registry_testvalues import set_fake_test_registry_wine
+from .fake_reg import FakeRegistry
+from . import fake_reg
+from . import setup_fake_registry
 
 from . import __init__conf__
 __title__ = __init__conf__.title

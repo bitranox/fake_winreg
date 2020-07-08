@@ -1,8 +1,10 @@
 .. code-block:: python
 
-        from lib_fake_registry import *
+        from fake_winreg import *
 
-        # Setup the registry values - see file "set_fake_registry_testvalues" how it is done
+        # get a fake registry object
+        fake_registry =
+
         fake_registry_windows = set_fake_test_registry_windows()
         fake_registry_wine = set_fake_test_registry_wine()
 

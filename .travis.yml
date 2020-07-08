@@ -9,6 +9,8 @@ env:
         - cPYTHON="python"			# command to launch python interpreter (its different on macOs, there we need python3)
         - cPIP="python -m pip"   	# command to launch pip (its different on macOs, there we need pip3)
         - WINEDEBUG=fixme-all       # switch off wine fix me messages
+        - secure:   # CC_TEST_REPORTER_ID.secret
+        - secure:   # pypi_password.secret
 
 
 addons:

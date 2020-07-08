@@ -74,7 +74,7 @@ LIMITATIONS
 - some (few) winreg functions are not implemented - if You need it, give me a note
 - obviously we can not connect to the registry of another windows computer over the network
 - KEY_WOW64_32KEY is not supported. We show always the same ...
-- obviously auditing event's are not supported
+- auditing event's are not supported
 
 ----
 
@@ -204,9 +204,11 @@ Usage
 
 .. code-block:: python
 
-        from lib_fake_registry import *
+        from fake_winreg import *
 
-        # Setup the registry values - see file "set_fake_registry_testvalues" how it is done
+        # get a fake registry object
+        fake_registry =
+
         fake_registry_windows = set_fake_test_registry_windows()
         fake_registry_wine = set_fake_test_registry_wine()
 
@@ -270,7 +272,18 @@ This software is licensed under the `MIT license <http://en.wikipedia.org/wiki/M
 Changelog
 =========
 
-put the usage of the project under CHANGES.rst
+- new MAJOR version for incompatible API changes,
+- new MINOR version for added functionality in a backwards compatible manner
+- new PATCH version for backwards compatible bug fixes
+
+0.1.1
+-----
+2020-07-08 : patch release
+    - new click CLI
+    - use PizzaCutter Template
+    - added jupyter notebook
+    - reorganized modules and import
+    - updated documentation
 
 0.1.0
 -----
