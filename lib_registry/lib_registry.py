@@ -11,19 +11,10 @@ is_platform_windows = platform.system().lower() == 'windows'
 if is_platform_windows:
     import winreg                                       # type: ignore
 else:
-    import lib_fake_registry
+    import fake_winreg
     # an empty Registry at the Moment
-    fake_registry = lib_fake_registry.FakeRegistry()
-    winreg = lib_fake_registry.FakeWinReg(fake_registry)
-
-# PROJ
-try:
-    from .__doc__ import __doc__
-    from . import __init__conf__
-except ImportError:                 # pragma: no cover
-    # imports for doctest
-    from __doc__ import __doc__     # type: ignore  # pragma: no cover
-    import __init__conf__           # type: ignore  # pragma: no cover
+    fake_registry = fake_winreg.FakeRegistry()
+    winreg = fake_winreg.FakeWinReg(fake_registry)
 
 
 main_key_hashed_by_name = {'hkey_classes_root': winreg.HKEY_CLASSES_ROOT,
@@ -495,46 +486,5 @@ def get_is_platform_windows_wine() -> bool:
     return _is_platform_windows_wine
 
 
-# we might import this module and call main from another program and pass docopt args manually
-def main(docopt_args: Dict[str, Union[bool, str]]) -> None:
-    """
-    >>> docopt_args = dict()
-    >>> docopt_args['--version'] = True
-    >>> docopt_args['--info'] = False
-    >>> main(docopt_args)   # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
-    version: ...
-
-
-    >>> docopt_args['--version'] = False
-    >>> docopt_args['--info'] = True
-    >>> main(docopt_args)   # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
-    information for ...
-
-    >>> docopt_args['--version'] = False
-    >>> docopt_args['--info'] = False
-    >>> main(docopt_args)
-
-
-    """
-    if docopt_args['--version']:
-        __init__conf__.print_version()
-    elif docopt_args['--info']:
-        __init__conf__.print_info()
-
-
-# entry point via commandline
-def main_commandline() -> None:
-    """
-    >>> main_commandline()  # doctest: +ELLIPSIS +NORMALIZE_WHITESPACE
-    Traceback (most recent call last):
-        ...
-    docopt.DocoptExit: ...
-
-    """
-    docopt_args = docopt(__doc__)
-    main(docopt_args)       # pragma: no cover
-
-
-# entry point if main
 if __name__ == '__main__':
-    main_commandline()
+    print('this is a library only, the executable is named lib_parameter_cli.py')
