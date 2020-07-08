@@ -1,23 +1,28 @@
 #!/bin/bash
 save_dir="$PWD"
-own_dir="$( cd "$(dirname "${BASH_SOURCE[0]}")" || exit && pwd -P )" # this gives the full path, even for sourced scripts
+own_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" || exit && pwd -P)" # this gives the full path, even for sourced scripts
 
+# shellcheck disable=SC2050
+if [[ "True" != "True" ]]; then
+    echo "exit - ${BASH_SOURCE[0]} is not configured by PizzaCutter"
+    exit 0
+fi
 
 sleeptime_on_error=5
 sudo_askpass="$(command -v ssh-askpass)"
 export SUDO_ASKPASS="${sudo_askpass}"
-export NO_AT_BRIDGE=1                                     # get rid of (ssh-askpass:25930): dbind-WARNING **: 18:46:12.019: Couldn't register with accessibility bus: Did not receive a reply.
+export NO_AT_BRIDGE=1                        # get rid of (ssh-askpass:25930): dbind-WARNING **: 18:46:12.019: Couldn't register with accessibility bus: Did not receive a reply.
 
-tests_dir="${own_dir}"
-project_root_dir="$(dirname "${tests_dir}")"              # one level up
-# if we have other Projects stored in that directory, we can import them without installing, otherwise not harmful
-above_project_root_dir="$(dirname "${project_root_dir}")" # one level up
-export PYTHONPATH="${above_project_root_dir}":"${PYTHONPATH}"
+tests_dir="$(dirname "${own_dir}")"          # one level up
+project_root_dir="$(dirname "${tests_dir}")" # one level up
 
-# if we have other Projects stored in that directory, we can import them without installing, otherwise not harmful
-# this we might need for rotek intern development - but then commandline registration will fail - keep this as a reminder :
-# two_above_project_root_dir="$(dirname "${above_project_root_dir}")" # one level up
-# export PYTHONPATH="${two_above_project_root_dir}":"${PYTHONPATH}"
+cd "$own_dir"||exit
+# shellcheck disable=SC2155
+export PYTHONPATH="$(python3 ./testing_tools.py append_directory_to_python_path "${project_root_dir}")"
+# following lines are not only a comment, they get actually replaced
+export PYTHONPATH="$(python3 ./testing_tools.py append_directory_to_python_path "/media/srv-main-softdev/rotek-apps/lib")"
+export MYPYPATH="$(python3 ./testing_tools.py append_immediate_subdirs_to_mypy_path "/media/srv-main-softdev/rotek-apps/lib/bitranox")"
+cd "$save_dir"||exit
 
 function install_or_update_lib_bash() {
   if [[ ! -f /usr/local/lib_bash/install_or_update.sh ]]; then
@@ -52,29 +57,30 @@ function clean_caches() {
   sudo find "${project_root_dir}" -name "dist" -type d -exec rm -rf {} \; 2>/dev/null
   sudo find "${project_root_dir}" -name "*.egg-info" -type d -exec rm -rf {} \; 2>/dev/null
   sudo rm -rf "$HOME/.eggs/*"
+  sudo rm -rf "$HOME/.mypy_cache"
 }
 
 function install_virtualenv_debian() {
-  clr_green "installing virtualenv"
-  sudo apt-get install python3-virtualenv
+  if ! is_package_installed python3-virtualenv; then
+    banner "python3-virtualenv is not installed, I will install it for You"
+    wait_for_enter
+    install_package_if_not_present python3-virtualenv
+  fi
 }
 
-function install_requirements() {
+function install_test_requirements() {
   # this should be already installed, but it happens that pycharm ide venv does not have it
-  clr_green "install_requirements"
-  sudo chmod -R 0777 ~/.eggs    # make already installed eggs accessible, just in case they were installed as root
+  clr_green "installing/updating pip, setuptools, wheel"
+  sudo chmod -R 0777 ~/.eggs # make already installed eggs accessible, just in case they were installed as root
 
   python3 -m pip install --upgrade pip
   python3 -m pip install --upgrade setuptools
   python3 -m pip install --upgrade wheel
-
-  if test -f "${project_root_dir}/requirements.txt"; then
-    python3 -m pip install --upgrade -r "${project_root_dir}/requirements.txt"
-  else
-    clr_red "requirements.txt not found"
-  fi
+  # this we need for local testscripts
+  python3 -m pip install --upgrade click
 
   if test -f "${project_root_dir}/requirements_test.txt"; then
+    clr_green "installing/updating test requirements from \"requirements_test.txt\""
     python3 -m pip install --upgrade -r "${project_root_dir}/requirements_test.txt"
   else
     clr_red "requirements_test.txt not found"
@@ -82,9 +88,9 @@ function install_requirements() {
 }
 
 function install_dependencies() {
-  clr_green "installing dependencies"
+  banner "installing dependencies"
   install_virtualenv_debian
-  install_requirements
+  install_test_requirements
 }
 
 function delete_virtual_environment() {
@@ -98,15 +104,18 @@ function install_clean_virtual_environment() {
 }
 
 function cleanup() {
+  trap '' 2 # disable Ctrl+C
   delete_virtual_environment
   clean_caches
   cd "${save_dir}" || exit
+  trap 2 # enable Ctrl+C
 }
 
-function pytest_codestyle_mypy() {
-  my_banner "pytest --pycodestyle --mypy"
-  if ! python3 -m pytest "${project_root_dir}" --disable-warnings; then
-    my_banner_warning "pytest --pycodestyle --mypy ERROR"
+function run_pytest() {
+  # run pytest, accepts additional pytest parameters like --disable-warnings and so on
+  my_banner "running pytest with settings from pytest.ini, mypy.ini and conftest.py"
+  if ! python3 -m pytest "${project_root_dir}" "$@"; then
+    my_banner_warning "pytest ERROR"
     beep
     sleep "${sleeptime_on_error}"
     return 1
@@ -115,7 +124,7 @@ function pytest_codestyle_mypy() {
 
 function mypy_strict() {
   my_banner "mypy strict"
-  if ! python3 -m mypy "${project_root_dir}" --strict --no-warn-unused-ignores --follow-imports=skip; then
+  if ! python3 -m mypy "${project_root_dir}" --strict --warn-unused-ignores --implicit-reexport --follow-imports=silent; then
     my_banner_warning "mypy strict ERROR"
     beep
     sleep "${sleeptime_on_error}"
@@ -125,7 +134,7 @@ function mypy_strict() {
 
 function mypy_strict_with_imports() {
   my_banner "mypy strict including imports"
-  if ! python3 -m mypy "${project_root_dir}" --strict --no-warn-unused-ignores &>/dev/null; then
+  if ! python3 -m mypy "${project_root_dir}" --strict --warn-unused-ignores --implicit-reexport --follow-imports=normal; then
     my_banner_warning "mypy strict including imports ERROR"
     beep
     sleep "${sleeptime_on_error}"
@@ -164,9 +173,8 @@ function test_commandline_interface_venv() {
   # this will fail if rotek lib directory is in the path - keep this as a reminder
   my_banner "test commandline interface on virtual environment"
 
-  registered_shell_command=$(python3 "${project_root_dir}/project_update.py" --get_registered_shell_command)
-  clr_green "issuing command : $HOME/venv/bin/${registered_shell_command} -v"
-  if ! "$HOME/venv/bin/${registered_shell_command}" -v; then
+  clr_green "issuing command : $HOME/venv/bin/lib_registry --version"
+  if ! "$HOME/venv/bin/lib_registry" --version; then
     my_banner_warning "test commandline interface on virtual environment ERROR"
     beep
     sleep "${sleeptime_on_error}"

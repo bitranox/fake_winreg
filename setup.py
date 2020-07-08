@@ -6,16 +6,11 @@ see : https://docs.python.org/3.8/distutils/setupscript.html
 import codecs
 import os
 import pathlib
-from typing import List
+import platform
+from typing import Any, List, Dict
 
-# single point of configuration
-import project_conf
-
-try:
-    from setuptools import setup        # type: ignore
-except ImportError:
-    from distutils.core import setup
-
+from setuptools import setup                # type: ignore
+from setuptools import find_packages
 
 def is_travis_deploy() -> bool:
     if 'travis_deploy' in os.environ:
@@ -44,9 +39,8 @@ def strip_links_from_required(l_required: List[str]) -> List[str]:
     return l_req_stripped
 
 
+long_description = 'a more pythonic way to access the windows registry as winreg'   # will be overwritten with long_description if exists !
 path_readme = pathlib.Path(__file__).parent / 'README.rst'
-long_description = project_conf.package_name
-
 
 if path_readme.exists():
     # noinspection PyBroadException
@@ -87,24 +81,29 @@ if is_travis_deploy() and is_tagged_commit():
     # tests_require = strip_links_from_required(tests_require)
     # install_requires = strip_links_from_required(install_requires)
 
+setup_kwargs: Dict[str, Any] = dict()
+setup_kwargs['name'] = 'lib_registry'
+setup_kwargs['version'] = '1.0.4'
+setup_kwargs['url'] = 'https://github.com/bitranox/lib_registry'
+setup_kwargs['packages'] = find_packages()
+setup_kwargs['package_data'] = {'lib_registry': ['py.typed', '*.pyi', '__init__.pyi']}
+setup_kwargs['description'] = 'a more pythonic way to access the windows registry as winreg'
+setup_kwargs['long_description'] = long_description
+setup_kwargs['long_description_content_type'] = 'text/x-rst'
+setup_kwargs['author'] = 'Robert Nowotny'
+setup_kwargs['author_email'] = 'bitranox@gmail.com'
+setup_kwargs['classifiers'] = ['Development Status :: 5 - Production/Stable', 'Intended Audience :: Developers', 'License :: OSI Approved :: MIT License', 'Natural Language :: English', 'Operating System :: OS Independent', 'Programming Language :: Python', 'Topic :: Software Development :: Libraries :: Python Modules']
+setup_kwargs['entry_points'] = {'console_scripts': ['lib_registry = lib_registry.lib_registry_cli:cli_main']}
+# minimally needs to run tests - no project requirements here
+setup_kwargs['tests_require'] = tests_require
+# specify what a project minimally needs to run correctly
+setup_kwargs['install_requires'] = install_requires + ['typing', 'pathlib']
+# minimally needs to run the setup script, dependencies needs also to put here for "setup.py install test"
+# dependencies must not be put here for pip install
+setup_kwargs['setup_requires'] = setup_requires
+setup_kwargs['python_requires'] = ">=3.6.0"
+setup_kwargs['zip_safe'] = False
+
+
 if __name__ == '__main__':
-    setup(name=project_conf.package_name,
-          version=project_conf.version,
-          url=project_conf.url,
-          packages=project_conf.packages,
-          package_data=project_conf.package_data,
-          description=project_conf.description,
-          long_description=long_description,
-          long_description_content_type='text/x-rst',
-          author=project_conf.author,
-          author_email=project_conf.author_email,
-          classifiers=project_conf.CLASSIFIERS,
-          entry_points=project_conf.entry_points,
-          # minimally needs to run tests - no project requirements here
-          tests_require=tests_require,
-          # specify what a project minimally needs to run correctly
-          install_requires=install_requires + ['typing', 'pathlib'],
-          # minimally needs to run the setup script, dependencies needs also to put here for "setup.py install test"
-          # dependencies must not be put here for pip install
-          setup_requires=setup_requires
-          )
+    setup(**setup_kwargs)

@@ -1,16 +1,16 @@
-{repository}
-{double_underline_repository}
+lib_registry
+============
 
-.. include:: ./badges_project.rst
+.. include:: ./badges.rst
 
 .. include:: ./description.rst
 
+----
 
+automated tests, Travis Matrix, Documentation, Badges, etc. are managed with `PizzaCutter <https://github
+.com/bitranox/PizzaCutter>`_ (cookiecutter on steroids)
 
-
-automated tests, Travis Matrix, Documentation, Badges for this Project are managed with `lib_travis_template <https://github
-.com/bitranox/lib_travis_template>`_ - check it out
-
+Python version required: 3.6.0 or newer
 
 .. include:: ./tested_under.rst
 
@@ -20,7 +20,7 @@ automated tests, Travis Matrix, Documentation, Badges for this Project are manag
 
 ----
 
-{try_in_jupyter}
+.. include:: ./try_in_jupyter.rst
 
 Installation and Upgrade
 ------------------------
@@ -32,7 +32,7 @@ Usage
 
 Usage from Commandline
 ------------------------
-.. include:: ./commandline_help.txt
+.. include:: ./commandline_help.rst
 
 Requirements
 ------------

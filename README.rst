@@ -1,45 +1,63 @@
 lib_registry
 ============
 
-|Pypi Status| |license| |maintenance|
+|travis_build| |license| |jupyter| |pypi|
 
-|Build Status| |Codecov Status| |Better Code| |code climate| |code climate coverage| |snyk security|
+|codecov| |better_code| |cc_maintain| |cc_issues| |cc_coverage| |snyk|
+
+
+.. |travis_build| image:: https://img.shields.io/travis/bitranox/lib_registry/master.svg
+   :target: https://travis-ci.org/bitranox/lib_registry
 
 .. |license| image:: https://img.shields.io/github/license/webcomics/pywine.svg
    :target: http://en.wikipedia.org/wiki/MIT_License
-.. |maintenance| image:: https://img.shields.io/maintenance/yes/2021.svg
-.. |Build Status| image:: https://travis-ci.org/bitranox/lib_registry.svg?branch=master
-   :target: https://travis-ci.org/bitranox/lib_registry
+
+.. |jupyter| image:: https://mybinder.org/badge_logo.svg
+ :target: https://mybinder.org/v2/gh/bitranox/lib_registry/master?filepath=lib_registry.ipynb
+
 .. for the pypi status link note the dashes, not the underscore !
-.. |Pypi Status| image:: https://badge.fury.io/py/lib-registry.svg
+.. |pypi| image:: https://img.shields.io/pypi/status/lib-registry?label=PyPI%20Package
    :target: https://badge.fury.io/py/lib_registry
-.. |Codecov Status| image:: https://codecov.io/gh/bitranox/lib_registry/branch/master/graph/badge.svg
+
+.. |codecov| image:: https://img.shields.io/codecov/c/github/bitranox/lib_registry
    :target: https://codecov.io/gh/bitranox/lib_registry
-.. |Better Code| image:: https://bettercodehub.com/edge/badge/bitranox/lib_registry?branch=master
+
+.. |better_code| image:: https://bettercodehub.com/edge/badge/bitranox/lib_registry?branch=master
    :target: https://bettercodehub.com/results/bitranox/lib_registry
-.. |snyk security| image:: https://snyk.io/test/github/bitranox/lib_registry/badge.svg
-   :target: https://snyk.io/test/github/bitranox/lib_registry
-.. |code climate| image:: https://api.codeclimate.com/v1/badges/affaa3b099c55c69950c/maintainability
+
+.. |cc_maintain| image:: https://img.shields.io/codeclimate/maintainability-percentage/bitranox/lib_registry?label=CC%20maintainability
    :target: https://codeclimate.com/github/bitranox/lib_registry/maintainability
    :alt: Maintainability
-.. |code climate coverage| image:: https://api.codeclimate.com/v1/badges/affaa3b099c55c69950c/test_coverage
+
+.. |cc_issues| image:: https://img.shields.io/codeclimate/issues/bitranox/lib_registry?label=CC%20issues
+   :target: https://codeclimate.com/github/bitranox/lib_registry/maintainability
+   :alt: Maintainability
+
+.. |cc_coverage| image:: https://img.shields.io/codeclimate/coverage/bitranox/lib_registry?label=CC%20coverage
    :target: https://codeclimate.com/github/bitranox/lib_registry/test_coverage
    :alt: Code Coverage
 
-some convenience functions to access the windows registry - to be extended.
+.. |snyk| image:: https://img.shields.io/snyk/vulnerabilities/github/bitranox/lib_registry
+   :target: https://snyk.io/test/github/bitranox/lib_registry
+
+a more pythonic way to access the windows registry as winreg
 
 command line interface is prepared - if someone needs to use it via commandline, give me a note.
 
-automated tests, Travis Matrix, Documentation, Badges for this Project are managed with `lib_travis_template <https://github
-.com/bitranox/lib_travis_template>`_ - check it out
+----
 
-supports python 3.6-3.8, pypy3 and possibly other dialects.
+automated tests, Travis Matrix, Documentation, Badges, etc. are managed with `PizzaCutter <https://github
+.com/bitranox/PizzaCutter>`_ (cookiecutter on steroids)
 
-`100% code coverage <https://codecov.io/gh/bitranox/lib_registry>`_, mypy static type checking, tested under `Linux, macOS, Windows and Wine <https://travis-ci
-.org/bitranox/lib_registry>`_, automatic daily builds  and monitoring
+Python version required: 3.6.0 or newer
+
+tested on linux "bionic" with python 3.6, 3.7, 3.8, 3.8-dev, pypy3
+
+`100% code coverage <https://codecov.io/gh/bitranox/lib_registry>`_, codestyle checking ,mypy static type checking ,tested under `Linux, macOS, Windows <https://travis-ci.org/bitranox/lib_registry>`_, automatic daily builds and monitoring
 
 ----
 
+- `Try it Online`_
 - `Installation and Upgrade`_
 - `Usage`_
 - `Usage from Commandline`_
@@ -54,65 +72,66 @@ supports python 3.6-3.8, pypy3 and possibly other dialects.
 
 ----
 
+Try it Online
+-------------
 
+You might try it right away in Jupyter Notebook by using the "launch binder" badge, or click `here <https://mybinder.org/v2/gh/{{rst_include.
+repository_slug}}/master?filepath=lib_registry.ipynb>`_
 
 Installation and Upgrade
 ------------------------
 
-Before You start, its highly recommended to update pip and setup tools:
+- Before You start, its highly recommended to update pip and setup tools:
 
 
 .. code-block:: bash
 
-    python3 -m pip --upgrade pip
-    python3 -m pip --upgrade setuptools
-    python3 -m pip --upgrade wheel
+    python -m pip --upgrade pip
+    python -m pip --upgrade setuptools
+    python -m pip --upgrade wheel
 
-
-install latest version with pip (recommended):
+- to install the latest release from PyPi via pip (recommended):
 
 .. code-block:: bash
 
-    # upgrade all dependencies regardless of version number (PREFERRED)
-    python3 -m pip install --upgrade git+https://github.com/bitranox/lib_registry.git --upgrade-strategy eager
+    # install latest release from PyPi
+    python -m pip install --upgrade lib_registry
 
-    # test without installing (can be skipped)
-    python3 -m pip install git+https://github.com/bitranox/lib_registry.git --install-option test
+    # test latest release from PyPi without installing (can be skipped)
+    python -m pip install lib_registry --install-option test
+
+- to install the latest development version from github via pip:
+
+
+.. code-block:: bash
 
     # normal install
-    python3 -m pip install --upgrade git+https://github.com/bitranox/lib_registry.git
+    python -m pip install --upgrade git+https://github.com/bitranox/lib_registry.git
+
+    # to test without installing (can be skipped)
+    python -m pip install git+https://github.com/bitranox/lib_registry.git --install-option test
+
+    # to install and upgrade all dependencies regardless of version number
+    python -m pip install --upgrade git+https://github.com/bitranox/lib_registry.git --upgrade-strategy eager
 
 
-install latest pypi Release (if there is any):
-
-.. code-block:: bash
-
-    # latest Release from pypi
-    python3 -m pip install --upgrade lib_registry
-
-    # test without installing (can be skipped)
-    python3 -m pip install lib_registry --install-option test
-
-    # normal install
-    python3 -m pip install --upgrade lib_registry
-
-
-
-include it into Your requirements.txt:
+- include it into Your requirements.txt:
 
 .. code-block:: bash
 
     # Insert following line in Your requirements.txt:
-    # for the latest Release on pypi (if any):
+    # for the latest Release on pypi:
     lib_registry
-    # for the latest Development Version :
+
+    # for the latest development version :
     lib_registry @ git+https://github.com/bitranox/lib_registry.git
 
     # to install and upgrade all modules mentioned in requirements.txt:
-    python3 -m pip install --upgrade -r /<path>/requirements.txt
+    python -m pip install --upgrade -r /<path>/requirements.txt
 
 
-Install from source code:
+
+- to install the latest development version from source code:
 
 .. code-block:: bash
 
@@ -120,17 +139,15 @@ Install from source code:
     $ git clone https://github.com/bitranox/lib_registry.git
     $ cd lib_registry
 
-    # test without installing (can be skipped)
-    python3 setup.py test
+    # to test without installing (can be skipped)
+    python setup.py test
 
     # normal install
-    python3 setup.py install
+    python setup.py install
 
-
-via makefile:
-
-if You are on linux, makefiles are a very convenient way to install. Here we can do much more, like installing virtual environment, clean caches and so on.
-This is still in development and not recommended / working at the moment:
+- via makefile:
+  makefiles are a very convenient way to install. Here we can do much more,
+  like installing virtual environments, clean caches and so on.
 
 .. code-block:: shell
 
@@ -198,15 +215,16 @@ Usage from Commandline
 
 .. code-block:: bash
 
-   Usage:
-       lib_registry (-h | -v | -i)
+   Usage: lib_registry [OPTIONS] COMMAND [ARGS]...
+
+     a more pythonic way to access the windows registry as winreg
 
    Options:
-       -h, --help          show help
-       -v, --version       show version
-       -i, --info          show Info
+     --version   Show the version and exit.
+     -h, --help  Show this message and exit.
 
-   this module exposes no other useful functions to the commandline
+   Commands:
+     info  get program informations
 
 Requirements
 ------------
@@ -215,7 +233,8 @@ following modules will be automatically installed :
 .. code-block:: bash
 
     ## Project Requirements
-    docopt
+    click
+    fake_winreg @ git+https://github.com/bitranox/fake_winreg.git
 
 Acknowledgements
 ----------------
@@ -237,6 +256,19 @@ This software is licensed under the `MIT license <http://en.wikipedia.org/wiki/M
 
 Changelog
 =========
+
+- new MAJOR version for incompatible API changes,
+- new MINOR version for added functionality in a backwards compatible manner
+- new PATCH version for backwards compatible bug fixes
+
+1.0.4
+-----
+2020-07-08 : patch release
+    - new click CLI
+    - use PizzaCutter Template
+    - added jupyter notebook
+    - reorganized modules and import
+    - updated documentation
 
 1.0.3
 -----
