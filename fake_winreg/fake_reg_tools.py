@@ -9,9 +9,9 @@ except (ImportError, ModuleNotFoundError):      # pragma: no cover
     from fake_reg import *                 # type: ignore  # pragma: no cover
 
 
-def set_minimal_windows_testvalues(fake_registry: Optional[FakeRegistry] = None) -> FakeRegistry:
+def get_minimal_windows_testregistry(fake_registry: Optional[FakeRegistry] = None) -> FakeRegistry:
     """
-    >>> fake_registry = set_minimal_windows_testvalues()
+    >>> fake_registry = get_minimal_windows_testregistry()
 
     """
     if fake_registry is None:
@@ -45,9 +45,9 @@ def set_minimal_windows_testvalues(fake_registry: Optional[FakeRegistry] = None)
     return fake_registry
 
 
-def set_minimal_wine_testvalues(_fake_registry: Optional[FakeRegistry] = None) -> FakeRegistry:
+def get_minimal_wine_testregistry(_fake_registry: Optional[FakeRegistry] = None) -> FakeRegistry:
     """
-    >>> fake_registry = set_minimal_wine_testvalues()
+    >>> fake_registry = get_minimal_wine_testregistry()
 
     """
     if _fake_registry is None:

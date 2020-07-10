@@ -1,12 +1,9 @@
-import fake_winreg
-from fake_winreg import fake_reg
-from fake_winreg import setup_fake_registry
+import fake_winreg as winreg
 import pytest       # type: ignore
 import unittest
 
-f_registry = fake_reg.FakeRegistry()
-setup_fake_registry.set_minimal_windows_testvalues(f_registry)
-winreg = fake_winreg.FakeWinReg(f_registry)
+fake_registry = winreg.fake_reg_tools.get_minimal_windows_testregistry()
+winreg.load_fake_registry(fake_registry)
 
 
 @pytest.fixture(scope="function")

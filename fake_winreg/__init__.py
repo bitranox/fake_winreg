@@ -1,7 +1,5 @@
-from .fake_winreg import FakeWinReg
-from .fake_reg import FakeRegistry
-from . import fake_reg
-from . import setup_fake_registry
+from .fake_winreg import *
+
 
 from . import __init__conf__
 __title__ = __init__conf__.title

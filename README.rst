@@ -204,27 +204,20 @@ Usage
 
 .. code-block:: python
 
-        from fake_winreg import *
+        import fake_winreg as winreg
 
-        # get a fake registry object
-        fake_registry =
+        # setup a fake registry for windows
+        fake_registry = winreg.fake_reg_tools.get_minimal_windows_testregistry()
 
-        fake_registry_windows = set_fake_test_registry_windows()
-        fake_registry_wine = set_fake_test_registry_wine()
+        # load the fake registry into fake winreg
+        winreg.load_fake_registry(fake_registry)
 
-        # initialize the fake winreg with a fake registry
-        winreg = FakeWinReg(fake_registry_windows)
+        # try the fake registry
+        reg_handle = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
 
-        # do Your testing against that fake registry
-        hive_key = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
-        winreg.CloseKey(winreg.HKEY_LOCAL_MACHINE)
-
-        # initialize the fake winreg with another fake registry
-        winreg = FakeWinReg(fake_registry_wine)
-
-        # do Your testing against that other fake registry
-        hive_key = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
-        winreg.CloseKey(winreg.HKEY_LOCAL_MACHINE)
+        # Open Key
+        reg_key = winreg.OpenKey(reg_handle, r'SOFTWARE\Microsoft\Windows NT\CurrentVersion')
+        winreg.QueryValueEx(reg_key, 'CurrentBuild')
 
 Usage from Commandline
 ------------------------
