@@ -1,5 +1,5 @@
 # STDLIB
-from typing import Any, Callable, Dict, Tuple, TypeVar, Union, cast
+from typing import Any, Callable, Dict, Optional, Tuple, TypeVar, Union, cast
 
 # OWN
 try:
@@ -47,6 +47,28 @@ class PyHKEY(object):
         self.data = data
         self.access = access
 
+    @staticmethod
+    def Close() -> None:    # noqa
+        """
+        Closes the underlying Windows handle.
+        If the handle is already closed, no error is raised.
+        """
+        pass
+
+    @staticmethod
+    def Detach() -> int:  # noqa
+        """
+        Detaches the Windows handle from the handle object.
+        The result is an integer that holds the value of the handle before it is detached.
+        If the handle is already detached or closed, this will return zero.
+        After calling this function, the handle is effectively invalidated,
+        but the handle is not closed.
+        You would call this function when you need the underlying Win32 handle
+        to exist beyond the lifetime of the handle object.
+        Raises an auditing event winreg.PyHKEY.Detach with argument key.
+        """
+        return 0
+
 
 class FakeWinReg(object):
     # value Types
@@ -92,6 +114,7 @@ class FakeWinReg(object):
     KEY_WOW64_32KEY = 512  # Indicates that an application on 64-bit Windows should operate on the 32-bit registry view. NOT IMPLEMENTED
 
     def __init__(self, fake_registry: fake_reg.FakeRegistry) -> None:
+        self.PyHKEY = PyHKEY
         self.fake_registry = fake_registry
         # the list of the open handles - hashed by full_key_path
         self.py_hkey_handles: Dict[str, PyHKEY] = dict()
@@ -119,15 +142,15 @@ class FakeWinReg(object):
         """
         # we could recursively delete all the handles in self.py_hkey_handles by walking the fake registry keys - atm we dont bother
         # or we can get the hive name and delete all self.py_hkey_handles beginning with hive name
-        # tha objects are destroyed anyway when we close fake_winreg object, so we dont bother
+        # the objects are destroyed anyway when we close fake_winreg object, so we dont bother
         pass
 
     @check_for_kwargs
     def ConnectRegistry(self, computer_name: Union[None, str], key: int) -> PyHKEY:     # noqa
         """
         Establishes a connection to a predefined registry handle on another computer, and returns a handle object.
-        computer_name is the name of the remote computer, of the form r"\\computername". If None, the local computer is used.  (NOT IMPLEMENTED)
-        key is the predefined handle to connect to.
+        computer_name : the name of the remote computer, of the form r"\\computername". If None, the local computer is used.  (NOT IMPLEMENTED)
+        key: the predefined handle to connect to.
         The return value is the handle of the opened key. If the function fails, an OSError exception is raised.
         Raises an auditing event winreg.ConnectRegistry with arguments computer_name, key.
 
@@ -166,12 +189,14 @@ class FakeWinReg(object):
         try:
             fake_reg_handle = self.fake_registry.hive[key]
         except KeyError:
-            raise OSError('[WinError 6] The handle is invalid')
+            error = OSError('[WinError 6] The handle is invalid')
+            setattr(error, 'winerror', 6)
+            raise error
         reg_handle = PyHKEY(data=fake_reg_handle)
         reg_handle = self.add_handle_to_hash_list_or_return_already_existing_handle(reg_handle)
         return reg_handle
 
-    @check_for_kwargs
+    # @check_for_kwargs
     def CreateKey(self, key: Union[PyHKEY, int], sub_key: Union[str, None]) -> PyHKEY:      # noqa
         """
         Creates or opens the specified key, returning a handle object.
@@ -192,15 +217,17 @@ class FakeWinReg(object):
         >>> reg_handle = winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_USER)
 
         >>> # create key
-        >>> reg_handle_created = winreg.CreateKey(reg_handle, r'SOFTWARE\\xxxx\\yyyy')
+        >>> key_handle_created = winreg.CreateKey(reg_handle, r'SOFTWARE\\xxxx\\yyyy')
 
         >>> # create an existing key - we get the same handle back
-        >>> reg_handle_existing = winreg.CreateKey(reg_handle, r'SOFTWARE\\xxxx\\yyyy')
-        >>> assert reg_handle_existing == reg_handle_created
+        >>> key_handle_existing = winreg.CreateKey(reg_handle, r'SOFTWARE\\xxxx\\yyyy')
+        >>> assert key_handle_existing == key_handle_created
 
-        >>> # open the new key - should be again the same handle :
-        >>> # reg_handle_open = winreg.OpenKey(reg_handle, r'SOFTWARE\\xxxx\\yyyy')
-        >>> # assert reg_handle_existing == reg_handle_created == reg_handle_open
+        >>> # provoke Error on empty subkey
+        >>> key_handle_existing = winreg.CreateKey(reg_handle, r'')
+        Traceback (most recent call last):
+            ...
+        OSError: [WinError 1010] The configuration registry key is invalid.
 
         >>> # Teardown
         >>> winreg.DeleteKey(reg_handle, r'SOFTWARE\\xxxx\\yyyy')
@@ -208,16 +235,18 @@ class FakeWinReg(object):
 
         """
         if not sub_key:
-            raise OSError('[WinError 1010] The configuration registry key is invalid.')
+            error = OSError('[WinError 1010] The configuration registry key is invalid.')
+            setattr(error, 'winerror', 1010)
+            raise error
 
-        reg_handle = self._resolve_key(key)
-        access = reg_handle.access
-        fake_reg_key = fake_reg.set_fake_reg_key(reg_handle.data, sub_key=sub_key)
-        reg_handle = PyHKEY(fake_reg_key, access=access)
-        reg_handle = self.add_handle_to_hash_list_or_return_already_existing_handle(reg_handle)
-        return reg_handle
+        key_handle = self._resolve_key(key)
+        access = key_handle.access
+        fake_reg_key = fake_reg.set_fake_reg_key(key_handle.data, sub_key=sub_key)
+        key_handle = PyHKEY(fake_reg_key, access=access)
+        key_handle = self.add_handle_to_hash_list_or_return_already_existing_handle(key_handle)
+        return key_handle
 
-    @check_for_kwargs
+    # @check_for_kwargs
     def DeleteKey(self, key: Union[PyHKEY, int], sub_key: str) -> None:         # noqa
         """
         Deletes the specified key.
@@ -233,7 +262,7 @@ class FakeWinReg(object):
         >>> winreg = FakeWinReg(f_registry)
 
         >>> reg_handle = winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_USER)
-        >>> reg_handle_created = winreg.CreateKey(reg_handle, r'SOFTWARE\\xxxx\\yyyy\\zzz')
+        >>> key_handle_created = winreg.CreateKey(reg_handle, r'SOFTWARE\\xxxx\\yyyy\\zzz')
 
         >>> # Delete key without subkeys
         >>> assert r'HKEY_CURRENT_USER\\SOFTWARE\\xxxx\\yyyy\\zzz' in winreg.py_hkey_handles
@@ -262,12 +291,6 @@ class FakeWinReg(object):
         >>> reg_handle_sub = winreg.OpenKey(reg_handle, r'SOFTWARE\\xxxx\\yyyy')
         >>> winreg.DeleteKey(reg_handle_sub, '')
 
-        >>> # test with a blank in the key - does not work on jupyter
-        >>> reg_handle = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
-        >>> reg_key = winreg.OpenKey(reg_handle, r'SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion')
-        >>> winreg.DeleteKey(reg_handle, r"SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", '')
-
-
         >>> # Teardown
         >>> winreg.DeleteKey(reg_handle, r'SOFTWARE\\xxxx')
 
@@ -276,23 +299,26 @@ class FakeWinReg(object):
             raise TypeError('DeleteKey() argument 2 must be str, not None')
 
         sub_key = str(sub_key)
-        reg_handle = self._resolve_key(key)
+        key_handle = self._resolve_key(key)
         try:
-            fake_reg_key = fake_reg.get_fake_reg_key(fake_reg_key=reg_handle.data, sub_key=sub_key)
+            fake_reg_key = fake_reg.get_fake_reg_key(fake_reg_key=key_handle.data, sub_key=sub_key)
         except FileNotFoundError:
-            raise FileNotFoundError('[WinError 2] The system cannot find the file specified')
+            error = FileNotFoundError('[WinError 2] The system cannot find the file specified')
+            setattr(error, 'winerror', 2)
+            raise error
 
         if fake_reg_key.subkeys:
-            raise PermissionError('[WinError 5] Access is denied')
+            permission_error = PermissionError('[WinError 5] Access is denied')
+            setattr(permission_error, 'winerror', 5)
+            raise permission_error
 
         full_key_path = fake_reg_key.full_key
         sub_key = str(full_key_path.rsplit('\\', 1)[1])
         fake_parent_key = fake_reg_key.parent_fake_registry_key
         # get rid of Optional[] mypy
         assert fake_parent_key is not None
-        del fake_parent_key.subkeys[sub_key]     # delete the subkey
-        if full_key_path in self.py_hkey_handles:
-            del self.py_hkey_handles[full_key_path]  # delete the handle from the dict, if any
+        fake_parent_key.subkeys.pop(sub_key, None)          # delete the subkey
+        self.py_hkey_handles.pop(full_key_path, None)       # delete the handle from the dict, if any
 
     @check_for_kwargs
     def DeleteKeyEx(self, key: Union[PyHKEY, int], sub_key: str, access: int = KEY_WOW64_64KEY, reserved: int = 0) -> None:     # noqa
@@ -323,7 +349,7 @@ class FakeWinReg(object):
         >>> discard = setup_fake_registry.set_minimal_windows_testvalues(f_registry)
         >>> winreg = FakeWinReg(f_registry)
         >>> reg_handle = winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_USER)
-        >>> reg_handle_created = winreg.CreateKey(reg_handle, r'SOFTWARE\\xxxx\\yyyy\\zzz')
+        >>> key_handle_created = winreg.CreateKey(reg_handle, r'SOFTWARE\\xxxx\\yyyy\\zzz')
 
         >>> # Delete key without subkeys
         >>> assert r'HKEY_CURRENT_USER\\SOFTWARE\\xxxx\\yyyy\\zzz' in winreg.py_hkey_handles
@@ -364,11 +390,12 @@ class FakeWinReg(object):
         self.DeleteKey(key, sub_key)
 
     @check_for_kwargs
-    def DeleteValue(self, key: Union[PyHKEY, int], value: str) -> None:         # noqa
+    def DeleteValue(self, key: Union[PyHKEY, int], value: Optional[str]) -> None:         # noqa
         """
         Removes a named value from a registry key.
         key is an already open key, or one of the predefined HKEY_* constants.
         value is a string that identifies the value to remove.
+        if value is None, or '' it deletes the default Value of the Key
         Raises an auditing event winreg.DeleteValue with arguments key, value. (NOT IMPLEMENTED)
 
         >>> # Setup
@@ -376,24 +403,26 @@ class FakeWinReg(object):
         >>> discard = setup_fake_registry.set_minimal_windows_testvalues(f_registry)
         >>> winreg = FakeWinReg(f_registry)
         >>> reg_handle = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
-        >>> reg_key = winreg.OpenKey(reg_handle, r'SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion')
+        >>> key_handle = winreg.OpenKey(reg_handle, r'SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion')
         >>> # winreg.SetValueEx(reg_key, 'some_test', 0, winreg.REG_SZ, 'some_test_value')
 
-        >>> # Delete Value
-        >>> #winreg.DeleteValue(reg_key, 'some_test')
-
         >>> # Delete Non Existing Value
-        >>> winreg.DeleteValue(reg_key, 'some_test')
+        >>> winreg.DeleteValue(key_handle, 'some_test')
         Traceback (most recent call last):
             ...
         FileNotFoundError: [WinError 2] The system cannot find the file specified
 
         """
-        reg_handle = self._resolve_key(key)
+        if value is None:
+            value = ''
+
+        key_handle = self._resolve_key(key)
         try:
-            del reg_handle.data.values[value]
+            del key_handle.data.values[value]
         except KeyError:
-            raise FileNotFoundError('[WinError 2] The system cannot find the file specified')
+            error = FileNotFoundError('[WinError 2] The system cannot find the file specified')
+            setattr(error, 'winerror', 2)
+            raise error
 
     @check_for_kwargs
     def EnumKey(self, key: Union[PyHKEY, int], index: int) -> str:              # noqa
@@ -413,22 +442,88 @@ class FakeWinReg(object):
         >>> reg_handle = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
 
         >>> # test get the first profile in the profile list
-        >>> reg_handle_profile = winreg.OpenKey(reg_handle, r'SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList')
-        >>> assert isinstance(winreg.EnumKey(reg_handle_profile, 0), str)
+        >>> key_handle = winreg.OpenKey(reg_handle, r'SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList')
+        >>> assert isinstance(winreg.EnumKey(key_handle, 0), str)
 
         >>> # test out of index
-        >>> winreg.EnumKey(reg_handle_profile, 100000000)
+        >>> winreg.EnumKey(key_handle, 100000000)
         Traceback (most recent call last):
             ...
         OSError: [WinError 259] No more data is available
 
         """
-        reg_handle = self._resolve_key(key)
+        key_handle = self._resolve_key(key)
         try:
-            sub_key_str = list(reg_handle.data.subkeys.keys())[index]
+            sub_key_str = list(key_handle.data.subkeys.keys())[index]
             return sub_key_str
         except IndexError:
-            raise OSError('[WinError 259] No more data is available')
+            error = OSError('[WinError 259] No more data is available')
+            setattr(error, 'winerror', 259)
+            raise error
+
+    @check_for_kwargs
+    def EnumValue(self, key: Union[PyHKEY, int], index: int) -> Tuple[str, Union[None, bytes, str, int], int]:              # noqa
+        """
+        Enumerates values of an open registry key, returning a tuple.
+
+        The result is a tuple of 3 items:
+        Index       Meaning
+        0           A string that identifies the value name
+        1           An object that holds the value data, and whose type depends on the underlying registry type
+        2           An integer giving the registry type for this value (see table in docs for SetValueEx())
+
+        key is an already open key, or one of the predefined HKEY_* constants.
+        index is an integer that identifies the index of the value to retrieve.
+        The function retrieves the name of one subkey each time it is called.
+        It is typically called repeatedly, until an OSError exception is raised, indicating no more values.
+        Raises an auditing event winreg.EnumValue with arguments key, index. (NOT IMPLEMENTED)
+
+        type(int)       type name                       Description
+        =========================================================
+        0               REG_NONE	                    No defined value type.
+        1               REG_SZ	                        A null-terminated string.
+        2               REG_EXPAND_SZ	                Null-terminated string containing references to environment variables (%PATH%).
+                                                        (Python handles this termination automatically.)
+        3               REG_BINARY	                    Binary data in any form.
+        4               REG_DWORD	                    A 32-bit number.
+        4               REG_DWORD_LITTLE_ENDIAN	        A 32-bit number in little-endian format.
+        5               REG_DWORD_BIG_ENDIAN	        A 32-bit number in big-endian format.
+        6               REG_LINK	                    A Unicode symbolic link.
+        7               REG_MULTI_SZ	                A sequence of null-terminated strings, terminated by two null characters.
+        8               REG_RESOURCE_LIST	            A device-driver resource list.
+        9               REG_FULL_RESOURCE_DESCRIPTOR    A hardware setting.
+        10              REG_RESOURCE_REQUIREMENTS_LIST  A hardware resource list.
+        11              REG_QWORD                       A 64 - bit number.
+        11              REG_QWORD_LITTLE_ENDIAN         A 64 - bit number in little - endian format.Equivalent to REG_QWORD.
+
+        >>> # Setup
+        >>> f_registry = fake_reg.FakeRegistry()
+        >>> discard = setup_fake_registry.set_minimal_windows_testvalues(f_registry)
+        >>> winreg = FakeWinReg(f_registry)
+        >>> reg_handle = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
+
+        >>> # Read the current Version
+        >>> key_handle = winreg.OpenKey(reg_handle, r'SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion')
+        >>> winreg.EnumValue(key_handle, 0)
+        (...)
+
+        >>> # test out of index
+        >>> winreg.EnumValue(key_handle, 100000000)
+        Traceback (most recent call last):
+            ...
+        OSError: [WinError 259] No more data is available
+
+        """
+        key_handle = self._resolve_key(key)
+        try:
+            value_name = list(key_handle.data.values.keys())[index]
+            value_data = key_handle.data.values[value_name].value
+            value_type = key_handle.data.values[value_name].value_type
+            return value_name, value_data, value_type
+        except IndexError:
+            error = OSError('[WinError 259] No more data is available')
+            setattr(error, 'winerror', 259)
+            raise error
 
     # named arguments are allowed here !
     def OpenKey(self, key: Union[PyHKEY, int], sub_key: Union[str, None], reserved: int = 0, access: int = KEY_READ) -> PyHKEY:         # noqa
@@ -455,15 +550,19 @@ class FakeWinReg(object):
         >>> reg_handle = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
 
         >>> # Open Key
-        >>> reg_key = winreg.OpenKey(reg_handle, r'SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion')
-        >>> assert reg_key.data.full_key == r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion'
+        >>> key_handle = winreg.OpenKey(reg_handle, r'SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion')
+        >>> assert key_handle.data.full_key == r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion'
 
         >>> # Open Key mit subkey=None
-        >>> reg_open1 = winreg.OpenKey(reg_key, None)
+        >>> reg_open1 = winreg.OpenKey(key_handle, None)
 
-        >>> # Open Key mit subkey=None
-        >>> reg_open2 = winreg.OpenKey(reg_key, '')
-        >>> assert reg_open1 == reg_open2
+        >>> # Open Key mit subkey=''
+        >>> reg_open2 = winreg.OpenKey(key_handle, '')
+
+        >>> # Open the same kay again, but we get a different Handle
+        >>> reg_open3 = winreg.OpenKey(key_handle, '')
+
+        >>> assert reg_open2 != reg_open3
 
         >>> # Open non existing Key
         >>> winreg.OpenKey(reg_handle, r'SOFTWARE\\Microsoft\\Windows NT\\DoesNotExist')
@@ -476,14 +575,20 @@ class FakeWinReg(object):
             sub_key = ''
 
         try:
-            reg_handle = self._resolve_key(key)
-            access = reg_handle.access
-            reg_key = fake_reg.get_fake_reg_key(reg_handle.data, sub_key=sub_key)
-            reg_handle = PyHKEY(reg_key, access=access)
-            reg_handle = self.add_handle_to_hash_list_or_return_already_existing_handle(reg_handle)
-            return reg_handle
+            key_handle = self._resolve_key(key)
+            access = key_handle.access
+            reg_key = fake_reg.get_fake_reg_key(key_handle.data, sub_key=sub_key)
+            key_handle = PyHKEY(reg_key, access=access)
+            # no - winreg gives a new handle, even if You open the same key twice
+            # this is, because You can open it once with Read Access,
+            # and a second time with different access rights
+            # reg_handle = self.add_handle_to_hash_list_or_return_already_existing_handle(reg_handle)
+            self.py_hkey_handles[key_handle.data.full_key] = key_handle
+            return key_handle
         except FileNotFoundError:
-            raise FileNotFoundError('[WinError 2] The system cannot find the file specified')
+            error = FileNotFoundError('[WinError 2] The system cannot find the file specified')
+            setattr(error, 'winerror', 2)
+            raise error
 
     # named arguments are allowed here !
     def OpenKeyEx(self, key: Union[PyHKEY, int], sub_key: str, reserved: int = 0, access: int = KEY_READ) -> PyHKEY:        # noqa
@@ -510,8 +615,8 @@ class FakeWinReg(object):
         >>> reg_handle = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
 
         >>> # Open Key
-        >>> reg_key = winreg.OpenKeyEx(reg_handle, r'SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion')
-        >>> assert reg_key.data.full_key == r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion'
+        >>> key_handle = winreg.OpenKeyEx(reg_handle, r'SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion')
+        >>> assert key_handle.data.full_key == r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion'
 
         >>> # Open non existing Key
         >>> winreg.OpenKeyEx(reg_handle, r'SOFTWARE\\Microsoft\\Windows NT\\DoesNotExist')
@@ -542,10 +647,10 @@ class FakeWinReg(object):
         >>> reg_handle = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
 
         >>> # Open Key
-        >>> reg_key = winreg.OpenKeyEx(reg_handle, r'SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion')
+        >>> key_handle = winreg.OpenKeyEx(reg_handle, r'SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion')
 
-        >>> new_reg_key_without_values = winreg.CreateKey(reg_key, 'test_without_values')
-        >>> new_reg_key_with_subkeys_and_values = winreg.CreateKey(reg_key, 'test_with_subkeys_and_values')
+        >>> new_reg_key_without_values = winreg.CreateKey(key_handle, 'test_without_values')
+        >>> new_reg_key_with_subkeys_and_values = winreg.CreateKey(key_handle, 'test_with_subkeys_and_values')
         >>> winreg.SetValueEx(new_reg_key_with_subkeys_and_values, 'test_value_name', 0, FakeWinReg.REG_SZ, 'test_value')
         >>> new_reg_key_with_subkeys_subkey = winreg.CreateKey(new_reg_key_with_subkeys_and_values, 'subkey_of_test_with_subkeys')
 
@@ -556,9 +661,9 @@ class FakeWinReg(object):
         (1, 1, ...)
 
         >>> # Teardown
-        >>> winreg.DeleteKey(reg_key, 'test_without_values')
+        >>> winreg.DeleteKey(key_handle, 'test_without_values')
         >>> winreg.DeleteKey(new_reg_key_with_subkeys_and_values, 'subkey_of_test_with_subkeys')
-        >>> winreg.DeleteKey(reg_key, 'test_with_subkeys_and_values')
+        >>> winreg.DeleteKey(key_handle, 'test_with_subkeys_and_values')
         """
         reg_handle = self._resolve_key(key)
         n_subkeys = len(reg_handle.data.subkeys)
@@ -578,161 +683,256 @@ class FakeWinReg(object):
         This method retrieves the data for a key’s first value that has a NULL name.
         But the underlying API call doesn’t return the type, so always use QueryValueEx() if possible.
 
-        * Remark : this is the Value what is shown in Regedit as "(Standard)" or "(Default)" - it does not have a value name.
-        it is also not received with Enumvalues and can only be string
+        * Remark : this is the Value what is shown in Regedit as "(Standard)" or "(Default)"
+        it is usually not set. Nethertheless, even if the value is not set, QueryValue will deliver ''
 
         >>> # Setup
         >>> f_registry = fake_reg.FakeRegistry()
         >>> discard = setup_fake_registry.set_minimal_windows_testvalues(f_registry)
         >>> winreg = FakeWinReg(f_registry)
         >>> reg_handle = winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_USER)
-        >>> reg_handle_created = winreg.CreateKey(reg_handle, r'SOFTWARE\\xxxx')
+        >>> key_handle_created = winreg.CreateKey(reg_handle, r'SOFTWARE\\lib_registry_test')
 
         >>> # read Default Value, which is ''
-        >>> assert winreg.QueryValue(reg_handle, r'SOFTWARE\\xxxx') == ''
+        >>> assert winreg.QueryValue(reg_handle, r'SOFTWARE\\lib_registry_test') == ''
 
         >>> # sub key can be here None or empty !
-        >>> assert winreg.QueryValue(reg_handle_created, '') == ''
-        >>> assert winreg.QueryValue(reg_handle_created, None) == ''
+        >>> assert winreg.QueryValue(key_handle_created, '') == ''
+        >>> assert winreg.QueryValue(key_handle_created, None) == ''
 
-        >>> winreg.SetValue(reg_handle, r'SOFTWARE\\xxxx', FakeWinReg.REG_SZ, 'test1')
-        >>> winreg.SetValue(reg_handle, r'SOFTWARE\\xxxx', FakeWinReg.REG_SZ, 'test1')
-        >>> assert winreg.QueryValue(reg_handle, r'SOFTWARE\\xxxx') == 'test1'
+        >>> # set and get default value
+        >>> winreg.SetValueEx(key_handle_created, '', 0, FakeWinReg.REG_SZ, 'test1')
+        >>> assert winreg.QueryValueEx(key_handle_created, '') == ('test1', 1)
+        >>> assert winreg.QueryValue(reg_handle, r'SOFTWARE\\lib_registry_test') == 'test1'
 
         >>> # Teardown
-        >>> winreg.DeleteKey(reg_handle, r'SOFTWARE\\xxxx')
+        >>> winreg.DeleteKey(reg_handle, r'SOFTWARE\\lib_registry_test')
 
         """
-        reg_handle = self._resolve_key(key)
-        reg_handle = self.OpenKey(reg_handle, sub_key)
-        default_value = reg_handle.data.default_value
+        key_handle = self._resolve_key(key)
+        key_handle = self.OpenKey(key_handle, sub_key)
+        try:
+            result = key_handle.data.values[''].value
+            if not isinstance(result, str):
+                error = OSError('[WinError 13] The data is invalid')
+                setattr(error, 'winerror', 13)
+                raise error
+            isinstance(result, str)
+            default_value = result
+        except KeyError:
+            default_value = ''
+
         return default_value
 
     @check_for_kwargs
-    def QueryValueEx(self, key: Union[PyHKEY, int], value_name: str) -> Tuple[Union[bytes, str, int], int]:     # noqa
+    def QueryValueEx(self, key: Union[PyHKEY, int], value_name: Optional[str]) -> Tuple[Union[None, bytes, str, int], int]:     # noqa
         """
-        Retrieves the type and data for a specified value name associated with an open registry key.
+        Retrieves data and type for a specified value name associated with an open registry key.
         key is an already open key, or one of the predefined HKEY_* constants.
-        value_name is a string indicating the value to query.
+        value_name is a string indicating the value to query. If Value_name is '' or None,
+        it queries the Default Value of the Key - this will Fail if the Default Value for the Key is not Present.
+        But the Default Value might be set to "None" - then "None" will be returned.
+
         The result is a tuple of 2 items:
         Index       Meaning
         0           The value of the registry item.
         1           An integer giving the registry type for this value (see table in docs for SetValueEx())
         Raises an auditing event winreg.QueryValue with arguments key, sub_key, value_name. (NOT Implemented)
 
+        type(int)       type name                       Description
+        =========================================================
+        0               REG_NONE	                    No defined value type.
+        1               REG_SZ	                        A null-terminated string.
+        2               REG_EXPAND_SZ	                Null-terminated string containing references to environment variables (%PATH%).
+                                                        (Python handles this termination automatically.)
+        3               REG_BINARY	                    Binary data in any form.
+        4               REG_DWORD	                    A 32-bit number.
+        4               REG_DWORD_LITTLE_ENDIAN	        A 32-bit number in little-endian format.
+        5               REG_DWORD_BIG_ENDIAN	        A 32-bit number in big-endian format.
+        6               REG_LINK	                    A Unicode symbolic link.
+        7               REG_MULTI_SZ	                A sequence of null-terminated strings, terminated by two null characters.
+        8               REG_RESOURCE_LIST	            A device-driver resource list.
+        9               REG_FULL_RESOURCE_DESCRIPTOR    A hardware setting.
+        10              REG_RESOURCE_REQUIREMENTS_LIST  A hardware resource list.
+        11              REG_QWORD                       A 64 - bit number.
+        11              REG_QWORD_LITTLE_ENDIAN         A 64 - bit number in little - endian format.Equivalent to REG_QWORD.
+
         >>> # Setup
         >>> f_registry = fake_reg.FakeRegistry()
         >>> discard = setup_fake_registry.set_minimal_windows_testvalues(f_registry)
         >>> winreg = FakeWinReg(f_registry)
         >>> reg_handle = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
+        >>> key_handle = winreg.OpenKey(reg_handle, r'SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion')
 
         >>> # Read the current Version
-        >>> reg_key = winreg.OpenKey(reg_handle, r'SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion')
-        >>> assert winreg.QueryValueEx(reg_key, 'CurrentBuild') == ('18363', FakeWinReg.REG_SZ)
+        >>> winreg.QueryValueEx(key_handle, 'CurrentBuild')
+        ('...', 1)
+
+        >>> # Attempt to read a non Existing Default Value
+        >>> winreg.QueryValueEx(key_handle, '')
+        Traceback (most recent call last):
+            ...
+        FileNotFoundError: [WinError 2] The system cannot find the file specified
+
+        >>> winreg.QueryValueEx(key_handle, None)
+        Traceback (most recent call last):
+            ...
+        FileNotFoundError: [WinError 2] The system cannot find the file specified
+
+        >>> # Set a Default Value
+        >>> winreg.SetValueEx(key_handle, '',0 , winreg.REG_SZ, 'test_default_value')
+        >>> winreg.QueryValueEx(key_handle, '')
+        ('test_default_value', 1)
+
+        >>> # Delete a Default Value
+        >>> winreg.DeleteValue(key_handle, None)
+
         """
 
         try:
-            reg_handle = self._resolve_key(key)
-            value = reg_handle.data.values[value_name].value
-            value_type = reg_handle.data.values[value_name].value_type
+            if value_name is None:
+                value_name = ''
+            key_handle = self._resolve_key(key)
+            value = key_handle.data.values[value_name].value
+            value_type = key_handle.data.values[value_name].value_type
             return value, value_type
         except KeyError:
-            raise FileNotFoundError('[WinError 2] The system cannot find the file specified')
+            error = FileNotFoundError('[WinError 2] The system cannot find the file specified')
+            setattr(error, 'winerror', 2)
+            raise error
 
     @check_for_kwargs
     def SetValue(self, key: Union[PyHKEY, int], sub_key: Union[str, None], type: int, value: str) -> None:      # noqa
         """
-        Associates a value with a specified key. (the Default Value of the Key, usually blank)
+        Associates a value with a specified key. (the Default Value of the Key, usually not set)
         key is an already open key, or one of the predefined HKEY_* constants.
         sub_key is a string that names the subkey with which the value is associated.
         type is an integer that specifies the type of the data. Currently this must be REG_SZ,
         meaning only strings are supported. Use the SetValueEx() function for support for other data types.
         value is a string that specifies the new value.
+
         If the key specified by the sub_key parameter does not exist, the SetValue function creates it.
+
         Value lengths are limited by available memory. Long values (more than 2048 bytes) should be stored
         as files with the filenames stored in the configuration registry. This helps the registry perform efficiently.
         The key identified by the key parameter must have been opened with KEY_SET_VALUE access.    (NOT IMPLEMENTED)
         Raises an auditing event winreg.SetValue with arguments key, sub_key, type, value.          (NOT IMPLEMENTED)
 
-        * Remark : this is the Value what is shown in Regedit as "(Standard)" or "(Default)" - it does not have a value name.
-        it is also not received with Enumvalues and can only be string
+        * Remark : this is the Value what is shown in Regedit as "(Standard)" or "(Default)"
+        it is usually not set. Nethertheless, even if the value is not set, QueryValue will deliver ''
 
+        >>> # Done 4
         >>> # Setup
         >>> f_registry = fake_reg.FakeRegistry()
         >>> discard = setup_fake_registry.set_minimal_windows_testvalues(f_registry)
         >>> winreg = FakeWinReg(f_registry)
         >>> reg_handle = winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_USER)
-        >>> reg_handle_created = winreg.CreateKey(reg_handle, r'SOFTWARE\\xxxx')
+        >>> key_handle = winreg.CreateKey(reg_handle, r'SOFTWARE\\lib_registry_test')
 
         >>> # read Default Value, which is ''
-        >>> assert winreg.QueryValue(reg_handle, r'SOFTWARE\\xxxx') == ''
+        >>> assert winreg.QueryValue(reg_handle, r'SOFTWARE\\lib_registry_test') == ''
 
         >>> # sub key can be ''
-        >>> winreg.SetValue(reg_handle_created, '', FakeWinReg.REG_SZ, 'test1')
-        >>> assert winreg.QueryValue(reg_handle, r'SOFTWARE\\xxxx') == 'test1'
+        >>> winreg.SetValue(key_handle, '', FakeWinReg.REG_SZ, 'test1')
+        >>> assert winreg.QueryValue(reg_handle, r'SOFTWARE\\lib_registry_test') == 'test1'
 
         >>> # sub key can be None
-        >>> winreg.SetValue(reg_handle_created, None, FakeWinReg.REG_SZ, 'test2')
-        >>> assert winreg.QueryValue(reg_handle, r'SOFTWARE\\xxxx') == 'test2'
+        >>> winreg.SetValue(key_handle, None, FakeWinReg.REG_SZ, 'test2')
+        >>> assert winreg.QueryValue(reg_handle, r'SOFTWARE\\lib_registry_test') == 'test2'
 
         >>> # use sub key
         >>> reg_handle_software = winreg.OpenKey(reg_handle, 'SOFTWARE')
-        >>> winreg.SetValue(reg_handle_software, 'xxxx', FakeWinReg.REG_SZ, 'test3')
-        >>> assert winreg.QueryValue(reg_handle, r'SOFTWARE\\xxxx') == 'test3'
+        >>> winreg.SetValue(reg_handle_software, 'lib_registry_test', FakeWinReg.REG_SZ, 'test3')
+        >>> assert winreg.QueryValue(reg_handle, r'SOFTWARE\\lib_registry_test') == 'test3'
 
         >>> # Tear Down
-        >>> winreg.DeleteKey(reg_handle,r'SOFTWARE\\xxxx')
+        >>> winreg.DeleteKey(reg_handle,r'SOFTWARE\\lib_registry_test')
 
         """
         if type != FakeWinReg.REG_SZ:
+            # checked - like winreg
             raise TypeError('type must be winreg.REG_SZ')
 
-        reg_handle = self._resolve_key(key)
-        access = reg_handle.access
+        key_handle = self._resolve_key(key)
+        access = key_handle.access
         try:
-            reg_handle = self.OpenKey(reg_handle, sub_key, 0, access=access)
+            # create the key if not there
+            key_handle = self.OpenKey(key_handle, sub_key, 0, access=access)
         except FileNotFoundError:
-            reg_handle = self.CreateKey(reg_handle, sub_key=sub_key)
-            reg_handle = self.OpenKey(reg_handle, '', 0, access)
-        reg_handle.data.default_value = value
+            key_handle = self.CreateKey(key_handle, sub_key=sub_key)
+        self.SetValueEx(key_handle, '', 0, FakeWinReg.REG_SZ, value)
 
     @check_for_kwargs
-    def SetValueEx(self, key: Union[PyHKEY, int], value_name: str, reserved: int, type: int, value: Union[bytes, str, int]) -> None:    # noqa
+    def SetValueEx(self, key: Union[PyHKEY, int], value_name: Optional[str], reserved: int, type: int, value: Union[None, bytes, str, int]) -> None:    # noqa
         """
         Stores data in the value field of an open registry key.
         key is an already open key, or one of the predefined HKEY_* constants.
+
         value_name is a string that names the subkey with which the value is associated.
+        if value_name is None or '' it will write to the default value of the Key
+
         reserved can be anything – zero is always passed to the API.
-        type is an integer that specifies the type of the data. See Value Types for the available types.
-        value is a string that specifies the new value.
+
+        type is an integer that specifies the type of the data.
+
+        value is a new value.
+
         This method can also set additional value and type information for the specified key.
         The key identified by the key parameter must have been opened with KEY_SET_VALUE access.    (NOT IMPLEMENTED))
+
         To open the key, use the CreateKey() or OpenKey() methods.
+
         Value lengths are limited by available memory. Long values (more than 2048 bytes)
         should be stored as files with the filenames stored in the configuration registry. This helps the registry perform efficiently.
         Raises an auditing event winreg.SetValue with arguments key, sub_key, type, value.          (NOT IMPLEMENTED)
+
+        type(int)       type name                       Description
+        =========================================================
+        0               REG_NONE	                    No defined value type.
+        1               REG_SZ	                        A null-terminated string.
+        2               REG_EXPAND_SZ	                Null-terminated string containing references to environment variables (%PATH%).
+                                                        (Python handles this termination automatically.)
+        3               REG_BINARY	                    Binary data in any form.
+        4               REG_DWORD	                    A 32-bit number.
+        4               REG_DWORD_LITTLE_ENDIAN	        A 32-bit number in little-endian format.
+        5               REG_DWORD_BIG_ENDIAN	        A 32-bit number in big-endian format.
+        6               REG_LINK	                    A Unicode symbolic link.
+        7               REG_MULTI_SZ	                A sequence of null-terminated strings, terminated by two null characters.
+        8               REG_RESOURCE_LIST	            A device-driver resource list.
+        9               REG_FULL_RESOURCE_DESCRIPTOR    A hardware setting.
+        10              REG_RESOURCE_REQUIREMENTS_LIST  A hardware resource list.
+        11              REG_QWORD                       A 64 - bit number.
+        11              REG_QWORD_LITTLE_ENDIAN         A 64 - bit number in little - endian format.Equivalent to REG_QWORD.
+
 
         >>> # Setup
         >>> f_registry = fake_reg.FakeRegistry()
         >>> discard = setup_fake_registry.set_minimal_windows_testvalues(f_registry)
         >>> winreg = FakeWinReg(f_registry)
         >>> reg_handle = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
-        >>> reg_key = winreg.OpenKey(reg_handle, r'SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion')
+        >>> key_handle = winreg.OpenKey(reg_handle, r'SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion')
 
         >>> # Test
-        >>> winreg.SetValueEx(reg_key, 'some_test', 0, winreg.REG_SZ, 'some_test_value')
-        >>> assert winreg.QueryValueEx(reg_key, 'some_test') == ('some_test_value', winreg.REG_SZ)
+        >>> winreg.SetValueEx(key_handle, 'some_test', 0, winreg.REG_SZ, 'some_test_value')
+        >>> assert winreg.QueryValueEx(key_handle, 'some_test') == ('some_test_value', winreg.REG_SZ)
+
+        >>> # Test Overwrite
+        >>> winreg.SetValueEx(key_handle, 'some_test', 0, winreg.REG_SZ, 'some_test_value2')
+        >>> assert winreg.QueryValueEx(key_handle, 'some_test') == ('some_test_value2', winreg.REG_SZ)
 
         >>> # Teardown
-        >>> winreg.DeleteValue(reg_key, 'some_test')
+        >>> winreg.DeleteValue(key_handle, 'some_test')
 
         """
-        reg_handle = self._resolve_key(key)
-        fake_reg.set_fake_reg_value(reg_handle.data, sub_key='', value_name=value_name, value=value, value_type=type)
+        # value name = None is the default Value of the Key
+        if value_name is None:
+            value_name = ''
+        key_handle = self._resolve_key(key)
+        fake_reg.set_fake_reg_value(key_handle.data, sub_key='', value_name=value_name, value=value, value_type=type)
 
     def _resolve_key(self, key: Union[int, PyHKEY]) -> PyHKEY:
         """
-        Returns the full path to the key and the access of the parent key
+        Returns the full path to the key
 
         >>> # Setup
         >>> f_registry = fake_reg.FakeRegistry()

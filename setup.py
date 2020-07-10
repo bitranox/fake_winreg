@@ -6,7 +6,6 @@ see : https://docs.python.org/3.8/distutils/setupscript.html
 import codecs
 import os
 import pathlib
-import platform
 from typing import Any, List, Dict
 
 from setuptools import setup                # type: ignore
@@ -83,7 +82,7 @@ if is_travis_deploy() and is_tagged_commit():
 
 setup_kwargs: Dict[str, Any] = dict()
 setup_kwargs['name'] = 'fake_winreg'
-setup_kwargs['version'] = '0.1.1'
+setup_kwargs['version'] = '0.2.0'
 setup_kwargs['url'] = 'https://github.com/bitranox/fake_winreg'
 setup_kwargs['packages'] = find_packages()
 setup_kwargs['package_data'] = {'fake_winreg': ['py.typed', '*.pyi', '__init__.pyi']}
@@ -97,7 +96,7 @@ setup_kwargs['entry_points'] = {'console_scripts': ['fake_winreg = fake_winreg.f
 # minimally needs to run tests - no project requirements here
 setup_kwargs['tests_require'] = tests_require
 # specify what a project minimally needs to run correctly
-setup_kwargs['install_requires'] = install_requires + ['typing', 'pathlib']
+setup_kwargs['install_requires'] = install_requires
 # minimally needs to run the setup script, dependencies needs also to put here for "setup.py install test"
 # dependencies must not be put here for pip install
 setup_kwargs['setup_requires'] = setup_requires

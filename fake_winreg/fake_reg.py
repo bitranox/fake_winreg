@@ -91,8 +91,6 @@ class FakeRegistryKey(object):
         self.values: Dict[str, FakeRegistryValue] = dict()
         # the time in ns since (Linux)Epoch, of the last modification, some entries dont have timestamp
         self.last_modified_ns: int = 0
-        # the default Value of the Key, which is set with SetValue, GetValue
-        self.default_value: str = ''
 
 
 class FakeRegistryValue(object):
@@ -105,7 +103,7 @@ class FakeRegistryValue(object):
         # the name of the value
         self.value_name: str = ''
         # the value
-        self.value: Union[bytes, str, int] = ''
+        self.value: Union[None, bytes, str, int] = ''
         # the REG_* type of the Value
         self.value_type: int = REG_SZ
         # used in module fake_winreg, Default = KEY_READ
@@ -115,7 +113,7 @@ class FakeRegistryValue(object):
 
 
 def set_fake_reg_key(fake_reg_key: FakeRegistryKey, sub_key: Union[str, None] = None,
-                     last_modified_ns: Union[int, None] = None, default_value: str = '') -> FakeRegistryKey:
+                     last_modified_ns: Union[int, None] = None) -> FakeRegistryKey:
     """
     Creates a registry key if it does not exist already
 
@@ -143,7 +141,6 @@ def set_fake_reg_key(fake_reg_key: FakeRegistryKey, sub_key: Union[str, None] = 
             data.subkeys[key_part].full_key = ('\\'.join(key_parts_full)).strip('\\')
             data.subkeys[key_part].last_modified_ns = last_modified_ns
             data.subkeys[key_part].parent_fake_registry_key = data
-            data.subkeys[key_part].default_value = default_value
         data = data.subkeys[key_part]
 
     return data
@@ -179,7 +176,7 @@ def get_fake_reg_key(fake_reg_key: FakeRegistryKey, sub_key: str) -> FakeRegistr
 
 
 def set_fake_reg_value(fake_reg_key: FakeRegistryKey, sub_key: str,
-                       value_name: str, value: Union[bytes, str, int], value_type: int = REG_SZ,
+                       value_name: str, value: Union[None, bytes, str, int], value_type: int = REG_SZ,
                        last_modified_ns: Union[int, None] = None) -> FakeRegistryValue:
     """
     sets the value of the fake key - we create here keys on the fly, but beware of the last_modified_ns time !

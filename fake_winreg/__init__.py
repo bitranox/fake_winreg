@@ -1,4 +1,3 @@
-from .fake_winreg import PyHKEY
 from .fake_winreg import FakeWinReg
 from .fake_reg import FakeRegistry
 from . import fake_reg

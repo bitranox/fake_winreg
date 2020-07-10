@@ -1,0 +1,66 @@
+import fake_winreg
+from fake_winreg import fake_reg
+from fake_winreg import setup_fake_registry
+import pytest       # type: ignore
+import unittest
+
+f_registry = fake_reg.FakeRegistry()
+setup_fake_registry.set_minimal_windows_testvalues(f_registry)
+winreg = fake_winreg.FakeWinReg(f_registry)
+
+
+@pytest.fixture(scope="function")
+def key_handle_test_read_only():
+    reg_handle = winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_USER)
+    key_handle = winreg.CreateKey(reg_handle, 'Software\\lib_registry_test')
+    key_handle_read_only = winreg.OpenKeyEx(key_handle, '', 0, winreg.KEY_READ)
+    yield key_handle_read_only
+    # teardown code
+    try:
+        winreg.DeleteKey(key_handle, '')
+    # On Windows sometimes this Error occurs, if we try again to delete a key
+    # that is already marked for deletion
+    # OSError: [WinError 1018]
+    except OSError:
+        pass
+    winreg.CloseKey(key_handle)
+
+
+@pytest.fixture(scope="function")
+def key_handle_test_all_access():
+    reg_handle = winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_USER)
+    key_handle = winreg.CreateKey(reg_handle, 'Software\\lib_registry_test')
+    key_handle_read_only = winreg.OpenKeyEx(key_handle, '', 0, winreg.KEY_ALL_ACCESS)
+    yield key_handle_read_only
+    # teardown code
+    try:
+        winreg.DeleteKey(key_handle, '')
+    # On Windows sometimes this Error occurs, if we try again to delete a key
+    # that is already marked for deletion
+    # OSError: [WinError 1018]
+    except OSError:
+        pass
+    winreg.CloseKey(key_handle)
+
+
+def test_write_default_value(key_handle_test_read_only, key_handle_test_all_access):
+    # test write value to key default value with SetValue - value Name ''
+    winreg.SetValue(key_handle_test_all_access, '', winreg.REG_SZ, 'test')
+    assert winreg.EnumValue(key_handle_test_all_access, 0) == ('', 'test', 1)
+    # test write value to key default value with SetValue - value Name None
+    winreg.SetValue(key_handle_test_all_access, None, winreg.REG_SZ, 'test')
+
+    # try if it appears with enum value
+    winreg.EnumValue(key_handle_test_all_access, 0)
+
+    # blank value DOES also appear in enum value
+    winreg.SetValue(key_handle_test_all_access, None, winreg.REG_SZ, '')
+    assert winreg.EnumValue(key_handle_test_all_access, 0) == ('', '', 1)
+
+    # You need to delete the Value to put it back to Original
+    winreg.DeleteValue(key_handle_test_all_access, None)
+    unittest.TestCase().assertRaises(OSError, winreg.EnumValue, key_handle_test_read_only, 0)
+
+
+if __name__ == '__main__':
+    pytest.main()
