@@ -243,6 +243,7 @@ following modules will be automatically installed :
 
     ## Project Requirements
     click
+    wrapt
 
 Acknowledgements
 ----------------

@@ -12,7 +12,8 @@ except (ImportError, ModuleNotFoundError):      # pragma: no cover
 def get_minimal_windows_testregistry(fake_registry: Optional[FakeRegistry] = None) -> FakeRegistry:
     """
     >>> fake_registry = get_minimal_windows_testregistry()
-
+    >>> fake_reg = FakeRegistry()
+    >>> fake_registry2 = get_minimal_windows_testregistry(fake_reg)
     """
     if fake_registry is None:
         fake_registry = FakeRegistry()
@@ -48,6 +49,8 @@ def get_minimal_windows_testregistry(fake_registry: Optional[FakeRegistry] = Non
 def get_minimal_wine_testregistry(_fake_registry: Optional[FakeRegistry] = None) -> FakeRegistry:
     """
     >>> fake_registry = get_minimal_wine_testregistry()
+    >>> fake_reg = FakeRegistry()
+    >>> fake_registry2 = get_minimal_wine_testregistry(fake_reg)
 
     """
     if _fake_registry is None:

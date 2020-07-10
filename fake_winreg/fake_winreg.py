@@ -1,27 +1,16 @@
 # STDLIB
-from typing import Any, Callable, Dict, Optional, Tuple, TypeVar, Union, cast
+from typing import Dict, Optional, Tuple, Union
 
 # OWN
 try:
     from .constants import *
     from . import fake_reg
     from . import fake_reg_tools
-except (ImportError, ModuleNotFoundError):                                      # pragma: no cover
+except (ImportError, ModuleNotFoundError):                           # pragma: no cover
     # imports for doctest
     from constants import *             # type: ignore  # pragma: no cover
     import fake_reg                     # type: ignore  # pragma: no cover
     import fake_reg_tools          # type: ignore  # pragma: no cover
-
-F = TypeVar('F', bound=Callable[..., Any])
-
-
-def __check_for_kwargs(f: F) -> F:
-    def wrapper(*args: Any, **kwargs: Any) -> Any:
-        if kwargs:
-            keys = ', '.join([key for key in kwargs.keys()])
-            raise TypeError("{fn}() got some positional-only arguments passed as keyword arguments: '{keys}'".format(fn=f.__name__, keys=keys))
-        return f(*args, **kwargs)
-    return cast(F, wrapper)
 
 
 class PyHKEY(object):
@@ -42,8 +31,11 @@ class PyHKEY(object):
     Handle objects can be converted to an integer (e.g., using the built-in int() function), in which case the underlying Windows handle value is returned.
     You can also use the Detach() method to return the integer handle, and also disconnect the Windows handle from the handle object.
 
+    >>> p = PyHKEY(fake_reg.FakeRegistryKey())
+    >>> p.Close()
+    >>> assert p.Detach() == 0
+
     """
-    KEY_READ = 131097  # Combines the STANDARD_RIGHTS_READ, KEY_QUERY_VALUE, KEY_ENUMERATE_SUB_KEYS, and KEY_NOTIFY values.
 
     def __init__(self, data: fake_reg.FakeRegistryKey, access: int = KEY_READ):
         self.data = data
@@ -86,8 +78,7 @@ def load_fake_registry(fake_registry: fake_reg.FakeRegistry) -> None:
     __py_hive_handles = dict()
 
 
-@__check_for_kwargs
-def CloseKey(hkey: Union[int, PyHKEY]) -> None:      # noqa
+def CloseKey(hkey: Union[int, PyHKEY], /) -> None:      # noqa
     """
     Closes a previously opened registry key. The hkey argument specifies a previously opened hive key.
 
@@ -112,8 +103,7 @@ def CloseKey(hkey: Union[int, PyHKEY]) -> None:      # noqa
     pass
 
 
-@__check_for_kwargs
-def ConnectRegistry(computer_name: Union[None, str], key: int) -> PyHKEY:     # noqa
+def ConnectRegistry(computer_name: Union[None, str], key: int, /) -> PyHKEY:     # noqa
     """
     Establishes a connection to a predefined registry handle on another computer, and returns a handle object.
     computer_name : the name of the remote computer, of the form r"\\computername". If None, the local computer is used.  (NOT IMPLEMENTED)
@@ -148,10 +138,18 @@ def ConnectRegistry(computer_name: Union[None, str], key: int) -> PyHKEY:     # 
         ...
     TypeError: ConnectRegistry() got some positional-only arguments passed as keyword arguments: 'computer_name, key'
 
+    >>> # Try to connect to computer
+    >>> ConnectRegistry('HAL', HKEY_LOCAL_MACHINE)
+    Traceback (most recent call last):
+        ...
+    FileNotFoundError: System error 53 has occurred. The network path was not found
+
 
     """
     if computer_name:
-        raise FileNotFoundError('System error 53 has occurred. The network path was not found')
+        network_error = FileNotFoundError('System error 53 has occurred. The network path was not found')
+        setattr(network_error, 'winerror', 53)
+        raise network_error
     try:
         fake_reg_handle = __fake_registry.hive[key]
     except KeyError:
@@ -165,8 +163,7 @@ def ConnectRegistry(computer_name: Union[None, str], key: int) -> PyHKEY:     # 
     return hive_handle
 
 
-@__check_for_kwargs
-def CreateKey(key: Union[PyHKEY, int], sub_key: Union[str, None]) -> PyHKEY:      # noqa
+def CreateKey(key: Union[PyHKEY, int], sub_key: Union[str, None], /) -> PyHKEY:      # noqa
     """
     Creates or opens the specified key, returning a handle object.
     key is an already open key, or one of the predefined HKEY_* constants.
@@ -215,8 +212,7 @@ def CreateKey(key: Union[PyHKEY, int], sub_key: Union[str, None]) -> PyHKEY:    
     return key_handle
 
 
-@__check_for_kwargs
-def DeleteKey(key: Union[PyHKEY, int], sub_key: str) -> None:         # noqa
+def DeleteKey(key: Union[PyHKEY, int], sub_key: str, /) -> None:         # noqa
     """
     Deletes the specified key.
     key is an already open key, or one of the predefined HKEY_* constants.
@@ -233,9 +229,10 @@ def DeleteKey(key: Union[PyHKEY, int], sub_key: str) -> None:         # noqa
     >>> key_handle_created = CreateKey(reg_handle, r'SOFTWARE\\xxxx\\yyyy\\zzz')
 
     >>> # Delete key without subkeys
-    >>> assert r'HKEY_CURRENT_USER\\SOFTWARE\\xxxx\\yyyy\\zzz' in __py_hive_handles
+    >>> assert __key_in_py_hive_handles(r'HKEY_CURRENT_USER\\SOFTWARE\\xxxx\\yyyy\\zzz')
+
     >>> DeleteKey(reg_handle, r'SOFTWARE\\xxxx\\yyyy\\zzz')
-    >>> assert r'HKEY_CURRENT_USER\\SOFTWARE\\xxxx\\yyyy\\zzz' not in __py_hive_handles
+    >>> assert not __key_in_py_hive_handles(r'HKEY_CURRENT_USER\\SOFTWARE\\xxxx\\yyyy\\zzz')
 
     >>> # try to delete non existing key (it was deleted before)
     >>> DeleteKey(reg_handle, r'SOFTWARE\\xxxx\\yyyy\\zzz')
@@ -250,7 +247,7 @@ def DeleteKey(key: Union[PyHKEY, int], sub_key: str) -> None:         # noqa
     PermissionError: [WinError 5] Access is denied
 
     >>> # try to delete key with subkey = None
-    >>> DeleteKey(reg_handle, None)          # noqa
+    >>> DeleteKey(reg_handle, None)                     # noqa
     Traceback (most recent call last):
         ...
     TypeError: DeleteKey() argument 2 must be str, not None
@@ -289,8 +286,7 @@ def DeleteKey(key: Union[PyHKEY, int], sub_key: str) -> None:         # noqa
     __py_hive_handles.pop(full_key_path, None)       # delete the handle from the dict, if any
 
 
-@__check_for_kwargs
-def DeleteKeyEx(key: Union[PyHKEY, int], sub_key: str, access: int = KEY_WOW64_64KEY, reserved: int = 0) -> None:     # noqa
+def DeleteKeyEx(key: Union[PyHKEY, int], sub_key: str, access: int = KEY_WOW64_64KEY, reserved: int = 0, /) -> None:     # noqa
     """
     Deletes the specified key.
 
@@ -320,9 +316,9 @@ def DeleteKeyEx(key: Union[PyHKEY, int], sub_key: str, access: int = KEY_WOW64_6
     >>> key_handle_created = CreateKey(reg_handle, r'SOFTWARE\\xxxx\\yyyy\\zzz')
 
     >>> # Delete key without subkeys
-    >>> assert r'HKEY_CURRENT_USER\\SOFTWARE\\xxxx\\yyyy\\zzz' in __py_hive_handles
+    >>> assert __key_in_py_hive_handles(r'HKEY_CURRENT_USER\\SOFTWARE\\xxxx\\yyyy\\zzz')
     >>> DeleteKeyEx(reg_handle, r'SOFTWARE\\xxxx\\yyyy\\zzz')
-    >>> assert r'HKEY_CURRENT_USER\\SOFTWARE\\xxxx\\yyyy\\zzz' not in __py_hive_handles
+    >>> assert not __key_in_py_hive_handles(r'HKEY_CURRENT_USER\\SOFTWARE\\xxxx\\yyyy\\zzz')
 
     >>> # try to delete non existing key (it was deleted before)
     >>> DeleteKeyEx(reg_handle, r'SOFTWARE\\xxxx\\yyyy\\zzz')
@@ -358,8 +354,7 @@ def DeleteKeyEx(key: Union[PyHKEY, int], sub_key: str, access: int = KEY_WOW64_6
     DeleteKey(key, sub_key)
 
 
-@__check_for_kwargs
-def DeleteValue(key: Union[PyHKEY, int], value: Optional[str]) -> None:         # noqa
+def DeleteValue(key: Union[PyHKEY, int], value: Optional[str], /) -> None:         # noqa
     """
     Removes a named value from a registry key.
     key is an already open key, or one of the predefined HKEY_* constants.
@@ -374,6 +369,18 @@ def DeleteValue(key: Union[PyHKEY, int], value: Optional[str]) -> None:         
     >>> reg_handle = ConnectRegistry(None, HKEY_LOCAL_MACHINE)
     >>> key_handle = OpenKey(reg_handle, r'SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion')
     >>> # winreg.SetValueEx(reg_key, 'some_test', 0, winreg.REG_SZ, 'some_test_value')
+
+    >>> # Delete Default Value, value_name NONE (not set, therefore Error
+    >>> DeleteValue(key_handle, None)
+    Traceback (most recent call last):
+        ...
+    FileNotFoundError: [WinError 2] The system cannot find the file specified
+
+    >>> # Delete Default Value, value_name '' (not set, therefore Error
+    >>> DeleteValue(key_handle, '')
+    Traceback (most recent call last):
+        ...
+    FileNotFoundError: [WinError 2] The system cannot find the file specified
 
     >>> # Delete Non Existing Value
     >>> DeleteValue(key_handle, 'some_test')
@@ -394,8 +401,7 @@ def DeleteValue(key: Union[PyHKEY, int], value: Optional[str]) -> None:         
         raise error
 
 
-@__check_for_kwargs
-def EnumKey(key: Union[PyHKEY, int], index: int) -> str:              # noqa
+def EnumKey(key: Union[PyHKEY, int], index: int, /) -> str:              # noqa
     """
     Enumerates subkeys of an open registry key, returning a string.
     key is an already open key, or one of the predefined HKEY_* constants.
@@ -431,8 +437,7 @@ def EnumKey(key: Union[PyHKEY, int], index: int) -> str:              # noqa
         raise error
 
 
-@__check_for_kwargs
-def EnumValue(key: Union[PyHKEY, int], index: int) -> Tuple[str, Union[None, bytes, str, int], int]:              # noqa
+def EnumValue(key: Union[PyHKEY, int], index: int, /) -> Tuple[str, Union[None, bytes, str, int], int]:              # noqa
     """
     Enumerates values of an open registry key, returning a tuple.
 
@@ -598,8 +603,7 @@ def OpenKeyEx(key: Union[PyHKEY, int], sub_key: str, reserved: int = 0, access: 
     return key_handle
 
 
-@__check_for_kwargs
-def QueryInfoKey(key: Union[PyHKEY, int]) -> Tuple[int, int, int]:            # noqa
+def QueryInfoKey(key: Union[PyHKEY, int], /) -> Tuple[int, int, int]:            # noqa
     """
     Returns information about a key, as a tuple.
     key is an already open key, or one of the predefined HKEY_* constants.
@@ -641,8 +645,7 @@ def QueryInfoKey(key: Union[PyHKEY, int]) -> Tuple[int, int, int]:            # 
     return n_subkeys, n_values, last_modified_nanoseconds
 
 
-@__check_for_kwargs
-def QueryValue(key: Union[PyHKEY, int], sub_key: Union[str, None]) -> str:        # noqa
+def QueryValue(key: Union[PyHKEY, int], sub_key: Union[str, None], /) -> str:        # noqa
     """
     Retrieves the unnamed value for a key, as a string.
     key is an already open key, or one of the predefined HKEY_* constants.
@@ -694,8 +697,7 @@ def QueryValue(key: Union[PyHKEY, int], sub_key: Union[str, None]) -> str:      
     return default_value
 
 
-@__check_for_kwargs
-def QueryValueEx(key: Union[PyHKEY, int], value_name: Optional[str]) -> Tuple[Union[None, bytes, str, int], int]:     # noqa
+def QueryValueEx(key: Union[PyHKEY, int], value_name: Optional[str], /) -> Tuple[Union[None, bytes, str, int], int]:     # noqa
     """
     Retrieves data and type for a specified value name associated with an open registry key.
     key is an already open key, or one of the predefined HKEY_* constants.
@@ -771,8 +773,7 @@ def QueryValueEx(key: Union[PyHKEY, int], value_name: Optional[str]) -> Tuple[Un
         raise error
 
 
-@__check_for_kwargs
-def SetValue(key: Union[PyHKEY, int], sub_key: Union[str, None], type: int, value: str) -> None:      # noqa
+def SetValue(key: Union[PyHKEY, int], sub_key: Union[str, None], type: int, value: str, /) -> None:      # noqa
     """
     Associates a value with a specified key. (the Default Value of the Key, usually not set)
     key is an already open key, or one of the predefined HKEY_* constants.
@@ -827,12 +828,11 @@ def SetValue(key: Union[PyHKEY, int], sub_key: Union[str, None], type: int, valu
         # create the key if not there
         key_handle = OpenKey(key_handle, sub_key, 0, access=access)
     except FileNotFoundError:
-        key_handle = CreateKey(key_handle, sub_key=sub_key)
+        key_handle = CreateKey(key_handle, sub_key)
     SetValueEx(key_handle, '', 0, REG_SZ, value)
 
 
-@__check_for_kwargs
-def SetValueEx(key: Union[PyHKEY, int], value_name: Optional[str], reserved: int, type: int, value: Union[None, bytes, str, int]) -> None:    # noqa
+def SetValueEx(key: Union[PyHKEY, int], value_name: Optional[str], reserved: int, type: int, value: Union[None, bytes, str, int], /) -> None:    # noqa
     """
     Stores data in the value field of an open registry key.
     key is an already open key, or one of the predefined HKEY_* constants.
@@ -931,3 +931,11 @@ def __add_key_handle_to_hash_or_return_existing_handle(key_handle: PyHKEY) -> Py
     else:
         __py_hive_handles[key_handle.data.full_key] = key_handle
     return key_handle
+
+
+def __key_in_py_hive_handles(key: str) -> bool:
+    global __py_hive_handles
+    if key in __py_hive_handles:
+        return True
+    else:
+        return False
