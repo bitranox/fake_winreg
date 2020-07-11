@@ -933,6 +933,11 @@ def SetValueEx(key: Union[PyHKEY, int], value_name: Optional[str], reserved: int
     >>> DeleteValue(key_handle, 'some_test')
 
     """
+    # Todo : Raise Errors according to winreg - check types of value against type of REG_*
+    # and make test matrix for it
+    # Example Error from Winreg :
+    # TypeError: Objects of type 'str' can not be used as binary registry values (if try to write string to REG_NONE type)
+
     # value name = None is the default Value of the Key
     if value_name is None:
         value_name = ''
