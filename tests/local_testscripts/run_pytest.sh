@@ -17,7 +17,11 @@ trap cleanup EXIT
 function do_tests {
         banner "Project Root Dir: ${project_root_dir}"
         # pytest options can be passed to run_pytest like --disable-warnings
-        if ! run_pytest --disable-warnings; then
+        # take care that all 3rd party stub files are in one folder and
+        # that folder is in the mypy path
+        # a more loose setting here would be:
+        # if ! run_pytest --disable-warnings --follow-imports=silent; then
+        if ! run_pytest; then
             banner_warning "TESTS FAILED for ${project_root_dir}"
         exit 1
     fi
