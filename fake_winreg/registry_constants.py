@@ -8,20 +8,39 @@ HKEY_PERFORMANCE_DATA: int = 18446744071562067972
 HKEY_USERS: int = 18446744071562067971
 
 # value Types
+REG_NONE: int = 0                   # No defined value type.
+REG_SZ: int = 1                             # A null-terminated string.
+REG_EXPAND_SZ: int = 2              # Null - terminated string containing references to environment variables( % PATH %).
 REG_BINARY: int = 3                 # Binary data in any form.
 REG_DWORD: int = 4                  # 32 - bit number.
 REG_DWORD_LITTLE_ENDIAN: int = 4    # A 32 - bit number in little - endian format.Equivalent to REG_DWORD.
 REG_DWORD_BIG_ENDIAN: int = 5       # A 32 - bit number in big - endian format.
-REG_EXPAND_SZ: int = 2              # Null - terminated string containing references to environment variables( % PATH %).
 REG_LINK: int = 6                   # A Unicode symbolic link.
 REG_MULTI_SZ: int = 7               # A sequence of null - terminated strings, terminated by two null characters. python handles this termination automatically
-REG_NONE: int = 0                   # No defined value type.
-REG_QWORD: int = 11                 # A 64 - bit number.
-REG_QWORD_LITTLE_ENDIAN: int = 11   # A 64 - bit number in little - endian format.Equivalent to REG_QWORD.
 REG_RESOURCE_LIST: int = 8          # A device - driver resource list.
 REG_FULL_RESOURCE_DESCRIPTOR: int = 9       # A hardware setting.
 REG_RESOURCE_REQUIREMENTS_LIST: int = 10    # A hardware resource list.
-REG_SZ: int = 1                             # A null-terminated string.
+REG_QWORD: int = 11                 # A 64 - bit number.
+REG_QWORD_LITTLE_ENDIAN: int = 11   # A 64 - bit number in little - endian format.Equivalent to REG_QWORD.
+
+REG_OPTION_RESERVED: int = 0
+REG_OPTION_NON_VOLATILE: int = 0
+REG_OPTION_VOLATILE: int = 1
+REG_OPTION_CREATE_LINK: int = 2
+REG_OPTION_BACKUP_RESTORE: int = 4
+REG_OPTION_OPEN_LINK: int = 8
+REG_LEGAL_OPTION: int = 31
+REG_CREATED_NEW_KEY: int = 1
+REG_OPENED_EXISTING_KEY: int = 2
+REG_WHOLE_HIVE_VOLATILE: int = 1
+REG_REFRESH_HIVE: int = 2
+REG_NO_LAZY_FLUSH: int = 4
+REG_NOTIFY_CHANGE_ATTRIBUTES: int = 2
+REG_NOTIFY_CHANGE_NAME: int = 1
+REG_NOTIFY_CHANGE_LAST_SET: int = 4
+REG_NOTIFY_CHANGE_SECURITY: int = 8
+REG_LEGAL_CHANGE_FILTER: int = 268435471
+
 # the type of a fake registry key in the csv file
 REG_FAKE_KEY = -1
 

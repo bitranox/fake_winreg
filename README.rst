@@ -272,13 +272,16 @@ Changelog
 
 0.2.0
 -----
-2020-07-10 : feature release
+2020-07-11 : feature release
     - added EnumValue
     - added Close() and Detach() for PyHKEY Class
     - more consistent naming in internal methods
     - added winerror attributes and values in exceptions
     - corrected handling of default key values
     - corrected race condition when deleting keys
+    - corrected decorator to check for names arguments
+    - added stub file for wrapt
+    - added more REG_* Types
 
 0.1.1
 -----
