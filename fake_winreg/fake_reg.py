@@ -8,10 +8,10 @@ is_windows = platform.system().lower() == 'windows'
 
 # PROJ
 try:
-    from .constants import *
+    from .registry_constants import *
 except (ImportError, ModuleNotFoundError):      # pragma: no cover
     # imports for doctest
-    from constants import *                     # type: ignore  # pragma: no cover
+    from registry_constants import *                     # type: ignore  # pragma: no cover
 
 
 class FakeRegistry(object):

@@ -11,6 +11,7 @@ from typing import Any, List, Dict
 from setuptools import setup                # type: ignore
 from setuptools import find_packages
 
+
 def is_travis_deploy() -> bool:
     if 'travis_deploy' in os.environ:
         if os.environ['travis_deploy'] == 'True':

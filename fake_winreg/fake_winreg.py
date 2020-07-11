@@ -1,16 +1,44 @@
 # STDLIB
-from typing import Dict, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Optional, Tuple, TypeVar, Union, cast, List
+
+
+# EXT
+import wrapt
 
 # OWN
 try:
-    from .constants import *
+    from .registry_constants import *
     from . import fake_reg
     from . import fake_reg_tools
 except (ImportError, ModuleNotFoundError):                           # pragma: no cover
     # imports for doctest
-    from constants import *             # type: ignore  # pragma: no cover
+    from registry_constants import *    # type: ignore  # pragma: no cover
     import fake_reg                     # type: ignore  # pragma: no cover
     import fake_reg_tools          # type: ignore  # pragma: no cover
+
+
+F = TypeVar('F', bound=Callable[..., Any])
+
+
+@wrapt.decorator
+def check_for_kwargs_wrapt(wrapped: F, instance: object = None, args: Any = (), kwargs: Any = dict()) -> F:     # noqa
+    if kwargs:                                            # pragma: no cover
+        keys = ', '.join([key for key in kwargs.keys()])  # pragma: no cover
+        raise TypeError("{fn}() got some positional-only arguments passed as keyword arguments: '{keys}'".format(
+            fn=wrapped.__name__, keys=keys))              # pragma: no cover
+    return cast(F, wrapped(*args, **kwargs))
+
+
+@check_for_kwargs_wrapt
+def test(x: int) -> None:
+    """
+    >>> test(x=5)
+    Traceback (most recent call last):
+        ...
+    TypeError: test() got some positional-only arguments passed as keyword arguments: 'x'
+
+    """
+    print(x)
 
 
 class PyHKEY(object):
@@ -78,7 +106,8 @@ def load_fake_registry(fake_registry: fake_reg.FakeRegistry) -> None:
     __py_hive_handles = dict()
 
 
-def CloseKey(hkey: Union[int, PyHKEY], /) -> None:      # noqa
+@check_for_kwargs_wrapt
+def CloseKey(hkey: Union[int, PyHKEY]) -> None:      # noqa
     """
     Closes a previously opened registry key. The hkey argument specifies a previously opened hive key.
 
@@ -103,7 +132,8 @@ def CloseKey(hkey: Union[int, PyHKEY], /) -> None:      # noqa
     pass
 
 
-def ConnectRegistry(computer_name: Union[None, str], key: int, /) -> PyHKEY:     # noqa
+@check_for_kwargs_wrapt
+def ConnectRegistry(computer_name: Union[None, str], key: int) -> PyHKEY:     # noqa
     """
     Establishes a connection to a predefined registry handle on another computer, and returns a handle object.
     computer_name : the name of the remote computer, of the form r"\\computername". If None, the local computer is used.  (NOT IMPLEMENTED)
@@ -163,7 +193,8 @@ def ConnectRegistry(computer_name: Union[None, str], key: int, /) -> PyHKEY:    
     return hive_handle
 
 
-def CreateKey(key: Union[PyHKEY, int], sub_key: Union[str, None], /) -> PyHKEY:      # noqa
+@check_for_kwargs_wrapt
+def CreateKey(key: Union[PyHKEY, int], sub_key: Union[str, None]) -> PyHKEY:      # noqa
     """
     Creates or opens the specified key, returning a handle object.
     key is an already open key, or one of the predefined HKEY_* constants.
@@ -212,7 +243,8 @@ def CreateKey(key: Union[PyHKEY, int], sub_key: Union[str, None], /) -> PyHKEY: 
     return key_handle
 
 
-def DeleteKey(key: Union[PyHKEY, int], sub_key: str, /) -> None:         # noqa
+@check_for_kwargs_wrapt
+def DeleteKey(key: Union[PyHKEY, int], sub_key: str) -> None:         # noqa
     """
     Deletes the specified key.
     key is an already open key, or one of the predefined HKEY_* constants.
@@ -286,7 +318,8 @@ def DeleteKey(key: Union[PyHKEY, int], sub_key: str, /) -> None:         # noqa
     __py_hive_handles.pop(full_key_path, None)       # delete the handle from the dict, if any
 
 
-def DeleteKeyEx(key: Union[PyHKEY, int], sub_key: str, access: int = KEY_WOW64_64KEY, reserved: int = 0, /) -> None:     # noqa
+@check_for_kwargs_wrapt
+def DeleteKeyEx(key: Union[PyHKEY, int], sub_key: str, access: int = KEY_WOW64_64KEY, reserved: int = 0) -> None:     # noqa
     """
     Deletes the specified key.
 
@@ -354,7 +387,8 @@ def DeleteKeyEx(key: Union[PyHKEY, int], sub_key: str, access: int = KEY_WOW64_6
     DeleteKey(key, sub_key)
 
 
-def DeleteValue(key: Union[PyHKEY, int], value: Optional[str], /) -> None:         # noqa
+@check_for_kwargs_wrapt
+def DeleteValue(key: Union[PyHKEY, int], value: Optional[str]) -> None:         # noqa
     """
     Removes a named value from a registry key.
     key is an already open key, or one of the predefined HKEY_* constants.
@@ -401,7 +435,8 @@ def DeleteValue(key: Union[PyHKEY, int], value: Optional[str], /) -> None:      
         raise error
 
 
-def EnumKey(key: Union[PyHKEY, int], index: int, /) -> str:              # noqa
+@check_for_kwargs_wrapt
+def EnumKey(key: Union[PyHKEY, int], index: int) -> str:              # noqa
     """
     Enumerates subkeys of an open registry key, returning a string.
     key is an already open key, or one of the predefined HKEY_* constants.
@@ -437,7 +472,8 @@ def EnumKey(key: Union[PyHKEY, int], index: int, /) -> str:              # noqa
         raise error
 
 
-def EnumValue(key: Union[PyHKEY, int], index: int, /) -> Tuple[str, Union[None, bytes, str, int], int]:              # noqa
+@check_for_kwargs_wrapt
+def EnumValue(key: Union[PyHKEY, int], index: int) -> Tuple[str, Union[None, bytes, str, int], int]:              # noqa
     """
     Enumerates values of an open registry key, returning a tuple.
 
@@ -603,7 +639,8 @@ def OpenKeyEx(key: Union[PyHKEY, int], sub_key: str, reserved: int = 0, access: 
     return key_handle
 
 
-def QueryInfoKey(key: Union[PyHKEY, int], /) -> Tuple[int, int, int]:            # noqa
+@check_for_kwargs_wrapt
+def QueryInfoKey(key: Union[PyHKEY, int]) -> Tuple[int, int, int]:            # noqa
     """
     Returns information about a key, as a tuple.
     key is an already open key, or one of the predefined HKEY_* constants.
@@ -645,7 +682,8 @@ def QueryInfoKey(key: Union[PyHKEY, int], /) -> Tuple[int, int, int]:           
     return n_subkeys, n_values, last_modified_nanoseconds
 
 
-def QueryValue(key: Union[PyHKEY, int], sub_key: Union[str, None], /) -> str:        # noqa
+@check_for_kwargs_wrapt
+def QueryValue(key: Union[PyHKEY, int], sub_key: Union[str, None]) -> str:        # noqa
     """
     Retrieves the unnamed value for a key, as a string.
     key is an already open key, or one of the predefined HKEY_* constants.
@@ -697,7 +735,8 @@ def QueryValue(key: Union[PyHKEY, int], sub_key: Union[str, None], /) -> str:   
     return default_value
 
 
-def QueryValueEx(key: Union[PyHKEY, int], value_name: Optional[str], /) -> Tuple[Union[None, bytes, str, int], int]:     # noqa
+@check_for_kwargs_wrapt
+def QueryValueEx(key: Union[PyHKEY, int], value_name: Optional[str]) -> Tuple[Union[None, bytes, str, int], int]:     # noqa
     """
     Retrieves data and type for a specified value name associated with an open registry key.
     key is an already open key, or one of the predefined HKEY_* constants.
@@ -773,7 +812,8 @@ def QueryValueEx(key: Union[PyHKEY, int], value_name: Optional[str], /) -> Tuple
         raise error
 
 
-def SetValue(key: Union[PyHKEY, int], sub_key: Union[str, None], type: int, value: str, /) -> None:      # noqa
+@check_for_kwargs_wrapt
+def SetValue(key: Union[PyHKEY, int], sub_key: Union[str, None], type: int, value: str) -> None:      # noqa
     """
     Associates a value with a specified key. (the Default Value of the Key, usually not set)
     key is an already open key, or one of the predefined HKEY_* constants.
@@ -832,7 +872,8 @@ def SetValue(key: Union[PyHKEY, int], sub_key: Union[str, None], type: int, valu
     SetValueEx(key_handle, '', 0, REG_SZ, value)
 
 
-def SetValueEx(key: Union[PyHKEY, int], value_name: Optional[str], reserved: int, type: int, value: Union[None, bytes, str, int], /) -> None:    # noqa
+@check_for_kwargs_wrapt
+def SetValueEx(key: Union[PyHKEY, int], value_name: Optional[str], reserved: int, type: int, value: Union[None, bytes, str, int]) -> None:    # noqa
     """
     Stores data in the value field of an open registry key.
     key is an already open key, or one of the predefined HKEY_* constants.
