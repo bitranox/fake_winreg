@@ -17,7 +17,8 @@ except (ImportError, ModuleNotFoundError):      # pragma: no cover
 class FakeRegistry(object):
 
     def __init__(self) -> None:
-        self.hive = dict()
+        # the Key of the hive Dict is int or PyHKEY
+        self.hive: Dict[object, FakeRegistryKey] = dict()
         self.hive[HKEY_CLASSES_ROOT] = set_fake_reg_key(FakeRegistryKey(), 'HKEY_CLASSES_ROOT')
         self.hive[HKEY_CURRENT_CONFIG] = set_fake_reg_key(FakeRegistryKey(), 'HKEY_CURRENT_CONFIG')
         self.hive[HKEY_CURRENT_USER] = set_fake_reg_key(FakeRegistryKey(), 'HKEY_CURRENT_USER')
