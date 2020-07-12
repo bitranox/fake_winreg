@@ -473,7 +473,7 @@ def EnumKey(key: Union[PyHKEY, int], index: int) -> str:              # noqa
 
 
 @check_for_kwargs_wrapt
-def EnumValue(key: Union[PyHKEY, int], index: int) -> Tuple[str, Union[None, bytes, str, int], int]:              # noqa
+def EnumValue(key: Union[PyHKEY, int], index: int) -> Tuple[str, Union[None, bytes, int, str, List[str]], int]:              # noqa
     """
     Enumerates values of an open registry key, returning a tuple.
 
@@ -489,23 +489,26 @@ def EnumValue(key: Union[PyHKEY, int], index: int) -> Tuple[str, Union[None, byt
     It is typically called repeatedly, until an OSError exception is raised, indicating no more values.
     Raises an auditing event winreg.EnumValue with arguments key, index. (NOT IMPLEMENTED)
 
-    type(int)       type name                       Description
-    =========================================================
-    0               REG_NONE	                    No defined value type.
-    1               REG_SZ	                        A null-terminated string.
-    2               REG_EXPAND_SZ	                Null-terminated string containing references to environment variables (%PATH%).
-                                                    (Python handles this termination automatically.)
-    3               REG_BINARY	                    Binary data in any form.
-    4               REG_DWORD	                    A 32-bit number.
-    4               REG_DWORD_LITTLE_ENDIAN	        A 32-bit number in little-endian format.
-    5               REG_DWORD_BIG_ENDIAN	        A 32-bit number in big-endian format.
-    6               REG_LINK	                    A Unicode symbolic link.
-    7               REG_MULTI_SZ	                A sequence of null-terminated strings, terminated by two null characters.
-    8               REG_RESOURCE_LIST	            A device-driver resource list.
-    9               REG_FULL_RESOURCE_DESCRIPTOR    A hardware setting.
-    10              REG_RESOURCE_REQUIREMENTS_LIST  A hardware resource list.
-    11              REG_QWORD                       A 64 - bit number.
-    11              REG_QWORD_LITTLE_ENDIAN         A 64 - bit number in little - endian format.Equivalent to REG_QWORD.
+    type(int)       type name                       accepted python Types           Description
+    ===================================================================================================================================
+    0               REG_NONE	                    None, bytes                     No defined value type.
+    1               REG_SZ	                        None, str                       A null-terminated string.
+    2               REG_EXPAND_SZ	                None, str                       Null-terminated string containing references to
+                                                                                    environment variables (%PATH%).
+                                                                                    (Python handles this termination automatically.)
+    3               REG_BINARY	                    None, bytes                     Binary data in any form.
+    4               REG_DWORD	                    None, int                       A 32-bit number.
+    4               REG_DWORD_LITTLE_ENDIAN	        None, int                       A 32-bit number in little-endian format.
+    5               REG_DWORD_BIG_ENDIAN	        None, bytes                     A 32-bit number in big-endian format.
+    6               REG_LINK	                    None, bytes                     A Unicode symbolic link.
+    7               REG_MULTI_SZ	                None, List[str]                 A sequence of null-terminated strings, terminated by two null characters.
+    8               REG_RESOURCE_LIST	            None, bytes                     A device-driver resource list.
+    9               REG_FULL_RESOURCE_DESCRIPTOR    None, bytes                     A hardware setting.
+    10              REG_RESOURCE_REQUIREMENTS_LIST  None, bytes                     A hardware resource list.
+    11              REG_QWORD                       None, bytes                     A 64 - bit number.
+    11              REG_QWORD_LITTLE_ENDIAN         None, bytes                     A 64 - bit number in little - endian format.Equivalent to REG_QWORD.
+    *               all other integers are accepted and written to the registry and handled as binary
+                    so You would be able to encode data in the REG_TYPE for stealth data not easy to spot - who would expect it.
 
     >>> # Setup
     >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -736,7 +739,7 @@ def QueryValue(key: Union[PyHKEY, int], sub_key: Union[str, None]) -> str:      
 
 
 @check_for_kwargs_wrapt
-def QueryValueEx(key: Union[PyHKEY, int], value_name: Optional[str]) -> Tuple[Union[None, bytes, str, int], int]:     # noqa
+def QueryValueEx(key: Union[PyHKEY, int], value_name: Optional[str]) -> Tuple[Union[None, bytes, int, str, List[str]], int]:     # noqa
     """
     Retrieves data and type for a specified value name associated with an open registry key.
     key is an already open key, or one of the predefined HKEY_* constants.
@@ -750,23 +753,29 @@ def QueryValueEx(key: Union[PyHKEY, int], value_name: Optional[str]) -> Tuple[Un
     1           An integer giving the registry type for this value (see table in docs for SetValueEx())
     Raises an auditing event winreg.QueryValue with arguments key, sub_key, value_name. (NOT Implemented)
 
-    type(int)       type name                       Description
-    =========================================================
-    0               REG_NONE	                    No defined value type.
-    1               REG_SZ	                        A null-terminated string.
-    2               REG_EXPAND_SZ	                Null-terminated string containing references to environment variables (%PATH%).
-                                                    (Python handles this termination automatically.)
-    3               REG_BINARY	                    Binary data in any form.
-    4               REG_DWORD	                    A 32-bit number.
-    4               REG_DWORD_LITTLE_ENDIAN	        A 32-bit number in little-endian format.
-    5               REG_DWORD_BIG_ENDIAN	        A 32-bit number in big-endian format.
-    6               REG_LINK	                    A Unicode symbolic link.
-    7               REG_MULTI_SZ	                A sequence of null-terminated strings, terminated by two null characters.
-    8               REG_RESOURCE_LIST	            A device-driver resource list.
-    9               REG_FULL_RESOURCE_DESCRIPTOR    A hardware setting.
-    10              REG_RESOURCE_REQUIREMENTS_LIST  A hardware resource list.
-    11              REG_QWORD                       A 64 - bit number.
-    11              REG_QWORD_LITTLE_ENDIAN         A 64 - bit number in little - endian format.Equivalent to REG_QWORD.
+    all other REG_* types are accepted and written to the registry and handled as binary
+    so You would be able to encode data in the REG_TYPE for stealth data not easy to spot - who would expect it.
+
+    type(int)       type name                       accepted python Types           Description
+    ===================================================================================================================================
+    0               REG_NONE	                    None, bytes                     No defined value type.
+    1               REG_SZ	                        None, str                       A null-terminated string.
+    2               REG_EXPAND_SZ	                None, str                       Null-terminated string containing references to
+                                                                                    environment variables (%PATH%).
+                                                                                    (Python handles this termination automatically.)
+    3               REG_BINARY	                    None, bytes                     Binary data in any form.
+    4               REG_DWORD	                    None, int                       A 32-bit number.
+    4               REG_DWORD_LITTLE_ENDIAN	        None, int                       A 32-bit number in little-endian format.
+    5               REG_DWORD_BIG_ENDIAN	        None, bytes                     A 32-bit number in big-endian format.
+    6               REG_LINK	                    None, bytes                     A Unicode symbolic link.
+    7               REG_MULTI_SZ	                None, List[str]                 A sequence of null-terminated strings, terminated by two null characters.
+    8               REG_RESOURCE_LIST	            None, bytes                     A device-driver resource list.
+    9               REG_FULL_RESOURCE_DESCRIPTOR    None, bytes                     A hardware setting.
+    10              REG_RESOURCE_REQUIREMENTS_LIST  None, bytes                     A hardware resource list.
+    11              REG_QWORD                       None, bytes                     A 64 - bit number.
+    11              REG_QWORD_LITTLE_ENDIAN         None, bytes                     A 64 - bit number in little - endian format.Equivalent to REG_QWORD.
+    *               all other integers are accepted and written to the registry and handled as binary
+                    so You would be able to encode data in the REG_TYPE for stealth data not easy to spot - who would expect it.
 
     >>> # Setup
     >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -873,7 +882,7 @@ def SetValue(key: Union[PyHKEY, int], sub_key: Union[str, None], type: int, valu
 
 
 @check_for_kwargs_wrapt
-def SetValueEx(key: Union[PyHKEY, int], value_name: Optional[str], reserved: int, type: int, value: Union[None, bytes, str, int]) -> None:    # noqa
+def SetValueEx(key: Union[PyHKEY, int], value_name: Optional[str], reserved: int, type: int, value: Union[None, bytes, int, str, List[str]]) -> None:    # noqa
     """
     Stores data in the value field of an open registry key.
     key is an already open key, or one of the predefined HKEY_* constants.
@@ -896,23 +905,26 @@ def SetValueEx(key: Union[PyHKEY, int], value_name: Optional[str], reserved: int
     should be stored as files with the filenames stored in the configuration registry. This helps the registry perform efficiently.
     Raises an auditing event winreg.SetValue with arguments key, sub_key, type, value.          (NOT IMPLEMENTED)
 
-    type(int)       type name                       Description
-    =========================================================
-    0               REG_NONE	                    No defined value type.
-    1               REG_SZ	                        A null-terminated string.
-    2               REG_EXPAND_SZ	                Null-terminated string containing references to environment variables (%PATH%).
-                                                    (Python handles this termination automatically.)
-    3               REG_BINARY	                    Binary data in any form.
-    4               REG_DWORD	                    A 32-bit number.
-    4               REG_DWORD_LITTLE_ENDIAN	        A 32-bit number in little-endian format.
-    5               REG_DWORD_BIG_ENDIAN	        A 32-bit number in big-endian format.
-    6               REG_LINK	                    A Unicode symbolic link.
-    7               REG_MULTI_SZ	                A sequence of null-terminated strings, terminated by two null characters.
-    8               REG_RESOURCE_LIST	            A device-driver resource list.
-    9               REG_FULL_RESOURCE_DESCRIPTOR    A hardware setting.
-    10              REG_RESOURCE_REQUIREMENTS_LIST  A hardware resource list.
-    11              REG_QWORD                       A 64 - bit number.
-    11              REG_QWORD_LITTLE_ENDIAN         A 64 - bit number in little - endian format.Equivalent to REG_QWORD.
+    type(int)       type name                       accepted python Types           Description
+    ===================================================================================================================================
+    0               REG_NONE	                    None, bytes                     No defined value type.
+    1               REG_SZ	                        None, str                       A null-terminated string.
+    2               REG_EXPAND_SZ	                None, str                       Null-terminated string containing references to
+                                                                                    environment variables (%PATH%).
+                                                                                    (Python handles this termination automatically.)
+    3               REG_BINARY	                    None, bytes                     Binary data in any form.
+    4               REG_DWORD	                    None, int                       A 32-bit number.
+    4               REG_DWORD_LITTLE_ENDIAN	        None, int                       A 32-bit number in little-endian format.
+    5               REG_DWORD_BIG_ENDIAN	        None, bytes                     A 32-bit number in big-endian format.
+    6               REG_LINK	                    None, bytes                     A Unicode symbolic link.
+    7               REG_MULTI_SZ	                None, List[str]                 A sequence of null-terminated strings, terminated by two null characters.
+    8               REG_RESOURCE_LIST	            None, bytes                     A device-driver resource list.
+    9               REG_FULL_RESOURCE_DESCRIPTOR    None, bytes                     A hardware setting.
+    10              REG_RESOURCE_REQUIREMENTS_LIST  None, bytes                     A hardware resource list.
+    11              REG_QWORD                       None, bytes                     A 64 - bit number.
+    11              REG_QWORD_LITTLE_ENDIAN         None, bytes                     A 64 - bit number in little - endian format.Equivalent to REG_QWORD.
+    *               all other integers are accepted and written to the registry and handled as binary
+                    so You would be able to encode data in the REG_TYPE for stealth data not easy to spot - who would expect it.
 
 
     >>> # Setup
@@ -933,14 +945,10 @@ def SetValueEx(key: Union[PyHKEY, int], value_name: Optional[str], reserved: int
     >>> DeleteValue(key_handle, 'some_test')
 
     """
-    # Todo : Raise Errors according to winreg - check types of value against type of REG_*
-    # and make test matrix for it
-    # Example Error from Winreg :
-    # TypeError: Objects of type 'str' can not be used as binary registry values (if try to write string to REG_NONE type)
-
     # value name = None is the default Value of the Key
     if value_name is None:
         value_name = ''
+    fake_reg_tools.__check_value_type_matches_type(value, type)
     key_handle = __resolve_key(key)
     fake_reg.set_fake_reg_value(key_handle.data, sub_key='', value_name=value_name, value=value, value_type=type)
 
@@ -972,6 +980,7 @@ def __resolve_key(key: Union[int, PyHKEY]) -> PyHKEY:
 
 
 def __add_key_handle_to_hash_or_return_existing_handle(key_handle: PyHKEY) -> PyHKEY:
+    global __py_hive_handles
     if key_handle.data.full_key in __py_hive_handles:
         key_handle = __py_hive_handles[key_handle.data.full_key]
     else:

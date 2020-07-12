@@ -1,5 +1,5 @@
 # STDLIB
-from typing import Optional
+from typing import Any, List
 
 # PROJ
 try:
@@ -74,3 +74,39 @@ def get_minimal_wine_testregistry(_fake_registry: Optional[FakeRegistry] = None)
     set_fake_reg_value(_fake_registry.hive[HKEY_USERS], r'S-1-5-21-0-0-0-1000\Volatile Environment', 'USERNAME', 'bitranox', REG_SZ)
 
     return _fake_registry
+
+
+def __is_list_of_str(list_of_str: List[Any]) -> bool:
+    for element in list_of_str:
+        if not isinstance(element, str):
+            return False
+    return True
+
+
+def __check_value_type_matches_type(value: Union[None, bytes, int, str, List[str]], reg_type: int) -> None:
+    type_error_reg_binary = "Objects of type '{data_type}' can not be used as binary registry values"
+    type_error_reg_non_binary = "Could not convert the data to the specified type."
+    data_type = type(value).__name__
+
+    if reg_type == REG_SZ or reg_type == REG_EXPAND_SZ:
+        valid_types = ['NoneType', 'str']
+        if data_type not in valid_types:
+            raise ValueError(type_error_reg_non_binary)
+
+    elif reg_type == REG_DWORD or reg_type == REG_QWORD:
+        valid_types = ['NoneType', 'int']
+        if data_type not in valid_types:
+            raise ValueError(type_error_reg_non_binary)
+
+    elif reg_type == REG_MULTI_SZ:
+        valid_types = ['NoneType', 'list']
+        if data_type not in valid_types:
+            raise ValueError(type_error_reg_non_binary)
+        if isinstance(value, list) and not __is_list_of_str(value):
+            raise ValueError(type_error_reg_non_binary)
+    else:
+        # all other REG_* types are accepted and written to the registry and handled as binary - UNUSUAL !!!
+        # so You would be able to encode data in the REG_TYPE for stealth data not easy to spot - who would expect it.
+        valid_types = ['NoneType', 'bytes']
+        if data_type not in valid_types:
+            raise TypeError(type_error_reg_binary.format(data_type=data_type))
