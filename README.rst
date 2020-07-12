@@ -230,7 +230,7 @@ ConnectRegistry
 
 .. code-block:: python
 
-    def ConnectRegistry(computer_name: Union[None, str], key: Union[PyHKEY, int]) -> PyHKEY:     # noqa
+    def ConnectRegistry(computer_name: Union[None, str], key: Union[int, HKEYType, PyHKEY]) -> PyHKEY:     # noqa
         """
         Establishes a connection to a predefined registry handle on another computer, and returns a handle object.
         the function does NOT accept named parameters, only positional parameters
@@ -264,7 +264,7 @@ CloseKey
 
 .. code-block:: python
 
-    def CloseKey(hkey: Union[int, PyHKEY]) -> None:      # noqa
+    def CloseKey(hkey: Union[int, HKEYType]) -> None:      # noqa
         """
         Closes a previously opened registry key.
 
@@ -287,7 +287,7 @@ CreateKey
 
 .. code-block:: python
 
-    def CreateKey(key: Union[PyHKEY, int], sub_key: Union[str, None]) -> PyHKEY:      # noqa
+    def CreateKey(key: Union[int, HKEYType, PyHKEY], sub_key: Union[str, None]) -> PyHKEY:      # noqa
         """
         Creates or opens the specified key, returning a handle object.
         The sub_key can contain a directory structure like r'Software\\xxx\\yyy' - all the parents to yyy will be created
@@ -328,7 +328,7 @@ DeleteKey
 
 .. code-block:: python
 
-    def DeleteKey(key: Union[PyHKEY, int], sub_key: str) -> None:         # noqa
+    def DeleteKey(key: Union[int, HKEYType, PyHKEY], sub_key: str) -> None:         # noqa
         """
         Deletes the specified key. This method can not delete keys with subkeys.
         If the method succeeds, the entire key, including all of its values, is removed.
@@ -366,7 +366,7 @@ DeleteKeyEx
 
 .. code-block:: python
 
-    def DeleteKeyEx(key: Union[PyHKEY, int], sub_key: str, access: int = KEY_WOW64_64KEY, reserved: int = 0) -> None:     # noqa
+    def DeleteKeyEx(key: Union[int, HKEYType, PyHKEY], sub_key: str, access: int = KEY_WOW64_64KEY, reserved: int = 0) -> None:     # noqa
         """
         Deletes the specified key. This method can not delete keys with subkeys.
         If the method succeeds, the entire key, including all of its values, is removed.
@@ -429,7 +429,7 @@ DeleteValue
 
 .. code-block:: python
 
-    def DeleteValue(key: Union[PyHKEY, int], value: Optional[str]) -> None:         # noqa
+    def DeleteValue(key: Union[int, HKEYType, PyHKEY], value: Optional[str]) -> None:         # noqa
         """
         Removes a named value from a registry key.
         the function does NOT accept named parameters, only positional parameters
@@ -462,7 +462,7 @@ EnumKey
 
 .. code-block:: python
 
-    def EnumKey(key: Union[PyHKEY, int], index: int) -> str:              # noqa
+    def EnumKey(key: Union[int, HKEYType, PyHKEY], index: int) -> str:              # noqa
         """
         Enumerates subkeys of an open registry key, returning a string.
         The function retrieves the name of one subkey each time it is called.
@@ -501,7 +501,7 @@ EnumValue
 
 .. code-block:: python
 
-    def EnumValue(key: Union[PyHKEY, int], index: int) -> Tuple[str, Union[None, bytes, int, str, List[str]], int]:              # noqa
+    def EnumValue(key: Union[int, HKEYType, PyHKEY], index: int) -> Tuple[str, Union[None, bytes, int, str, List[str]], int]:              # noqa
         """
         Enumerates values of an open registry key, returning a tuple.
         The function retrieves the name of one value each time it is called.
@@ -571,7 +571,7 @@ OpenKey
 
 .. code-block:: python
 
-    def OpenKey(key: Union[PyHKEY, int], sub_key: Union[str, None], reserved: int = 0, access: int = KEY_READ) -> PyHKEY:         # noqa
+    def OpenKey(key: Union[int, HKEYType, PyHKEY], sub_key: Union[str, None], reserved: int = 0, access: int = KEY_READ) -> PyHKEY:         # noqa
         """
         Opens the specified key, the result is a new handle to the specified key.
         one of the few functions of winreg that accepts named parameters
@@ -630,7 +630,7 @@ OpenKeyEx
 
 .. code-block:: python
 
-    def OpenKeyEx(key: Union[PyHKEY, int], sub_key: Optional[str], reserved: int = 0, access: int = KEY_READ) -> PyHKEY:        # noqa
+    def OpenKeyEx(key: Union[int, HKEYType, PyHKEY], sub_key: Optional[str], reserved: int = 0, access: int = KEY_READ) -> PyHKEY:        # noqa
         """
         Opens the specified key, the result is a new handle to the specified key.
         one of the few functions of winreg that accepts named parameters
@@ -688,7 +688,7 @@ QueryInfoKey
 
 .. code-block:: python
 
-    def QueryInfoKey(key: Union[PyHKEY, int]) -> Tuple[int, int, int]:            # noqa
+    def QueryInfoKey(key: Union[int, HKEYType, PyHKEY]) -> Tuple[int, int, int]:            # noqa
         """
         Returns information about a key, as a tuple.
         the function does NOT accept named parameters, only positional parameters
@@ -726,7 +726,7 @@ QueryValue
 
 .. code-block:: python
 
-    def QueryValue(key: Union[PyHKEY, int], sub_key: Union[str, None]) -> str:        # noqa
+    def QueryValue(key: Union[int, HKEYType, PyHKEY], sub_key: Union[str, None]) -> str:        # noqa
         """
         Retrieves the unnamed value (the default value*) for a key, as string.
 
@@ -774,7 +774,7 @@ QueryValueEx
 
 .. code-block:: python
 
-    def QueryValueEx(key: Union[PyHKEY, int], value_name: Optional[str]) -> Tuple[Union[None, bytes, int, str, List[str]], int]:     # noqa
+    def QueryValueEx(key: Union[int, HKEYType, PyHKEY], value_name: Optional[str]) -> Tuple[Union[None, bytes, int, str, List[str]], int]:     # noqa
         """
         Retrieves data and type for a specified value name associated with an open registry key.
 
@@ -848,7 +848,7 @@ SetValue
 
 .. code-block:: python
 
-    def SetValue(key: Union[PyHKEY, int], sub_key: Union[str, None], type: int, value: str) -> None:      # noqa
+    def SetValue(key: Union[int, HKEYType, PyHKEY], sub_key: Union[str, None], type: int, value: str) -> None:      # noqa
         """
         Associates a value with a specified key. (the Default Value* of the Key, usually not set)
 
@@ -905,7 +905,7 @@ SetValueEx
 
 .. code-block:: python
 
-    def SetValueEx(key: Union[PyHKEY, int], value_name: Optional[str], reserved: int, type: int, value: Union[None, bytes, int, str, List[str]]) -> None:    # noqa
+    def SetValueEx(key: Union[int, HKEYType, PyHKEY], value_name: Optional[str], reserved: int, type: int, value: Union[None, bytes, int, str, List[str]]) -> None:    # noqa
         """
         Stores data in the value field of an open registry key.
 
@@ -1032,6 +1032,11 @@ Changelog
 - new MAJOR version for incompatible API changes,
 - new MINOR version for added functionality in a backwards compatible manner
 - new PATCH version for backwards compatible bug fixes
+
+0.3.1
+-----
+2020-07-12 : patch release
+    - corrected types
 
 0.3.0
 -----
