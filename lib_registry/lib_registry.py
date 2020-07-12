@@ -732,6 +732,8 @@ class Registry(object):
         ...             break
         ...         except RegistryKeyNotFoundError:
         ...             pass
+        ... else:
+        ...   print("'pass'")
         '...'
 
         """
