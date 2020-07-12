@@ -119,6 +119,10 @@ class RegistryValueNotFoundError(RegistryValueError):
     pass
 
 
+class RegistryValueDeleteError(RegistryValueError):
+    pass
+
+
 class RegistryValueWriteError(RegistryValueError):
     pass
 
@@ -136,15 +140,15 @@ class Registry(object):
         # this holds all connections to the hives stated on init
         # or even later. We dont limit access to the selected hive,
         # but we connect to another hive if needed
-        self.reg_hive_connections: Dict[int, winreg.PyHKEY] = dict()
+        self.reg_hive_connections: Dict[int, winreg.HKEYType] = dict()
         self.computer_name = computer_name
         # if the computer is set already once by _connect -
         # we can not connect to different computers in the same with clause
         self._is_computer_name_set = False
 
         # we save and reuse the connections
-        # dict[(hive, subkey, access)] = winreg.PyHKEY
-        self.reg_key_handles: Dict[Tuple[int, str, int], winreg.PyHKEY] = dict()
+        # dict[(hive, subkey, access)] = winreg.HKEYType
+        self.reg_key_handles: Dict[Tuple[int, str, int], winreg.HKEYType] = dict()
 
         if key is not None:
             self._reg_connect(key=key, computer_name=computer_name)
@@ -158,7 +162,7 @@ class Registry(object):
     def __exit__(self, exc_type: Optional[Type[BaseException]], exc_val: Optional[BaseException], exc_tb: Optional[TracebackType]) -> None:
         print('close connections !!!')
 
-    def _reg_connect(self, key: Union[str, int], computer_name: Optional[str] = None) -> winreg.PyHKEY:
+    def _reg_connect(self, key: Union[str, int], computer_name: Optional[str] = None) -> winreg.HKEYType:
         """
         Establishes a connection to a predefined registry handle on another computer, and returns a handle object.
         The user should not need to use this method - hives are opened, reused and closed automatically
@@ -251,7 +255,7 @@ class Registry(object):
         except OSError:
             raise RegistryHKeyError('invalid KEY: "{}"'.format(key))
 
-    def _open_key(self, key: Union[str, int], sub_key: str = '', access: int = winreg.KEY_READ) -> winreg.PyHKEY:
+    def _open_key(self, key: Union[str, int], sub_key: str = '', access: int = winreg.KEY_READ) -> winreg.HKEYType:
         """
         Opens a registry key and returns a reg_handle to it.
         Openend Keys with the Access Rights are stored in a Hash Table and Reused if possible.
@@ -310,7 +314,7 @@ class Registry(object):
         except RegistryKeyNotFoundError:
             return False
 
-    def create_key(self, key: Union[str, int], sub_key: str = '', exist_ok: bool = True, parents: bool = False) -> winreg.PyHKEY:
+    def create_key(self, key: Union[str, int], sub_key: str = '', exist_ok: bool = True, parents: bool = False) -> winreg.HKEYType:
         """
         Creates a Key, and returns a Handle to the new key
 
@@ -885,10 +889,87 @@ class Registry(object):
         key_handle = self._open_key(key)
         try:
             winreg.SetValueEx(key_handle, value_name, 0, value_type, value)
-        except Exception:
+        except Exception:       # ToDo: narrow down
+            # different Errors can occur here :
+            # TypeError: Objects of type 'str' can not be used as binary registry values (if try to write string to REG_NONE type)
+            # others to explore ...
             key_str = get_key_as_string(key)
             value_type_str = get_value_type_as_string(value_type)
             raise RegistryValueWriteError('can not write data to key "{}", value_name "{}", value_type "{}"'.format(key_str, value_name, value_type_str))
+
+    def delete_value(self, key: Union[str, int], value_name: Optional[str]) -> None:
+        """
+        Stores data in the value field of an open registry key.
+        key is a key by string, or one of the predefined HKEY_* constants.
+
+        value_name is a string that names the subkey with which the value is associated.
+        if value_name is None or '' it will write to the default value of the Key
+
+        * Remark : this is the Value what is shown in Regedit as "(Standard)" or "(Default)" - it is usually not set.
+        Nethertheless, even if the Default Value is not set, winreg.QueryValue will deliver ''
+
+        value_type is an integer that specifies the type of the data.
+        if value_type is not given, it will be set automatically to an appropriate winreg.REG_TYPE:
+
+        value type          REG_TYPE    REG_TYPE(integer)
+        =============================================
+        str                 REG_SZ          1
+        bytes               REG_BINARY      3
+        int                 REG_DWORD       4
+        None                REG_NONE        0
+        everything else     REG_BINARY      3
+
+        value is the new value.
+
+        Value lengths are limited by available memory. Long values (more than 2048 bytes)
+        should be stored as files with the filenames stored in the configuration registry. This helps the registry perform efficiently.
+        Raises an auditing event winreg.SetValue with arguments key, sub_key, type, value.
+
+        valuetype(int)  value type name             Description
+        =========================================================
+        You can get the value type name with the function get_value_type_as_string
+        0               REG_NONE	                    No defined value type.
+        1               REG_SZ	                        A null-terminated string.
+        2               REG_EXPAND_SZ	                Null-terminated string containing references to environment variables (%PATH%).
+                                                        (Python handles this termination automatically.)
+        3               REG_BINARY	                    Binary data in any form.
+        4               REG_DWORD	                    A 32-bit number.
+        4               REG_DWORD_LITTLE_ENDIAN	        A 32-bit number in little-endian format.
+        5               REG_DWORD_BIG_ENDIAN	        A 32-bit number in big-endian format.
+        6               REG_LINK	                    A Unicode symbolic link.
+        7               REG_MULTI_SZ	                A sequence of null-terminated strings, terminated by two null characters.
+        8               REG_RESOURCE_LIST	            A device-driver resource list.
+        9               REG_FULL_RESOURCE_DESCRIPTOR    A hardware setting.
+        10              REG_RESOURCE_REQUIREMENTS_LIST  A hardware resource list.
+        11              REG_QWORD                       A 64 - bit number.
+        11              REG_QWORD_LITTLE_ENDIAN         A 64 - bit number in little - endian format.Equivalent to REG_QWORD.
+
+
+        >>> # Setup
+        >>> registry = Registry()
+        >>> registry.create_key(r'HKCU\\Software\\lib_registry_test', parents=True)
+        <...PyHKEY object at ...>
+
+        >>> registry.set_value(key=r'HKCU\\Software\\lib_registry_test', value_name='test_name', value='test_string', value_type=winreg.REG_SZ)
+        >>> assert registry.get_value_ex(key=r'HKCU\\Software\\lib_registry_test', value_name='test_name') == ('test_string', 1)
+
+        >>> # Teardown
+        >>> registry.delete_key(r'HKCU\\Software\\lib_registry_test', missing_ok=True, delete_subkeys=True)
+
+        """
+
+        if value_name is None:
+            value_name = ''
+
+        key_handle = self._open_key(key)
+        try:
+            winreg.DeleteValue(key_handle, value_name)
+        except FileNotFoundError as e:
+            if hasattr(e, 'winerror') and e.winerror == 2:  # type: ignore
+                key_str = get_key_as_string(key)
+                raise RegistryValueDeleteError('can not delete value "{}" from key "{}"'.format(value_name, key_str))
+            else:
+                raise e
 
 
 def get_value_type_as_string(value_type: int) -> str:
