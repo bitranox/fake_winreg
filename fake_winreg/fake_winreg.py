@@ -30,33 +30,6 @@ def check_for_kwargs_wrapt(wrapped: F, instance: object = None, args: Any = (), 
 
 
 class HKEYType(object):
-    pass
-
-
-class PyHKEY(HKEYType):
-    """
-    Registry Handle Objects
-    This object wraps a Windows HKEY object, automatically closing it when the object is destroyed.
-    To guarantee cleanup, you can call either the Close() method on the object, or the CloseKey() function.
-    All registry functions in this module return one of these objects.
-
-    # Not implemented features of the Original Object - its not hard, but I did not need it ATM:
-    All registry functions in this module which accept a handle object also accept an integer, however, use of the handle object is encouraged.
-    Handle objects provide semantics for __bool__() – thus
-    if handle:
-        print("Yes")
-    will print Yes if the handle is currently valid (has not been closed or detached).
-
-    The object also support comparison semantics, so handle objects will compare true if they both reference the same underlying Windows handle value.
-    Handle objects can be converted to an integer (e.g., using the built-in int() function), in which case the underlying Windows handle value is returned.
-    You can also use the Detach() method to return the integer handle, and also disconnect the Windows handle from the handle object.
-
-    >>> p = PyHKEY(fake_reg.FakeRegistryKey())
-    >>> p.Close()
-    >>> assert p.Detach() == 0
-
-    """
-
     def __init__(self, data: fake_reg.FakeRegistryKey, access: int = KEY_READ):
         self.data = data
         self.access = access
@@ -84,6 +57,34 @@ class PyHKEY(HKEYType):
         return 0
 
 
+class PyHKEY(HKEYType):
+    """
+    Registry Handle Objects
+    This object wraps a Windows HKEY object, automatically closing it when the object is destroyed.
+    To guarantee cleanup, you can call either the Close() method on the object, or the CloseKey() function.
+    All registry functions in this module return one of these objects.
+
+    # Not implemented features of the Original Object - its not hard, but I did not need it ATM:
+    All registry functions in this module which accept a handle object also accept an integer, however, use of the handle object is encouraged.
+    Handle objects provide semantics for __bool__() – thus
+    if handle:
+        print("Yes")
+    will print Yes if the handle is currently valid (has not been closed or detached).
+
+    The object also support comparison semantics, so handle objects will compare true if they both reference the same underlying Windows handle value.
+    Handle objects can be converted to an integer (e.g., using the built-in int() function), in which case the underlying Windows handle value is returned.
+    You can also use the Detach() method to return the integer handle, and also disconnect the Windows handle from the handle object.
+
+    >>> p = PyHKEY(fake_reg.FakeRegistryKey())
+    >>> p.Close()
+    >>> assert p.Detach() == 0
+
+    """
+
+    def __init__(self, data: fake_reg.FakeRegistryKey, access: int = KEY_READ):
+        super().__init__(data, access)
+
+
 __fake_registry = fake_reg.FakeRegistry()
 # the list of the open handles - hashed by full_key_path
 __py_hive_handles: Dict[str, PyHKEY] = dict()
@@ -98,7 +99,7 @@ def load_fake_registry(fake_registry: fake_reg.FakeRegistry) -> None:
 
 @check_for_kwargs_wrapt
 # CloseKey{{{
-def CloseKey(hkey: Union[int, PyHKEY]) -> None:      # noqa
+def CloseKey(hkey: Union[int, HKEYType]) -> None:      # noqa
     """
     Closes a previously opened registry key.
 
@@ -143,7 +144,7 @@ def CloseKey(hkey: Union[int, PyHKEY]) -> None:      # noqa
 
 @check_for_kwargs_wrapt
 # ConnectRegistry{{{
-def ConnectRegistry(computer_name: Union[None, str], key: Union[PyHKEY, int]) -> PyHKEY:     # noqa
+def ConnectRegistry(computer_name: Union[None, str], key: Union[int, HKEYType, PyHKEY]) -> PyHKEY:     # noqa
     """
     Establishes a connection to a predefined registry handle on another computer, and returns a handle object.
     the function does NOT accept named parameters, only positional parameters
@@ -237,7 +238,7 @@ def ConnectRegistry(computer_name: Union[None, str], key: Union[PyHKEY, int]) ->
 
 @check_for_kwargs_wrapt
 # CreateKey{{{
-def CreateKey(key: Union[PyHKEY, int], sub_key: Union[str, None]) -> PyHKEY:      # noqa
+def CreateKey(key: Union[int, HKEYType, PyHKEY], sub_key: Union[str, None]) -> PyHKEY:      # noqa
     """
     Creates or opens the specified key, returning a handle object.
     The sub_key can contain a directory structure like r'Software\\xxx\\yyy' - all the parents to yyy will be created
@@ -349,7 +350,7 @@ def CreateKey(key: Union[PyHKEY, int], sub_key: Union[str, None]) -> PyHKEY:    
 
 @check_for_kwargs_wrapt
 # DeleteKey{{{
-def DeleteKey(key: Union[PyHKEY, int], sub_key: str) -> None:         # noqa
+def DeleteKey(key: Union[int, HKEYType, PyHKEY], sub_key: str) -> None:         # noqa
     """
     Deletes the specified key. This method can not delete keys with subkeys.
     If the method succeeds, the entire key, including all of its values, is removed.
@@ -452,7 +453,7 @@ def DeleteKey(key: Union[PyHKEY, int], sub_key: str) -> None:         # noqa
 
 @check_for_kwargs_wrapt
 # DeleteKeyEx{{{
-def DeleteKeyEx(key: Union[PyHKEY, int], sub_key: str, access: int = KEY_WOW64_64KEY, reserved: int = 0) -> None:     # noqa
+def DeleteKeyEx(key: Union[int, HKEYType, PyHKEY], sub_key: str, access: int = KEY_WOW64_64KEY, reserved: int = 0) -> None:     # noqa
     """
     Deletes the specified key. This method can not delete keys with subkeys.
     If the method succeeds, the entire key, including all of its values, is removed.
@@ -564,7 +565,7 @@ def DeleteKeyEx(key: Union[PyHKEY, int], sub_key: str, access: int = KEY_WOW64_6
 
 @check_for_kwargs_wrapt
 # DeleteValue{{{
-def DeleteValue(key: Union[PyHKEY, int], value: Optional[str]) -> None:         # noqa
+def DeleteValue(key: Union[int, HKEYType, PyHKEY], value: Optional[str]) -> None:         # noqa
     """
     Removes a named value from a registry key.
     the function does NOT accept named parameters, only positional parameters
@@ -639,7 +640,7 @@ def DeleteValue(key: Union[PyHKEY, int], value: Optional[str]) -> None:         
 
 @check_for_kwargs_wrapt
 # EnumKey{{{
-def EnumKey(key: Union[PyHKEY, int], index: int) -> str:              # noqa
+def EnumKey(key: Union[int, HKEYType, PyHKEY], index: int) -> str:              # noqa
     """
     Enumerates subkeys of an open registry key, returning a string.
     The function retrieves the name of one subkey each time it is called.
@@ -718,7 +719,7 @@ def EnumKey(key: Union[PyHKEY, int], index: int) -> str:              # noqa
 
 @check_for_kwargs_wrapt
 # EnumValue{{{
-def EnumValue(key: Union[PyHKEY, int], index: int) -> Tuple[str, Union[None, bytes, int, str, List[str]], int]:              # noqa
+def EnumValue(key: Union[int, HKEYType, PyHKEY], index: int) -> Tuple[str, Union[None, bytes, int, str, List[str]], int]:              # noqa
     """
     Enumerates values of an open registry key, returning a tuple.
     The function retrieves the name of one value each time it is called.
@@ -819,7 +820,7 @@ def EnumValue(key: Union[PyHKEY, int], index: int) -> Tuple[str, Union[None, byt
 
 # named arguments are allowed here !
 # OpenKey{{{
-def OpenKey(key: Union[PyHKEY, int], sub_key: Union[str, None], reserved: int = 0, access: int = KEY_READ) -> PyHKEY:         # noqa
+def OpenKey(key: Union[int, HKEYType, PyHKEY], sub_key: Union[str, None], reserved: int = 0, access: int = KEY_READ) -> PyHKEY:         # noqa
     """
     Opens the specified key, the result is a new handle to the specified key.
     one of the few functions of winreg that accepts named parameters
@@ -927,7 +928,7 @@ def OpenKey(key: Union[PyHKEY, int], sub_key: Union[str, None], reserved: int = 
 
 # named arguments are allowed here !
 # OpenKeyEx{{{
-def OpenKeyEx(key: Union[PyHKEY, int], sub_key: Optional[str], reserved: int = 0, access: int = KEY_READ) -> PyHKEY:        # noqa
+def OpenKeyEx(key: Union[int, HKEYType, PyHKEY], sub_key: Optional[str], reserved: int = 0, access: int = KEY_READ) -> PyHKEY:        # noqa
     """
     Opens the specified key, the result is a new handle to the specified key.
     one of the few functions of winreg that accepts named parameters
@@ -1010,7 +1011,7 @@ def OpenKeyEx(key: Union[PyHKEY, int], sub_key: Optional[str], reserved: int = 0
 
 @check_for_kwargs_wrapt
 # QueryInfoKey{{{
-def QueryInfoKey(key: Union[PyHKEY, int]) -> Tuple[int, int, int]:            # noqa
+def QueryInfoKey(key: Union[int, HKEYType, PyHKEY]) -> Tuple[int, int, int]:            # noqa
     """
     Returns information about a key, as a tuple.
     the function does NOT accept named parameters, only positional parameters
@@ -1080,7 +1081,7 @@ def QueryInfoKey(key: Union[PyHKEY, int]) -> Tuple[int, int, int]:            # 
 
 @check_for_kwargs_wrapt
 # QueryValue{{{
-def QueryValue(key: Union[PyHKEY, int], sub_key: Union[str, None]) -> str:        # noqa
+def QueryValue(key: Union[int, HKEYType, PyHKEY], sub_key: Union[str, None]) -> str:        # noqa
     """
     Retrieves the unnamed value (the default value*) for a key, as string.
 
@@ -1168,7 +1169,7 @@ def QueryValue(key: Union[PyHKEY, int], sub_key: Union[str, None]) -> str:      
 
 @check_for_kwargs_wrapt
 # QueryValueEx{{{
-def QueryValueEx(key: Union[PyHKEY, int], value_name: Optional[str]) -> Tuple[Union[None, bytes, int, str, List[str]], int]:     # noqa
+def QueryValueEx(key: Union[int, HKEYType, PyHKEY], value_name: Optional[str]) -> Tuple[Union[None, bytes, int, str, List[str]], int]:     # noqa
     """
     Retrieves data and type for a specified value name associated with an open registry key.
 
@@ -1288,7 +1289,7 @@ def QueryValueEx(key: Union[PyHKEY, int], value_name: Optional[str]) -> Tuple[Un
 
 @check_for_kwargs_wrapt
 # SetValue{{{
-def SetValue(key: Union[PyHKEY, int], sub_key: Union[str, None], type: int, value: str) -> None:      # noqa
+def SetValue(key: Union[int, HKEYType, PyHKEY], sub_key: Union[str, None], type: int, value: str) -> None:      # noqa
     """
     Associates a value with a specified key. (the Default Value* of the Key, usually not set)
 
@@ -1389,7 +1390,7 @@ def SetValue(key: Union[PyHKEY, int], sub_key: Union[str, None], type: int, valu
 
 @check_for_kwargs_wrapt
 # SetValueEx{{{
-def SetValueEx(key: Union[PyHKEY, int], value_name: Optional[str], reserved: int, type: int, value: Union[None, bytes, int, str, List[str]]) -> None:    # noqa
+def SetValueEx(key: Union[int, HKEYType, PyHKEY], value_name: Optional[str], reserved: int, type: int, value: Union[None, bytes, int, str, List[str]]) -> None:    # noqa
     """
     Stores data in the value field of an open registry key.
 
@@ -1500,7 +1501,7 @@ def SetValueEx(key: Union[PyHKEY, int], value_name: Optional[str], reserved: int
     fake_reg.set_fake_reg_value(key_handle.data, sub_key='', value_name=value_name, value=value, value_type=type)
 
 
-def __resolve_key(key: Union[int, PyHKEY]) -> PyHKEY:
+def __resolve_key(key: Union[int, HKEYType, PyHKEY]) -> PyHKEY:
     """
     Returns the full path to the key
 
@@ -1526,6 +1527,8 @@ def __resolve_key(key: Union[int, PyHKEY]) -> PyHKEY:
             error = OSError('[WinError 6] The handle is invalid')
             setattr(error, 'winerror', 6)
             raise error
+    elif isinstance(key, HKEYType):
+        key_handle = PyHKEY(data=key.data, access=key.access)
     else:
         key_handle = key
     return key_handle
@@ -1578,7 +1581,7 @@ def __check_argument_must_be_str_or_none(arg_number: int, argument: Any) -> None
 def __check_key(key: Any) -> None:
     if key is None:
         raise TypeError('None is not a valid HKEY in this context')
-    if not isinstance(key, int) and not isinstance(key, HKEYType):
+    if not isinstance(key, int) and not isinstance(key, PyHKEY):
         raise TypeError('The object is not a PyHKEY object')
     if isinstance(key, int):
         if key >= 2 ** 64:
