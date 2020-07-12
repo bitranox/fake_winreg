@@ -3,7 +3,9 @@ FUNCTION
 
 test winreg functions on a fake registry on windows and linux, without messing up Your real registry.
 
-this is perfect for TDD, creating registry related code and covering most issues before You hit a real registry with Your tests.
+Fully type annotated and documented, so You can enjoy the type hints in Your favorit IDE
+
+This is perfect for TDD, creating registry related code and covering most issues before You hit a real registry with Your tests.
 
 If You want to see real life examples, check out `lib_registry <https://github.com/bitranox/lib_registry>`_
 
@@ -15,6 +17,7 @@ If You want to see real life examples, check out `lib_registry <https://github.c
 - it behaves very much like the real "winreg" (version 3.3),
   like not accepting keyword arguments for most functions,
   accepting sub_keys to be "None" or "blank" in some, but not all functions, etc.
+- it raises the same Exceptions like winreg
 - read, write registry values and keys, etc.
 
 LIMITATIONS
@@ -29,7 +32,7 @@ LIMITATIONS
 - you can not dump a real registry at the moment and save it, in order to use it as a fake registry - that means
   all the keys You need, You have to set manually at the moment.
   I will polish up my old project "fingerprint" and make a compatible file format to dump / read / write registry branches.
-- some (few) winreg functions are not implemented - if You need it, give me a note
+- some (few) winreg functions are not implemented - if You miss out something, give me a note, i will integrate it
 - obviously we can not connect to the registry of another windows computer over the network
 - KEY_WOW64_32KEY is not supported. We show always the same ...
 - auditing event's are not supported

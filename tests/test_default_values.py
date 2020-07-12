@@ -35,8 +35,12 @@ def key_handle_test_all_access():
     # On Windows sometimes this Error occurs, if we try again to delete a key
     # that is already marked for deletion
     # OSError: [WinError 1018]
-    except OSError:
-        pass
+    except OSError as e:
+        if hasattr(e, 'winerror') and e.winerror == 1018:  # type: ignore
+            pass
+        else:
+            raise e
+
     winreg.CloseKey(key_handle)
 
 

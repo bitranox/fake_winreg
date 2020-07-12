@@ -5,6 +5,13 @@ Changelog
 - new MINOR version for added functionality in a backwards compatible manner
 - new PATCH version for backwards compatible bug fixes
 
+0.3.0
+-----
+2020-07-12 : feature release
+    - raise Errors on SetValueEx if type is not appropriate
+    - raise Errors on wrong parameter types like original winreg
+    - comprehensive documentation
+
 0.2.0
 -----
 2020-07-11 : feature release

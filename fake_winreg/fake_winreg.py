@@ -1,6 +1,6 @@
 # STDLIB
 from typing import Any, Callable, Dict, Optional, Tuple, TypeVar, Union, cast, List
-
+import inspect
 
 # EXT
 import wrapt
@@ -29,19 +29,11 @@ def check_for_kwargs_wrapt(wrapped: F, instance: object = None, args: Any = (), 
     return cast(F, wrapped(*args, **kwargs))
 
 
-@check_for_kwargs_wrapt
-def test(x: int) -> None:
-    """
-    >>> test(x=5)
-    Traceback (most recent call last):
-        ...
-    TypeError: test() got some positional-only arguments passed as keyword arguments: 'x'
-
-    """
-    print(x)
+class HKEYType(object):
+    pass
 
 
-class PyHKEY(object):
+class PyHKEY(HKEYType):
     """
     Registry Handle Objects
     This object wraps a Windows HKEY object, automatically closing it when the object is destroyed.
@@ -92,8 +84,6 @@ class PyHKEY(object):
         return 0
 
 
-HKEYType = PyHKEY
-
 __fake_registry = fake_reg.FakeRegistry()
 # the list of the open handles - hashed by full_key_path
 __py_hive_handles: Dict[str, PyHKEY] = dict()
@@ -107,9 +97,27 @@ def load_fake_registry(fake_registry: fake_reg.FakeRegistry) -> None:
 
 
 @check_for_kwargs_wrapt
+# CloseKey{{{
 def CloseKey(hkey: Union[int, PyHKEY]) -> None:      # noqa
     """
-    Closes a previously opened registry key. The hkey argument specifies a previously opened hive key.
+    Closes a previously opened registry key.
+
+    the function does NOT accept named parameters, only positional parameters
+
+    Note: If hkey is not closed using this method (or via hkey.Close()), it is closed when the hkey object is destroyed by Python.
+
+    :parameter hkey:
+        the predefined handle to connect to, or one of the predefined HKEY_* constants.
+
+    :raises
+        OSError: [WinError 6] The handle is invalid             , if parameter key is invalid
+
+        TypeError: The object is not a PyHKEY object            , if parameter key is not integer or PyHKEY type
+
+        OverflowError: int too big to convert                   , if parameter key is > 64 Bit Integer Value
+
+
+    # CloseKey}}}
 
     >>> # Setup
     >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -126,21 +134,45 @@ def CloseKey(hkey: Union[int, PyHKEY]) -> None:      # noqa
     TypeError: CloseKey() got some positional-only arguments passed as keyword arguments: 'hkey'
 
     """
-    # we could recursively delete all the handles in self.py_hkey_handles by walking the fake registry keys - atm we dont bother
+    if hkey is not None:    # None accepted here
+        __check_key(hkey)
+    # we could recursively delete all the handles in self.py_hkey_handles by walking the fake registry keys
     # or we can get the hive name and delete all self.py_hkey_handles beginning with hive name
     # the objects are destroyed anyway when we close fake_winreg object, so we dont bother
-    pass
 
 
 @check_for_kwargs_wrapt
-def ConnectRegistry(computer_name: Union[None, str], key: int) -> PyHKEY:     # noqa
+# ConnectRegistry{{{
+def ConnectRegistry(computer_name: Union[None, str], key: Union[PyHKEY, int]) -> PyHKEY:     # noqa
     """
     Establishes a connection to a predefined registry handle on another computer, and returns a handle object.
-    computer_name : the name of the remote computer, of the form r"\\computername". If None, the local computer is used.  (NOT IMPLEMENTED)
-    key: the predefined handle to connect to.
-    The return value is the handle of the opened key. If the function fails, an OSError exception is raised.
-    Raises an auditing event winreg.ConnectRegistry with arguments computer_name, key.
+    the function does NOT accept named parameters, only positional parameters
 
+    :parameter computer_name:
+        the name of the remote computer (NOT IMPLEMENTED), of the form r"\\computername".
+        If None, the local computer is used.
+
+    :parameter key:
+        the predefined handle to connect to, or one of the predefined HKEY_* constants.
+
+    :returns
+        the handle of the opened key. If the function fails, an OSError exception is raised.
+
+    :raises
+        FileNotFoundError: System error 53...                   , if can not connect to remote computer
+
+        OSError: [WinError 6] The handle is invalid             , if parameter key is invalid
+
+        TypeError: None is not a valid HKEY in this context     , if parameter key is None
+
+        TypeError: The object is not a PyHKEY object            , if parameter key is not integer or PyHKEY type
+
+        OverflowError: int too big to convert                   , if parameter key is > 64 Bit Integer Value
+
+    :events
+        winreg.ConnectRegistry auditing event (NOT IMPLEMENTED), with arguments computer_name, key.
+
+    # ConnectRegistry}}}
 
     >>> # Setup
     >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -150,13 +182,19 @@ def ConnectRegistry(computer_name: Union[None, str], key: int) -> PyHKEY:     # 
     >>> ConnectRegistry(None, HKEY_LOCAL_MACHINE)
     <...PyHKEY object at ...>
 
-    >>> # Computername given
-    >>> ConnectRegistry('test', HKEY_LOCAL_MACHINE)
+    >>> # provoke wrong key type Error
+    >>> ConnectRegistry('fake_registry_test_computer', 'fake_registry_key')  # noqa
+    Traceback (most recent call last):
+        ...
+    TypeError: The object is not a PyHKEY object
+
+    >>> # provoke connection error, Computername given
+    >>> ConnectRegistry('fake_registry_test_computer', HKEY_LOCAL_MACHINE)
     Traceback (most recent call last):
     ...
     FileNotFoundError: System error 53 has occurred. The network path was not found
 
-    >>> # Invalid Handle
+    >>> # provoke Invalid Handle Error
     >>> ConnectRegistry(None, 42)
     Traceback (most recent call last):
         ...
@@ -176,10 +214,14 @@ def ConnectRegistry(computer_name: Union[None, str], key: int) -> PyHKEY:     # 
 
 
     """
+
+    __check_key(key)
+
     if computer_name:
         network_error = FileNotFoundError('System error 53 has occurred. The network path was not found')
         setattr(network_error, 'winerror', 53)
         raise network_error
+
     try:
         fake_reg_handle = __fake_registry.hive[key]
     except KeyError:
@@ -194,16 +236,44 @@ def ConnectRegistry(computer_name: Union[None, str], key: int) -> PyHKEY:     # 
 
 
 @check_for_kwargs_wrapt
+# CreateKey{{{
 def CreateKey(key: Union[PyHKEY, int], sub_key: Union[str, None]) -> PyHKEY:      # noqa
     """
     Creates or opens the specified key, returning a handle object.
-    key is an already open key, or one of the predefined HKEY_* constants.
-    sub_key is a string that names the key this method opens or creates.
-    If key is one of the predefined keys, sub_key may be None. In that case,
-    the handle returned is the same key handle passed in to the function.
-    If the key already exists, this function opens the existing key.
-    The return value is the handle of the opened key. If the function fails, an OSError exception is raised.
     The sub_key can contain a directory structure like r'Software\\xxx\\yyy' - all the parents to yyy will be created
+    the function does NOT accept named parameters, only positional parameters
+
+    :parameter key:
+        an already open key, or one of the predefined HKEY_* constants.
+
+    :parameter sub_key:
+        None, or a string that names the key this method opens or creates.
+        If key is one of the predefined keys, sub_key may be None. In that case,
+        the handle returned is the same key handle passed in to the function.
+        If the key already exists, this function opens the existing key.
+
+    :returns
+        the handle of the opened key.
+
+    :raises
+        OSError: [WinError 1010] The configuration registry key is invalid  , if the function fails to create the Key
+
+        OSError: [WinError 6] The handle is invalid                         , if parameter key is invalid
+
+        TypeError: None is not a valid HKEY in this context                 , if parameter key is None
+
+        TypeError: The object is not a PyHKEY object                        , if parameter key is not integer or PyHKEY type
+
+        OverflowError: int too big to convert                               , if parameter key is > 64 Bit Integer Value
+
+        TypeError: CreateKey() argument 2 must be str or None, not <type>   , if the subkey is anything else then str or None
+
+    :events:
+        Raises an auditing event winreg.CreateKey with arguments key, sub_key, access. (NOT IMPLEMENTED)
+
+        Raises an auditing event winreg.OpenKey/result with argument key. (NOT IMPLEMENTED)
+
+    # CreateKey}}}
 
     >>> # Setup
     >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -219,19 +289,53 @@ def CreateKey(key: Union[PyHKEY, int], sub_key: Union[str, None]) -> PyHKEY:    
     >>> key_handle_existing = CreateKey(reg_handle, r'SOFTWARE\\xxxx\\yyyy')
     >>> assert key_handle_existing == key_handle_created
 
+    >>> # provoke Error key None
+    >>> CreateKey(None, r'SOFTWARE\\xxxx\\yyyy')    # noqa
+    Traceback (most recent call last):
+        ...
+    TypeError: None is not a valid HKEY in this context
+
+    >>> # provoke Error key wrong type
+    >>> CreateKey('test_fake_key_invalid', r'SOFTWARE\\xxxx\\yyyy')    # noqa
+    Traceback (most recent call last):
+        ...
+    TypeError: The object is not a PyHKEY object
+
+    >>> # provoke Error key >= 2 ** 64
+    >>> CreateKey(2 ** 64, r'SOFTWARE\\xxxx\\yyyy')
+    Traceback (most recent call last):
+        ...
+    OverflowError: int too big to convert
+
+    >>> # provoke invalid handle
+    >>> CreateKey(42, r'SOFTWARE\\xxxx\\yyyy')
+    Traceback (most recent call last):
+    ...
+    OSError: [WinError 6] The handle is invalid
+
     >>> # provoke Error on empty subkey
     >>> key_handle_existing = CreateKey(reg_handle, r'')
     Traceback (most recent call last):
         ...
-    OSError: [WinError 1010] The configuration registry key is invalid.
+    OSError: [WinError 1010] The configuration registry key is invalid
+
+    >>> # provoke Error subkey wrong type
+    >>> key_handle_existing = CreateKey(reg_handle, 1)  # noqa
+    Traceback (most recent call last):
+        ...
+    TypeError: CreateKey() argument 2 must be str or None, not int
 
     >>> # Teardown
     >>> DeleteKey(reg_handle, r'SOFTWARE\\xxxx\\yyyy')
     >>> DeleteKey(reg_handle, r'SOFTWARE\\xxxx')
 
     """
+
+    __check_key(key)
+    __check_argument_must_be_str_or_none(2, sub_key)
+
     if not sub_key:
-        error = OSError('[WinError 1010] The configuration registry key is invalid.')
+        error = OSError('[WinError 1010] The configuration registry key is invalid')
         setattr(error, 'winerror', 1010)
         raise error
 
@@ -244,14 +348,41 @@ def CreateKey(key: Union[PyHKEY, int], sub_key: Union[str, None]) -> PyHKEY:    
 
 
 @check_for_kwargs_wrapt
+# DeleteKey{{{
 def DeleteKey(key: Union[PyHKEY, int], sub_key: str) -> None:         # noqa
     """
-    Deletes the specified key.
-    key is an already open key, or one of the predefined HKEY_* constants.
-    sub_key is a string that must be a subkey of the key identified by the key parameter or ''.
-    This value must not be None, and the key may not have subkeys.
-    This method can not delete keys with subkeys.
+    Deletes the specified key. This method can not delete keys with subkeys.
     If the method succeeds, the entire key, including all of its values, is removed.
+    the function does NOT accept named parameters, only positional parameters
+
+    :parameter key:
+        an already open key, or one of the predefined HKEY_* constants.
+
+    :parameter sub_key:
+        a string that must be a subkey of the key identified by the key parameter or ''.
+        sub_key must not be None, and the key may not have subkeys.
+
+    :raises
+        OSError ...                                                                 , if it fails to Delete the Key
+
+        PermissionError: [WinError 5] Access is denied                              , if the key specified to be deleted have subkeys
+
+        FileNotFoundError: [WinError 2] The system cannot find the file specified   , if the Key specified to be deleted does not exist
+
+        TypeError: DeleteKey() argument 2 must be str, not <type>                   , if parameter sub_key type is anything else but string
+
+        OSError: [WinError 6] The handle is invalid                                 , if parameter key is invalid
+
+        TypeError: None is not a valid HKEY in this context                         , if parameter key is None
+
+        TypeError: The object is not a PyHKEY object                                , if parameter key is not integer or PyHKEY type
+
+        OverflowError: int too big to convert                                       , if parameter key is > 64 Bit Integer Value
+
+    :events:
+        Raises an auditing event winreg.DeleteKey with arguments key, sub_key, access. (NOT IMPLEMENTED)
+
+    # DeleteKey}}}
 
     >>> # Setup
     >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -278,7 +409,7 @@ def DeleteKey(key: Union[PyHKEY, int], sub_key: str) -> None:         # noqa
         ...
     PermissionError: [WinError 5] Access is denied
 
-    >>> # try to delete key with subkey = None
+    >>> # provoke error subkey = None
     >>> DeleteKey(reg_handle, None)                     # noqa
     Traceback (most recent call last):
         ...
@@ -292,8 +423,9 @@ def DeleteKey(key: Union[PyHKEY, int], sub_key: str) -> None:         # noqa
     >>> DeleteKey(reg_handle, r'SOFTWARE\\xxxx')
 
     """
-    if not isinstance(sub_key, str):
-        raise TypeError('DeleteKey() argument 2 must be str, not None')
+
+    __check_key(key)
+    __check_argument_must_be_type_expected(arg_number=2, argument=sub_key, type_expected=str)
 
     sub_key = str(sub_key)
     key_handle = __resolve_key(key)
@@ -319,28 +451,66 @@ def DeleteKey(key: Union[PyHKEY, int], sub_key: str) -> None:         # noqa
 
 
 @check_for_kwargs_wrapt
+# DeleteKeyEx{{{
 def DeleteKeyEx(key: Union[PyHKEY, int], sub_key: str, access: int = KEY_WOW64_64KEY, reserved: int = 0) -> None:     # noqa
     """
-    Deletes the specified key.
+    Deletes the specified key. This method can not delete keys with subkeys.
+    If the method succeeds, the entire key, including all of its values, is removed.
+    the function does NOT accept named parameters, only positional parameters
 
     Note The DeleteKeyEx() function is implemented with the RegDeleteKeyEx Windows API function,
     which is specific to 64-bit versions of Windows. See the RegDeleteKeyEx documentation.
 
-    key is an already open key, or one of the predefined HKEY_* constants.
-    sub_key is a string that must be a subkey of the key identified by the key parameter.
-    This value must not be None, and the key may not have subkeys.
+    :parameter key:
+        an already open key, or one of the predefined HKEY_* constants.
 
-    reserved is a reserved integer, and must be zero. The default is zero.
-    access is an integer that specifies an access mask that describes the desired security
-    access for the key. Default is KEY_WOW64_64KEY. See Access Rights for other allowed values. (NOT IMPLEMENTED)
+    :parameter sub_key:
+        a string that must be a subkey of the key identified by the key parameter or ''.
+        sub_key must not be None, and the key may not have subkeys.
 
-    This method can not delete keys with subkeys.
+    :parameter access:
+        a integer that specifies an access mask that describes the desired security access for the key.
+        Default is KEY_WOW64_64KEY. See Access Rights for other allowed values. (NOT IMPLEMENTED)
+        (any integer is accepted here in original winreg
 
-    If the method succeeds, the entire key, including all of its values, is removed.
-    If the method fails, an OSError exception is raised.
+    :parameter reserved:
+        reserved is a reserved integer, and must be zero. The default is zero.
 
-    On unsupported Windows versions, NotImplementedError is raised.
-    Raises an auditing event winreg.DeleteKey with arguments key, sub_key, access. (NOT IMPLEMENTED)
+    :raises
+        OSError: ...                                                                , if it fails to Delete the Key
+
+        PermissionError: [WinError 5] Access is denied                              , if the key specified to be deleted have subkeys
+
+        FileNotFoundError: [WinError 2] The system cannot find the file specified   , if the Key specified to be deleted does not exist
+
+        OSError: [WinError 6] The handle is invalid                                 , if parameter key is invalid
+
+        TypeError: None is not a valid HKEY in this context                         , if parameter key is None
+
+        TypeError: The object is not a PyHKEY object                                , if parameter key is not integer or PyHKEY type
+
+        OverflowError: int too big to convert                                       , if parameter key is > 64 Bit Integer Value
+
+        NotImplementedError: On unsupported Windows versions (NOT IMPLEMENTED)
+
+        TypeError: DeleteKey() argument 2 must be str, not <type>                   , if parameter sub_key type is anything else but string
+
+        TypeError: an integer is required (got NoneType)                            , if parameter access is None
+
+        TypeError: an integer is required (got type <type>)                         , if parameter access is not int
+
+        OverflowError: Python int too large to convert to C long                    , if parameter access is > 64 Bit Integer Value
+
+        TypeError: an integer is required (got type <type>)                         , if parameter reserved is not int
+
+        OverflowError: Python int too large to convert to C long                    , if parameter reserved is > 64 Bit Integer Value
+
+        OSError: WinError 87 The parameter is incorrect                             , if parameter reserved is not 0
+
+    :events:
+        Raises an auditing event winreg.DeleteKey with arguments key, sub_key, access. (NOT IMPLEMENTED)
+
+    # DeleteKeyEx}}}
 
     >>> # Setup
     >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -369,7 +539,7 @@ def DeleteKeyEx(key: Union[PyHKEY, int], sub_key: str, access: int = KEY_WOW64_6
     >>> DeleteKeyEx(reg_handle, None)            # noqa
     Traceback (most recent call last):
         ...
-    TypeError: DeleteKey() argument 2 must be str, not None
+    TypeError: DeleteKeyEx() argument 2 must be str, not None
 
     >>> # try to delete key with access = KEY_WOW64_32KEY
     >>> DeleteKeyEx(reg_handle, r'SOFTWARE\\xxxx\\yyyy', KEY_WOW64_32KEY)
@@ -382,19 +552,47 @@ def DeleteKeyEx(key: Union[PyHKEY, int], sub_key: str, access: int = KEY_WOW64_6
     >>> DeleteKeyEx(reg_handle, r'SOFTWARE\\xxxx')
 
     """
+    __check_key(key)
+    __check_argument_must_be_type_expected(arg_number=2, argument=sub_key, type_expected=str)
+    __check_access(access=access)
+    __check_reserved(reserved=reserved)
+
     if access == KEY_WOW64_32KEY:
         raise NotImplementedError('we only support KEY_WOW64_64KEY')
     DeleteKey(key, sub_key)
 
 
 @check_for_kwargs_wrapt
+# DeleteValue{{{
 def DeleteValue(key: Union[PyHKEY, int], value: Optional[str]) -> None:         # noqa
     """
     Removes a named value from a registry key.
-    key is an already open key, or one of the predefined HKEY_* constants.
-    value is a string that identifies the value to remove.
-    if value is None, or '' it deletes the default Value of the Key
-    Raises an auditing event winreg.DeleteValue with arguments key, value. (NOT IMPLEMENTED)
+    the function does NOT accept named parameters, only positional parameters
+
+    :parameter key:
+        an already open key, or one of the predefined HKEY_* constants.
+
+    :parameter value:
+        None, or a string that identifies the value to remove.
+        if value is None, or '' it deletes the default Value of the Key
+
+    :raises
+        FileNotFoundError: [WinError 2] The system cannot find the file specified'  , if the Value specified to be deleted does not exist
+
+        OSError: [WinError 6] The handle is invalid                                 , if parameter key is invalid
+
+        TypeError: None is not a valid HKEY in this context                         , if parameter key is None
+
+        TypeError: The object is not a PyHKEY object                                , if parameter key is not integer or PyHKEY type
+
+        OverflowError: int too big to convert                                       , if parameter key is > 64 Bit Integer Value
+
+        TypeError: DeleteValue() argument 2 must be str or None, not <type>         , if parameter value type is anything else but string or None
+
+    :events
+        Raises an auditing event winreg.DeleteValue with arguments key, value. (NOT IMPLEMENTED)
+
+    # DeleteValue}}}
 
     >>> # Setup
     >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -423,6 +621,10 @@ def DeleteValue(key: Union[PyHKEY, int], value: Optional[str]) -> None:         
     FileNotFoundError: [WinError 2] The system cannot find the file specified
 
     """
+
+    __check_key(key)
+    __check_argument_must_be_str_or_none(2, value)
+
     if value is None:
         value = ''
 
@@ -436,15 +638,42 @@ def DeleteValue(key: Union[PyHKEY, int], value: Optional[str]) -> None:         
 
 
 @check_for_kwargs_wrapt
+# EnumKey{{{
 def EnumKey(key: Union[PyHKEY, int], index: int) -> str:              # noqa
     """
     Enumerates subkeys of an open registry key, returning a string.
-    key is an already open key, or one of the predefined HKEY_* constants.
-    index is an integer that identifies the index of the key to retrieve.
     The function retrieves the name of one subkey each time it is called.
     It is typically called repeatedly until an OSError exception is raised,
     indicating, no more values are available.
-    Raises an auditing event winreg.EnumKey with arguments key, index. (NOT IMPLEMENTED)
+    the function does NOT accept named parameters, only positional parameters
+
+    :parameter key:
+        an already open key, or one of the predefined HKEY_* constants.
+
+    :parameter index:
+        an integer that identifies the index of the key to retrieve.
+
+    :raises
+        OSError: [WinError 259] No more data is available                           , if the index is out of Range
+
+        OSError: [WinError 6] The handle is invalid                                 , if parameter key is invalid
+
+        TypeError: None is not a valid HKEY in this context                         , if parameter key is None
+
+        TypeError: The object is not a PyHKEY object                                , if parameter key is not integer or PyHKEY type
+
+        OverflowError: int too big to convert                   , if parameter key is > 64 Bit Integer Value
+
+        (no check for overflow of key on this method !)
+
+        TypeError: an integer is required (got type <type>)                         , if parameter index is type different from int
+
+        OverflowError: Python int too large to convert to C int                     , if parameter index is > 64 Bit Integer Value
+
+    :events:
+        Raises an auditing event winreg.EnumKey with arguments key, index. (NOT IMPLEMENTED)
+
+    # EnumKey}}}
 
     >>> # Setup
     >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -455,13 +684,28 @@ def EnumKey(key: Union[PyHKEY, int], index: int) -> str:              # noqa
     >>> key_handle = OpenKey(reg_handle, r'SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList')
     >>> assert isinstance(EnumKey(key_handle, 0), str)
 
-    >>> # test out of index
+    >>> # provoke error test out of index
     >>> EnumKey(key_handle, 100000000)
     Traceback (most recent call last):
         ...
     OSError: [WinError 259] No more data is available
 
+    >>> # provoke error wrong key handle
+    >>> EnumKey(42, 0)
+    Traceback (most recent call last):
+        ...
+    OSError: [WinError 6] The handle is invalid
+
+    >>> # no check for overflow here !
+    >>> EnumKey(2 ** 64, 0)
+    Traceback (most recent call last):
+        ...
+    OverflowError: int too big to convert
+
     """
+    __check_key(key)
+    __check_index(index)
+
     key_handle = __resolve_key(key)
     try:
         sub_key_str = list(key_handle.data.subkeys.keys())[index]
@@ -473,39 +717,73 @@ def EnumKey(key: Union[PyHKEY, int], index: int) -> str:              # noqa
 
 
 @check_for_kwargs_wrapt
-def EnumValue(key: Union[PyHKEY, int], index: int) -> Tuple[str, Union[None, bytes, str, int], int]:              # noqa
+# EnumValue{{{
+def EnumValue(key: Union[PyHKEY, int], index: int) -> Tuple[str, Union[None, bytes, int, str, List[str]], int]:              # noqa
     """
     Enumerates values of an open registry key, returning a tuple.
+    The function retrieves the name of one value each time it is called.
+    It is typically called repeatedly, until an OSError exception is raised, indicating no more values.
+    the function does NOT accept named parameters, only positional parameters
 
     The result is a tuple of 3 items:
+
+    ========    ==============================================================================================
     Index       Meaning
+    ========    ==============================================================================================
     0           A string that identifies the value name
     1           An object that holds the value data, and whose type depends on the underlying registry type
     2           An integer giving the registry type for this value (see table in docs for SetValueEx())
+    ========    ==============================================================================================
 
-    key is an already open key, or one of the predefined HKEY_* constants.
-    index is an integer that identifies the index of the value to retrieve.
-    The function retrieves the name of one subkey each time it is called.
-    It is typically called repeatedly, until an OSError exception is raised, indicating no more values.
-    Raises an auditing event winreg.EnumValue with arguments key, index. (NOT IMPLEMENTED)
+    :parameter key:
+        an already open key, or one of the predefined HKEY_* constants.
 
-    type(int)       type name                       Description
-    =========================================================
-    0               REG_NONE	                    No defined value type.
-    1               REG_SZ	                        A null-terminated string.
-    2               REG_EXPAND_SZ	                Null-terminated string containing references to environment variables (%PATH%).
-                                                    (Python handles this termination automatically.)
-    3               REG_BINARY	                    Binary data in any form.
-    4               REG_DWORD	                    A 32-bit number.
-    4               REG_DWORD_LITTLE_ENDIAN	        A 32-bit number in little-endian format.
-    5               REG_DWORD_BIG_ENDIAN	        A 32-bit number in big-endian format.
-    6               REG_LINK	                    A Unicode symbolic link.
-    7               REG_MULTI_SZ	                A sequence of null-terminated strings, terminated by two null characters.
-    8               REG_RESOURCE_LIST	            A device-driver resource list.
-    9               REG_FULL_RESOURCE_DESCRIPTOR    A hardware setting.
-    10              REG_RESOURCE_REQUIREMENTS_LIST  A hardware resource list.
-    11              REG_QWORD                       A 64 - bit number.
-    11              REG_QWORD_LITTLE_ENDIAN         A 64 - bit number in little - endian format.Equivalent to REG_QWORD.
+    :parameter index:
+        an integer that identifies the index of the key to retrieve.
+
+    :raises
+        OSError: [WinError 259] No more data is available                           , if the index is out of Range
+
+        OSError: [WinError 6] The handle is invalid                                 , if parameter key is invalid
+
+        TypeError: None is not a valid HKEY in this context                         , if parameter key is None
+
+        TypeError: The object is not a PyHKEY object                                , if parameter key is not integer or PyHKEY type
+
+        OverflowError: int too big to convert                                       , if parameter key is > 64 Bit Integer Value
+
+        TypeError: an integer is required (got type <type>)                         , if parameter index is type different from int
+
+        OverflowError: Python int too large to convert to C int                     , if parameter index is > 64 Bit Integer Value
+
+    :events
+        Raises an auditing event winreg.EnumValue with arguments key, index. (NOT IMPLEMENTED)
+
+    ==============  ==============================  ==============================  ==========================================================================
+    type(int)       type name                       accepted python Types           Description
+    ==============  ==============================  ==============================  ==========================================================================
+    0               REG_NONE	                     None, bytes                     No defined value type.
+    1               REG_SZ	                        None, str                       A null-terminated string.
+    2               REG_EXPAND_SZ	                None, str                       Null-terminated string containing references to
+                                                                                    environment variables (%PATH%).
+                                                                                    (Python handles this termination automatically.)
+    3               REG_BINARY	                    None, bytes                     Binary data in any form.
+    4               REG_DWORD	                    None, int                       A 32-bit number.
+    4               REG_DWORD_LITTLE_ENDIAN	        None, int                       A 32-bit number in little-endian format.
+    5               REG_DWORD_BIG_ENDIAN	        None, bytes                     A 32-bit number in big-endian format.
+    6               REG_LINK	                    None, bytes                     A Unicode symbolic link.
+    7               REG_MULTI_SZ	                None, List[str]                 A sequence of null-terminated strings, terminated by two null characters.
+    8               REG_RESOURCE_LIST	            None, bytes                     A device-driver resource list.
+    9               REG_FULL_RESOURCE_DESCRIPTOR    None, bytes                     A hardware setting.
+    10              REG_RESOURCE_REQUIREMENTS_LIST  None, bytes                     A hardware resource list.
+    11              REG_QWORD                       None, bytes                     A 64 - bit number.
+    11              REG_QWORD_LITTLE_ENDIAN         None, bytes                     A 64 - bit number in little - endian format.Equivalent to REG_QWORD.
+    ==============  ==============================  ==============================  ==========================================================================
+
+    * all other integers are accepted and written to the registry and handled as binary,
+    so You would be able to encode data in the REG_TYPE for stealth data not easy to spot - who would expect it.
+
+    # EnumValue}}}
 
     >>> # Setup
     >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -524,6 +802,9 @@ def EnumValue(key: Union[PyHKEY, int], index: int) -> Tuple[str, Union[None, byt
     OSError: [WinError 259] No more data is available
 
     """
+    __check_key(key)
+    __check_index(index)
+
     key_handle = __resolve_key(key)
     try:
         value_name = list(key_handle.data.values.keys())[index]
@@ -537,22 +818,61 @@ def EnumValue(key: Union[PyHKEY, int], index: int) -> Tuple[str, Union[None, byt
 
 
 # named arguments are allowed here !
+# OpenKey{{{
 def OpenKey(key: Union[PyHKEY, int], sub_key: Union[str, None], reserved: int = 0, access: int = KEY_READ) -> PyHKEY:         # noqa
     """
-    Opens the specified key, returning a handle object.
-    key is an already open key, or one of the predefined HKEY_* constants.
-    sub_key is a string that identifies the sub_key to open.
-    reserved is a reserved integer, and must be zero. The default is zero.
-    access is an integer that specifies an access mask that describes the desired security access for the key.
-    Default is KEY_READ. See Access Rights for other allowed values.
+    Opens the specified key, the result is a new handle to the specified key.
+    one of the few functions of winreg that accepts named parameters
 
-    The result is a new handle to the specified key.
-    If the key is not found, FileNotFoundError is raised
-    If the function fails, OSError is raised.
-    Raises an auditing event winreg.OpenKey with arguments key, sub_key, access.    # not implemented
-    Raises an auditing event winreg.OpenKey/result with argument key.               # not implemented
-    Changed in version 3.2: Allow the use of named arguments.
-    Changed in version 3.3: See above.
+    :parameter key:
+        an already open key, or one of the predefined HKEY_* constants.
+
+    :parameter sub_key:
+        None, or a string that names the key this method opens or creates.
+        If key is one of the predefined keys, sub_key may be None.
+
+    :parameter reserved:
+        reserved is a reserved integer, and should be zero. The default is zero.
+
+
+    :parameter access:
+        a integer that specifies an access mask that describes the desired security access for the key.
+        Default is KEY_READ. See Access Rights for other allowed values. (NOT IMPLEMENTED)
+        (any integer is accepted here in original winreg)
+
+    :raises
+        OSError: ...                                                                , if it fails to open the key
+
+        OSError: [WinError 6] The handle is invalid                                 , if parameter key is invalid
+
+        TypeError: None is not a valid HKEY in this context                         , if parameter key is None
+
+        TypeError: The object is not a PyHKEY object                                , if parameter key is not integer or PyHKEY type
+
+        OverflowError: int too big to convert                                       , if parameter key is > 64 Bit Integer Value
+
+        TypeError: OpenKey() argument 2 must be str or None, not <type>             , if the sub_key is anything else then str or None
+
+        TypeError: an integer is required (got NoneType)                            , if parameter reserved is None
+
+        TypeError: an integer is required (got type <type>)                         , if parameter reserved is not int
+
+        PermissionError: [WinError 5] Access denied                                 , if parameter reserved is > 3)
+
+        OverflowError: Python int too large to convert to C long                    , if parameter reserved is > 64 Bit Integer Value
+
+        OSError: [WinError 87] The parameter is incorrect                           , on some values (for instance 455565) NOT IMPLEMENTED
+
+        TypeError: an integer is required (got type <type>)                         , if parameter access is not int
+
+        OverflowError: Python int too large to convert to C long                    , if parameter access is > 64 Bit Integer Value
+
+
+
+    :events
+        Raises an auditing event winreg.OpenKey with arguments key, sub_key, access.    # not implemented
+        Raises an auditing event winreg.OpenKey/result with argument key.               # not implemented
+    # OpenKey}}}
 
     >>> # Setup
     >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -579,8 +899,12 @@ def OpenKey(key: Union[PyHKEY, int], sub_key: Union[str, None], reserved: int = 
     Traceback (most recent call last):
         ...
     FileNotFoundError: [WinError 2] The system cannot find the file specified
-
     """
+    __check_key(key)
+    __check_argument_must_be_str_or_none(arg_number=2, argument=sub_key)
+    __check_reserved2(reserved)
+    __check_access(access)
+
     if sub_key is None:
         sub_key = ''
 
@@ -602,22 +926,62 @@ def OpenKey(key: Union[PyHKEY, int], sub_key: Union[str, None], reserved: int = 
 
 
 # named arguments are allowed here !
-def OpenKeyEx(key: Union[PyHKEY, int], sub_key: str, reserved: int = 0, access: int = KEY_READ) -> PyHKEY:        # noqa
+# OpenKeyEx{{{
+def OpenKeyEx(key: Union[PyHKEY, int], sub_key: Optional[str], reserved: int = 0, access: int = KEY_READ) -> PyHKEY:        # noqa
     """
-    Opens the specified key, returning a handle object.
-    key is an already open key, or one of the predefined HKEY_* constants.
-    sub_key is a string that identifies the sub_key to open.
-    reserved is a reserved integer, and must be zero. The default is zero.
-    access is an integer that specifies an access mask that describes the desired security access for the key.
-    Default is KEY_READ. See Access Rights for other allowed values.
+    Opens the specified key, the result is a new handle to the specified key.
+    one of the few functions of winreg that accepts named parameters
 
-    The result is a new handle to the specified key.
-    If the key is not found, FileNotFoundError is raised
-    If the function fails, OSError is raised.
-    Raises an auditing event winreg.OpenKey with arguments key, sub_key, access.    # not implemented
-    Raises an auditing event winreg.OpenKey/result with argument key.               # not implemented
-    Changed in version 3.2: Allow the use of named arguments.
-    Changed in version 3.3: See above.
+    :parameter key:
+        an already open key, or one of the predefined HKEY_* constants.
+
+    :parameter sub_key:
+        None, or a string that names the key this method opens or creates.
+        If key is one of the predefined keys, sub_key may be None.
+
+    :parameter reserved:
+        reserved is a reserved integer, and should be zero. The default is zero.
+
+
+    :parameter access:
+        a integer that specifies an access mask that describes the desired security access for the key.
+        Default is KEY_READ. See Access Rights for other allowed values. (NOT IMPLEMENTED)
+        (any integer is accepted here in original winreg)
+
+    :raises
+        OSError: ...                                                                , if it fails to open the key
+
+        OSError: [WinError 6] The handle is invalid                                 , if parameter key is invalid
+
+        TypeError: None is not a valid HKEY in this context                         , if parameter key is None
+
+        TypeError: The object is not a PyHKEY object                                , if parameter key is not integer or PyHKEY type
+
+        OverflowError: int too big to convert                                       , if parameter key is > 64 Bit Integer Value
+
+        TypeError: OpenKeyEx() argument 2 must be str or None, not <type>           , if the subkey is anything else then str or None
+
+        TypeError: an integer is required (got NoneType)                            , if parameter reserved is None
+
+        TypeError: an integer is required (got type <type>)                         , if parameter reserved is not int
+
+        PermissionError: [WinError 5] Access denied                                 , if parameter reserved is > 3)
+
+        OverflowError: Python int too large to convert to C long                    , if parameter reserved is > 64 Bit Integer Value
+
+        OSError: [WinError 87] The parameter is incorrect                           , on some values (for instance 455565) NOT IMPLEMENTED
+
+        TypeError: an integer is required (got type <type>)                         , if parameter access is not int
+
+        OverflowError: Python int too large to convert to C long                    , if parameter access is > 64 Bit Integer Value
+
+
+    :events
+        Raises an auditing event winreg.OpenKey with arguments key, sub_key, access.    # not implemented
+        Raises an auditing event winreg.OpenKey/result with argument key.               # not implemented
+
+    # OpenKeyEx}}}
+
 
     >>> # Setup
     >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -635,21 +999,52 @@ def OpenKeyEx(key: Union[PyHKEY, int], sub_key: str, reserved: int = 0, access: 
     FileNotFoundError: [WinError 2] The system cannot find the file specified
 
     """
+    __check_key(key)
+    __check_argument_must_be_str_or_none(arg_number=2, argument=sub_key)
+    __check_reserved2(reserved)
+    __check_access(access)
+
     key_handle = OpenKey(key, sub_key, reserved, access)
     return key_handle
 
 
 @check_for_kwargs_wrapt
+# QueryInfoKey{{{
 def QueryInfoKey(key: Union[PyHKEY, int]) -> Tuple[int, int, int]:            # noqa
     """
     Returns information about a key, as a tuple.
-    key is an already open key, or one of the predefined HKEY_* constants.
-    The result is a tuple of 3 items:
-    Index, Meaning
-            0       An integer giving the number of sub keys this key has.
-            1       An integer giving the number of values this key has.
-            2       An integer giving when the key was last modified (if available) as 100’s of nanoseconds since Jan 1, 1601.
-    Raises an auditing event winreg.QueryInfoKey with argument key. (NOT IMPLEMENTED)
+    the function does NOT accept named parameters, only positional parameters
+
+    :parameter key:
+        the predefined handle to connect to, or one of the predefined HKEY_* constants.
+
+    :returns
+
+        The result is a tuple of 3 items:
+
+        ======  =============================================================================================================
+        Index,  Meaning
+        ======  =============================================================================================================
+        0       An integer giving the number of sub keys this key has.
+        1       An integer giving the number of values this key has.
+        2       An integer giving when the key was last modified (if available) as 100’s of nanoseconds since Jan 1, 1601.
+        ======  =============================================================================================================
+
+    :raises
+
+        OSError: [WinError 6] The handle is invalid             , if parameter key is invalid
+
+        TypeError: None is not a valid HKEY in this context     , if parameter key is None
+
+        TypeError: The object is not a PyHKEY object            , if parameter key is not integer or PyHKEY type
+
+        OverflowError: int too big to convert                   , if parameter key is > 64 Bit Integer Value
+
+    :events
+        Raises an auditing event winreg.QueryInfoKey with argument key.
+
+    # QueryInfoKey}}}
+
 
     >>> # Setup
     >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -675,6 +1070,7 @@ def QueryInfoKey(key: Union[PyHKEY, int]) -> Tuple[int, int, int]:            # 
     >>> DeleteKey(new_reg_key_with_subkeys_and_values, 'subkey_of_test_with_subkeys')
     >>> DeleteKey(key_handle, 'test_with_subkeys_and_values')
     """
+    __check_key(key)
     reg_handle = __resolve_key(key)
     n_subkeys = len(reg_handle.data.subkeys)
     n_values = len(reg_handle.data.values)
@@ -683,19 +1079,51 @@ def QueryInfoKey(key: Union[PyHKEY, int]) -> Tuple[int, int, int]:            # 
 
 
 @check_for_kwargs_wrapt
+# QueryValue{{{
 def QueryValue(key: Union[PyHKEY, int], sub_key: Union[str, None]) -> str:        # noqa
     """
-    Retrieves the unnamed value for a key, as a string.
-    key is an already open key, or one of the predefined HKEY_* constants.
-    sub_key is a string that holds the name of the subkey with which the value is associated.
-    If this parameter is None or empty, the function retrieves the value set by the SetValue()
-    method for the key identified by key.
-    Values in the registry have name, type, and data components.
-    This method retrieves the data for a key’s first value that has a NULL name.
-    But the underlying API call doesn’t return the type, so always use QueryValueEx() if possible.
+    Retrieves the unnamed value (the default value*) for a key, as string.
 
     * Remark : this is the Value what is shown in Regedit as "(Standard)" or "(Default)"
     it is usually not set. Nethertheless, even if the value is not set, QueryValue will deliver ''
+
+    Values in the registry have name, type, and data components.
+
+    This method retrieves the data for a key’s first value that has a NULL name.
+    But the underlying API call doesn’t return the type, so always use QueryValueEx() if possible.
+
+    the function does NOT accept named parameters, only positional parameters
+
+    :parameter key:
+        the predefined handle to connect to, or one of the predefined HKEY_* constants.
+
+    :parameter sub_key:
+        None, or a string that names the key this method opens or creates.
+        If key is one of the predefined keys, sub_key may be None. In that case,
+        the handle returned is the same key handle passed in to the function.
+        If the key already exists, this function opens the existing key.
+
+    :returns
+        the unnamed value as string (if possible)
+
+    :raises
+
+        OSError: [WinError 13] The data is invalid                          , if the data in the unnamed value is not string
+
+        OSError: [WinError 6] The handle is invalid                         , if parameter key is invalid
+
+        TypeError: None is not a valid HKEY in this context                 , if parameter key is None
+
+        TypeError: The object is not a PyHKEY object                        , if parameter key is not integer or PyHKEY type
+
+        OverflowError: int too big to convert                               , if parameter key is > 64 Bit Integer Value
+
+        TypeError: QueryValue() argument 2 must be str or None, not <type>  , if the subkey is anything else then str or None
+
+    :events:
+        Raises an auditing event winreg.QueryValue with arguments key, sub_key, value_name. (NOT IMPLEMENTED)
+
+    # QueryValue}}}
 
     >>> # Setup
     >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -719,6 +1147,9 @@ def QueryValue(key: Union[PyHKEY, int], sub_key: Union[str, None]) -> str:      
     >>> DeleteKey(reg_handle, r'SOFTWARE\\lib_registry_test')
 
     """
+    __check_key(key)
+    __check_argument_must_be_str_or_none(arg_number=2, argument=sub_key)
+
     key_handle = __resolve_key(key)
     key_handle = OpenKey(key_handle, sub_key)
     try:
@@ -736,37 +1167,77 @@ def QueryValue(key: Union[PyHKEY, int], sub_key: Union[str, None]) -> str:      
 
 
 @check_for_kwargs_wrapt
-def QueryValueEx(key: Union[PyHKEY, int], value_name: Optional[str]) -> Tuple[Union[None, bytes, str, int], int]:     # noqa
+# QueryValueEx{{{
+def QueryValueEx(key: Union[PyHKEY, int], value_name: Optional[str]) -> Tuple[Union[None, bytes, int, str, List[str]], int]:     # noqa
     """
     Retrieves data and type for a specified value name associated with an open registry key.
-    key is an already open key, or one of the predefined HKEY_* constants.
-    value_name is a string indicating the value to query. If Value_name is '' or None,
-    it queries the Default Value of the Key - this will Fail if the Default Value for the Key is not Present.
-    But the Default Value might be set to "None" - then "None" will be returned.
+
+    If Value_name is '' or None, it queries the Default Value* of the Key - this will Fail if the Default Value for the Key is not Present.
+    * Remark : this is the Value what is shown in Regedit as "(Standard)" or "(Default)"
+    it is usually not set.
+
+    the function does NOT accept named parameters, only positional parameters
+
+    :parameter key:
+        the predefined handle to connect to, or one of the predefined HKEY_* constants.
+
+    :parameter value_name:
+        None, or a string that identifies the value to Query
+        if value is None, or '' it queries the default Value of the Key
+
+
+    :raises
+
+        OSError: [WinError 6] The handle is invalid                             , if parameter key is invalid
+
+        TypeError: None is not a valid HKEY in this context                     , if parameter key is None
+
+        TypeError: The object is not a PyHKEY object                            , if parameter key is not integer or PyHKEY type
+
+        OverflowError: int too big to convert                                   , if parameter key is > 64 Bit Integer Value
+
+        TypeError: QueryValueEx() argument 2 must be str or None, not <type>    , if the value_name is anything else then str or None
+
+
+    :events
+        Raises an auditing event winreg.QueryValue with arguments key, sub_key, value_name. (NOT Implemented)
+
 
     The result is a tuple of 2 items:
-    Index       Meaning
-    0           The value of the registry item.
-    1           An integer giving the registry type for this value (see table in docs for SetValueEx())
-    Raises an auditing event winreg.QueryValue with arguments key, sub_key, value_name. (NOT Implemented)
 
-    type(int)       type name                       Description
-    =========================================================
-    0               REG_NONE	                    No defined value type.
-    1               REG_SZ	                        A null-terminated string.
-    2               REG_EXPAND_SZ	                Null-terminated string containing references to environment variables (%PATH%).
-                                                    (Python handles this termination automatically.)
-    3               REG_BINARY	                    Binary data in any form.
-    4               REG_DWORD	                    A 32-bit number.
-    4               REG_DWORD_LITTLE_ENDIAN	        A 32-bit number in little-endian format.
-    5               REG_DWORD_BIG_ENDIAN	        A 32-bit number in big-endian format.
-    6               REG_LINK	                    A Unicode symbolic link.
-    7               REG_MULTI_SZ	                A sequence of null-terminated strings, terminated by two null characters.
-    8               REG_RESOURCE_LIST	            A device-driver resource list.
-    9               REG_FULL_RESOURCE_DESCRIPTOR    A hardware setting.
-    10              REG_RESOURCE_REQUIREMENTS_LIST  A hardware resource list.
-    11              REG_QWORD                       A 64 - bit number.
-    11              REG_QWORD_LITTLE_ENDIAN         A 64 - bit number in little - endian format.Equivalent to REG_QWORD.
+    ==========  =====================================================================================================
+    Index       Meaning
+    ==========  =====================================================================================================
+    0           The value of the registry item.
+    1           An integer giving the registry type for this value see table
+    ==========  =====================================================================================================
+
+
+    ==============  ==============================  ==============================  ==========================================================================
+    type(int)       type name                       accepted python Types           Description
+    ==============  ==============================  ==============================  ==========================================================================
+    0               REG_NONE	                    None, bytes                     No defined value type.
+    1               REG_SZ	                        None, str                       A null-terminated string.
+    2               REG_EXPAND_SZ	                None, str                       Null-terminated string containing references to
+                                                                                    environment variables (%PATH%).
+                                                                                    (Python handles this termination automatically.)
+    3               REG_BINARY	                    None, bytes                     Binary data in any form.
+    4               REG_DWORD	                    None, int                       A 32-bit number.
+    4               REG_DWORD_LITTLE_ENDIAN	        None, int                       A 32-bit number in little-endian format.
+    5               REG_DWORD_BIG_ENDIAN	        None, bytes                     A 32-bit number in big-endian format.
+    6               REG_LINK	                    None, bytes                     A Unicode symbolic link.
+    7               REG_MULTI_SZ	                None, List[str]                 A sequence of null-terminated strings, terminated by two null characters.
+    8               REG_RESOURCE_LIST	            None, bytes                     A device-driver resource list.
+    9               REG_FULL_RESOURCE_DESCRIPTOR    None, bytes                     A hardware setting.
+    10              REG_RESOURCE_REQUIREMENTS_LIST  None, bytes                     A hardware resource list.
+    11              REG_QWORD                       None, bytes                     A 64 - bit number.
+    11              REG_QWORD_LITTLE_ENDIAN         None, bytes                     A 64 - bit number in little - endian format.Equivalent to REG_QWORD.
+    ==============  ==============================  ==============================  ==========================================================================
+
+    * all other integers are accepted and written to the registry and handled as binary,
+    so You would be able to encode data in the REG_TYPE for stealth data not easy to spot - who would expect it.
+
+    # QueryValueEx}}}
 
     >>> # Setup
     >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -799,6 +1270,9 @@ def QueryValueEx(key: Union[PyHKEY, int], value_name: Optional[str]) -> Tuple[Un
 
     """
 
+    __check_key(key)
+    __check_argument_must_be_str_or_none(arg_number=2, argument=value_name)
+
     try:
         if value_name is None:
             value_name = ''
@@ -813,24 +1287,60 @@ def QueryValueEx(key: Union[PyHKEY, int], value_name: Optional[str]) -> Tuple[Un
 
 
 @check_for_kwargs_wrapt
+# SetValue{{{
 def SetValue(key: Union[PyHKEY, int], sub_key: Union[str, None], type: int, value: str) -> None:      # noqa
     """
-    Associates a value with a specified key. (the Default Value of the Key, usually not set)
-    key is an already open key, or one of the predefined HKEY_* constants.
-    sub_key is a string that names the subkey with which the value is associated.
-    type is an integer that specifies the type of the data. Currently this must be REG_SZ,
-    meaning only strings are supported. Use the SetValueEx() function for support for other data types.
-    value is a string that specifies the new value.
-
-    If the key specified by the sub_key parameter does not exist, the SetValue function creates it.
-
-    Value lengths are limited by available memory. Long values (more than 2048 bytes) should be stored
-    as files with the filenames stored in the configuration registry. This helps the registry perform efficiently.
-    The key identified by the key parameter must have been opened with KEY_SET_VALUE access.    (NOT IMPLEMENTED)
-    Raises an auditing event winreg.SetValue with arguments key, sub_key, type, value.          (NOT IMPLEMENTED)
+    Associates a value with a specified key. (the Default Value* of the Key, usually not set)
 
     * Remark : this is the Value what is shown in Regedit as "(Standard)" or "(Default)"
     it is usually not set. Nethertheless, even if the value is not set, QueryValue will deliver ''
+
+    the function does NOT accept named parameters, only positional parameters
+
+
+    :parameter key:
+        the predefined handle to connect to, or one of the predefined HKEY_* constants.
+
+    :parameter sub_key:
+        None, or a string that names the key this method sets the default value
+        If the key specified by the sub_key parameter does not exist, the SetValue function creates it.
+
+    :parameter type:
+        an integer that specifies the type of the data. Currently this must be REG_SZ,
+        meaning only strings are supported. Use the SetValueEx() function for support for other data types.
+
+    :parameter value:
+        a string that specifies the new value.
+        Value lengths are limited by available memory. Long values (more than 2048 bytes) should be stored
+        as files with the filenames stored in the configuration registry. This helps the registry perform efficiently.
+        The key identified by the key parameter must have been opened with KEY_SET_VALUE access.    (NOT IMPLEMENTED)
+
+    :raises
+
+        OSError: [WinError 6] The handle is invalid                         , if parameter key is invalid
+
+        TypeError: None is not a valid HKEY in this context                 , if parameter key is None
+
+        TypeError: The object is not a PyHKEY object                        , if parameter key is not integer or PyHKEY type
+
+        OverflowError: int too big to convert                               , if parameter key is > 64 Bit Integer Value
+
+        TypeError: SetValue() argument 2 must be str or None, not <type>    , if the subkey is anything else then str or None
+
+        TypeError: SetValue() argument 3 must be int not None               , if the type is None
+
+        TypeError: SetValue() argument 3 must be int not <type>             , if the type is anything else but int
+
+        TypeError: type must be winreg.REG_SZ                               , if the type is not string (winreg.REG_SZ)
+
+        TypeError: SetValue() argument 4 must be str not None               , if the value is None
+
+        TypeError: SetValue() argument 4 must be str not <type>             , if the value is anything else but str
+
+    :events
+        Raises an auditing event winreg.SetValue with arguments key, sub_key, type, value. (NOT IMPLEMENTED)
+
+    # SetValue}}}
 
     >>> # Setup
     >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -858,6 +1368,11 @@ def SetValue(key: Union[PyHKEY, int], sub_key: Union[str, None], type: int, valu
     >>> DeleteKey(reg_handle,r'SOFTWARE\\lib_registry_test')
 
     """
+    __check_key(key)
+    __check_argument_must_be_str_or_none(arg_number=2, argument=sub_key)
+    __check_argument_must_be_type_expected(arg_number=3, argument=type, type_expected=int)
+    __check_argument_must_be_type_expected(arg_number=4, argument=value, type_expected=str)
+
     if type != REG_SZ:
         # checked - like winreg
         raise TypeError('type must be winreg.REG_SZ')
@@ -873,47 +1388,85 @@ def SetValue(key: Union[PyHKEY, int], sub_key: Union[str, None], type: int, valu
 
 
 @check_for_kwargs_wrapt
-def SetValueEx(key: Union[PyHKEY, int], value_name: Optional[str], reserved: int, type: int, value: Union[None, bytes, str, int]) -> None:    # noqa
+# SetValueEx{{{
+def SetValueEx(key: Union[PyHKEY, int], value_name: Optional[str], reserved: int, type: int, value: Union[None, bytes, int, str, List[str]]) -> None:    # noqa
     """
     Stores data in the value field of an open registry key.
-    key is an already open key, or one of the predefined HKEY_* constants.
 
     value_name is a string that names the subkey with which the value is associated.
-    if value_name is None or '' it will write to the default value of the Key
+    if value is None, or '' it sets the default value* of the Key
 
-    reserved can be anything – zero is always passed to the API.
+    the function does NOT accept named parameters, only positional parameters
 
-    type is an integer that specifies the type of the data.
+    :parameter key:
+        the predefined handle to connect to, or one of the predefined HKEY_* constants.
+        The key identified by the key parameter must have been opened with KEY_SET_VALUE access.    (NOT IMPLEMENTED))
+        To open the key, use the CreateKey() or OpenKey() methods.
 
-    value is a new value.
+    :parameter value_name:
+        None, or a string that identifies the value to set
+        if value is None, or '' it sets the default value* of the Key
 
-    This method can also set additional value and type information for the specified key.
-    The key identified by the key parameter must have been opened with KEY_SET_VALUE access.    (NOT IMPLEMENTED))
+        * Remark : this is the Value what is shown in Regedit as "(Standard)" or "(Default)"
+        it is usually not set, but You can set it to any data and datatype - but then it will
+        only be readable with QueryValueEX, not with QueryValue
 
-    To open the key, use the CreateKey() or OpenKey() methods.
+    :parameter reserved:
+        reserved is a reserved integer, and should be zero. reserved can be anything – zero is always passed to the API.
 
-    Value lengths are limited by available memory. Long values (more than 2048 bytes)
-    should be stored as files with the filenames stored in the configuration registry. This helps the registry perform efficiently.
-    Raises an auditing event winreg.SetValue with arguments key, sub_key, type, value.          (NOT IMPLEMENTED)
+    :parameter type:
+        type is an integer that specifies the type of the data. (see table)
 
-    type(int)       type name                       Description
-    =========================================================
-    0               REG_NONE	                    No defined value type.
-    1               REG_SZ	                        A null-terminated string.
-    2               REG_EXPAND_SZ	                Null-terminated string containing references to environment variables (%PATH%).
-                                                    (Python handles this termination automatically.)
-    3               REG_BINARY	                    Binary data in any form.
-    4               REG_DWORD	                    A 32-bit number.
-    4               REG_DWORD_LITTLE_ENDIAN	        A 32-bit number in little-endian format.
-    5               REG_DWORD_BIG_ENDIAN	        A 32-bit number in big-endian format.
-    6               REG_LINK	                    A Unicode symbolic link.
-    7               REG_MULTI_SZ	                A sequence of null-terminated strings, terminated by two null characters.
-    8               REG_RESOURCE_LIST	            A device-driver resource list.
-    9               REG_FULL_RESOURCE_DESCRIPTOR    A hardware setting.
-    10              REG_RESOURCE_REQUIREMENTS_LIST  A hardware resource list.
-    11              REG_QWORD                       A 64 - bit number.
-    11              REG_QWORD_LITTLE_ENDIAN         A 64 - bit number in little - endian format.Equivalent to REG_QWORD.
+    :parameter value:
+        value is a new value.
+        Value lengths are limited by available memory. Long values (more than 2048 bytes)
+        should be stored as files with the filenames stored in the configuration registry. This helps the registry perform efficiently.
 
+
+    :raises
+
+        OSError: [WinError 6] The handle is invalid                         , if parameter key is invalid
+
+        TypeError: None is not a valid HKEY in this context                 , if parameter key is None
+
+        TypeError: The object is not a PyHKEY object                        , if parameter key is not integer or PyHKEY type
+
+        OverflowError: int too big to convert                               , if parameter key is > 64 Bit Integer Value
+
+        TypeError: SetValueEx() argument 2 must be str or None, not <type>  , if the value_name is anything else then str or None
+
+        TypeError: SetValueEx() argument 4 must be int not None             , if the type is None
+
+        TypeError: SetValueEx() argument 4 must be int not <type>           , if the type is anything else but int
+
+    :events
+        Raises an auditing event winreg.SetValue with arguments key, sub_key, type, value.          (NOT IMPLEMENTED)
+
+    ==============  ==============================  ==============================  ==========================================================================
+    type(int)       type name                       accepted python Types           Description
+    ==============  ==============================  ==============================  ==========================================================================
+    0               REG_NONE	                    None, bytes                     No defined value type.
+    1               REG_SZ	                        None, str                       A null-terminated string.
+    2               REG_EXPAND_SZ	                None, str                       Null-terminated string containing references to
+                                                                                    environment variables (%PATH%).
+                                                                                    (Python handles this termination automatically.)
+    3               REG_BINARY	                    None, bytes                     Binary data in any form.
+    4               REG_DWORD	                    None, int                       A 32-bit number.
+    4               REG_DWORD_LITTLE_ENDIAN	        None, int                       A 32-bit number in little-endian format.
+    5               REG_DWORD_BIG_ENDIAN	        None, bytes                     A 32-bit number in big-endian format.
+    6               REG_LINK	                    None, bytes                     A Unicode symbolic link.
+    7               REG_MULTI_SZ	                None, List[str]                 A sequence of null-terminated strings, terminated by two null characters.
+    8               REG_RESOURCE_LIST	            None, bytes                     A device-driver resource list.
+    9               REG_FULL_RESOURCE_DESCRIPTOR    None, bytes                     A hardware setting.
+    10              REG_RESOURCE_REQUIREMENTS_LIST  None, bytes                     A hardware resource list.
+    11              REG_QWORD                       None, bytes                     A 64 - bit number.
+    11              REG_QWORD_LITTLE_ENDIAN         None, bytes                     A 64 - bit number in little - endian format.Equivalent to REG_QWORD.
+    ==============  ==============================  ==============================  ==========================================================================
+
+    * all other integers are accepted and written to the registry and handled as binary,
+    so You would be able to encode data in the REG_TYPE for stealth data not easy to spot - who would expect it.
+
+    # SetValueEx}}}
 
     >>> # Setup
     >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -933,9 +1486,16 @@ def SetValueEx(key: Union[PyHKEY, int], value_name: Optional[str], reserved: int
     >>> DeleteValue(key_handle, 'some_test')
 
     """
+
+    __check_key(key)
+    __check_argument_must_be_str_or_none(arg_number=2, argument=value_name)
+    # parameter 3 can be anything, it is ignored
+    __check_argument_must_be_type_expected(arg_number=4, argument=type, type_expected=int)
+
     # value name = None is the default Value of the Key
     if value_name is None:
         value_name = ''
+    fake_reg_tools.__check_value_type_matches_type(value, type)
     key_handle = __resolve_key(key)
     fake_reg.set_fake_reg_value(key_handle.data, sub_key='', value_name=value_name, value=value, value_type=type)
 
@@ -960,13 +1520,19 @@ def __resolve_key(key: Union[int, PyHKEY]) -> PyHKEY:
     """
 
     if isinstance(key, int):
-        key_handle = PyHKEY(__fake_registry.hive[key])
+        try:
+            key_handle = PyHKEY(__fake_registry.hive[key])
+        except KeyError:
+            error = OSError('[WinError 6] The handle is invalid')
+            setattr(error, 'winerror', 6)
+            raise error
     else:
         key_handle = key
     return key_handle
 
 
 def __add_key_handle_to_hash_or_return_existing_handle(key_handle: PyHKEY) -> PyHKEY:
+    global __py_hive_handles
     if key_handle.data.full_key in __py_hive_handles:
         key_handle = __py_hive_handles[key_handle.data.full_key]
     else:
@@ -980,3 +1546,69 @@ def __key_in_py_hive_handles(key: str) -> bool:
         return True
     else:
         return False
+
+
+def __check_argument_must_be_type_expected(arg_number: int, argument: Any, type_expected: type) -> None:
+    function_name = inspect.stack()[1].function
+    if not isinstance(argument, type_expected):
+        subkey_type = type(argument).__name__
+        if subkey_type == 'NoneType':
+            subkey_type = 'None'
+        error_str = '{function_name}() argument {arg_number} must be {type_expected}, not {subkey_type}'.format(
+            function_name=function_name,
+            arg_number=arg_number,
+            type_expected=type_expected.__name__,
+            subkey_type=subkey_type,
+            )
+        raise TypeError(error_str)
+
+
+def __check_argument_must_be_str_or_none(arg_number: int, argument: Any) -> None:
+    function_name = inspect.stack()[1].function
+    if not isinstance(argument, str) and argument is not None:
+        subkey_type = type(argument).__name__
+        error_str = '{function_name}() argument {arg_number} must be str or None, not {subkey_type}'.format(
+            function_name=function_name,
+            arg_number=arg_number,
+            subkey_type=subkey_type,
+            )
+        raise TypeError(error_str)
+
+
+def __check_key(key: Any) -> None:
+    if key is None:
+        raise TypeError('None is not a valid HKEY in this context')
+    if not isinstance(key, int) and not isinstance(key, HKEYType):
+        raise TypeError('The object is not a PyHKEY object')
+    if isinstance(key, int):
+        if key >= 2 ** 64:
+            raise OverflowError('int too big to convert')
+
+
+def __check_index(index: Any) -> None:
+    index_type = type(index).__name__
+    if not isinstance(index, int):
+        raise TypeError('an integer is required (got type {access_type})'.format(access_type=index_type))
+    elif index >= 2 ** 64:
+        raise OverflowError('Python int too large to convert to C long')
+
+
+def __check_access(access: Any) -> None:
+    __check_index(access)   # same as __check_index
+
+
+def __check_reserved(reserved: Any) -> None:
+    __check_access(reserved)    # same as access
+    if isinstance(reserved, int) and reserved != 0:
+        error = OSError('[WinError 87] The parameter is incorrect')
+        setattr(error, 'winerror', 87)
+        raise error
+
+
+def __check_reserved2(reserved: Any) -> None:
+    if isinstance(reserved, int):
+        if 3 < reserved < 2 ** 64:
+            error = PermissionError('[WinError 5] Access is denied')
+            setattr(error, 'winerror', 5)
+            raise error
+    __check_access(reserved)  # otherwise same as __check_access

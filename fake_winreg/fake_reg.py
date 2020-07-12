@@ -1,7 +1,7 @@
 # STDLIB
 import platform
 import time
-from typing import Dict, Optional, Union
+from typing import Dict, List, Optional, Union
 
 
 is_windows = platform.system().lower() == 'windows'
@@ -17,7 +17,8 @@ except (ImportError, ModuleNotFoundError):      # pragma: no cover
 class FakeRegistry(object):
 
     def __init__(self) -> None:
-        self.hive = dict()
+        # the Key of the hive Dict is int or PyHKEY
+        self.hive: Dict[object, FakeRegistryKey] = dict()
         self.hive[HKEY_CLASSES_ROOT] = set_fake_reg_key(FakeRegistryKey(), 'HKEY_CLASSES_ROOT')
         self.hive[HKEY_CURRENT_CONFIG] = set_fake_reg_key(FakeRegistryKey(), 'HKEY_CURRENT_CONFIG')
         self.hive[HKEY_CURRENT_USER] = set_fake_reg_key(FakeRegistryKey(), 'HKEY_CURRENT_USER')
@@ -54,7 +55,7 @@ class FakeRegistryValue(object):
         # the name of the value
         self.value_name: str = ''
         # the value
-        self.value: Union[None, bytes, str, int] = ''
+        self.value: Union[None, bytes, str, List[str], int] = ''
         # the REG_* type of the Value
         self.value_type: int = REG_SZ
         # used in module fake_winreg, Default = KEY_READ
@@ -127,7 +128,7 @@ def get_fake_reg_key(fake_reg_key: FakeRegistryKey, sub_key: str) -> FakeRegistr
 
 
 def set_fake_reg_value(fake_reg_key: FakeRegistryKey, sub_key: str,
-                       value_name: str, value: Union[None, bytes, str, int], value_type: int = REG_SZ,
+                       value_name: str, value: Union[None, bytes, str, List[str], int], value_type: int = REG_SZ,
                        last_modified_ns: Union[int, None] = None) -> FakeRegistryValue:
     """
     sets the value of the fake key - we create here keys on the fly, but beware of the last_modified_ns time !
