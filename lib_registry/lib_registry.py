@@ -724,12 +724,14 @@ class Registry(object):
 
         >>> # Setup
         >>> registry = Registry()
-        >>> for sid in registry.sids():
-        ...     try:
-        ...         registry._get_username_from_volatile_environment(sid)
-        ...         break
-        ...     except RegistryKeyNotFoundError:
-        ...         pass
+        >>> import os
+        >>> if 'TRAVIS' not in os.environ:     # there seems to be no volatile environment set in travis windows machine
+        ...     for sid in registry.sids():
+        ...         try:
+        ...             registry._get_username_from_volatile_environment(sid)
+        ...             break
+        ...         except RegistryKeyNotFoundError:
+        ...             pass
         '...'
 
         """
