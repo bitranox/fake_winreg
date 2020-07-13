@@ -5,10 +5,16 @@ Changelog
 - new MINOR version for added functionality in a backwards compatible manner
 - new PATCH version for backwards compatible bug fixes
 
+planned:
+    - test matrix parameter errors
+    - auditing events
+
 0.3.2
 -----
-2020-??-?? : some release release
-    - planned, test matrix parameter errors
+2020-07-13 : patch release
+    - raise [WinError 1707] The network address is invalid if computername is given
+    - make HKEYType int convertible
+    - make type aliases for better readability
 
 0.3.1
 -----
