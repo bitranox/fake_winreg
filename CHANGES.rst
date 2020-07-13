@@ -6,9 +6,9 @@ Changelog
 - new PATCH version for backwards compatible bug fixes
 
 planned:
+    - KEY_* Permission
     - test matrix for parameter errors
     - auditing events
-    - KEY_* Permission
     - Admin Permissions
 
 0.4.2

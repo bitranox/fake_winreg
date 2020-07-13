@@ -362,6 +362,9 @@ def CreateKey(key: Handle, sub_key: Union[str, None]) -> PyHKEY:      # noqa
     Exceptions
     ----------
 
+    PermissionError: [WinError 5] Access is denied
+        if You dont have the right to Create the Key (at least KEY_CREATE_SUBKEY)
+
     OSError: [WinError 1010] The configuration registry key is invalid
         if the function fails to create the Key
 
@@ -461,6 +464,7 @@ def CreateKey(key: Handle, sub_key: Union[str, None]) -> PyHKEY:      # noqa
 
     key_handle = __resolve_key(key)
     access = key_handle._access
+
     fake_reg_key = fake_reg.set_fake_reg_key(key_handle.handle, sub_key=sub_key)
     key_handle = PyHKEY(fake_reg_key, access=access)
     key_handle = __add_key_handle_to_hash_or_return_existing_handle(key_handle)
@@ -580,9 +584,7 @@ def DeleteKey(key: Handle, sub_key: str) -> None:         # noqa
         raise error
 
     if fake_reg_key.subkeys:
-        permission_error = PermissionError('[WinError 5] Access is denied')
-        setattr(permission_error, 'winerror', 5)
-        raise permission_error
+        __raise_permission_error()
 
     full_key_path = fake_reg_key.full_key
     sub_key = str(full_key_path.rsplit('\\', 1)[1])
@@ -2172,7 +2174,11 @@ def __check_reserved2(reserved: Any) -> None:
     """
     if isinstance(reserved, int):
         if 3 < reserved < 2 ** 64:
-            error = PermissionError('[WinError 5] Access is denied')
-            setattr(error, 'winerror', 5)
-            raise error
+            __raise_permission_error()
     __check_access(reserved)  # otherwise same as __check_access
+
+
+def __raise_permission_error():
+    permission_error = PermissionError('[WinError 5] Access is denied')
+    setattr(permission_error, 'winerror', 5)
+    raise permission_error
