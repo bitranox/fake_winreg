@@ -1940,9 +1940,9 @@ planned:
     - KEY_* Permission
     - Admin Permissions
 
-0.3.2
+0.4.0
 -----
-2020-07-13 : patch release
+2020-07-13 : feature release
     - raise [WinError 1707] The network address is invalid if computername is given
     - make HKEYType int convertible
     - make type aliases for better readability
