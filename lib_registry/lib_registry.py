@@ -974,9 +974,7 @@ class Registry(object):
 
         >>> # Setup
         >>> registry = Registry()
-        >>> registry.create_key(r'HKCU\\Software\\lib_registry_test', parents=True)
-        <...PyHKEY object at ...>
-
+        >>> key_handle = registry.create_key(r'HKCU\\Software\\lib_registry_test', parents=True)
         >>> registry.set_value(key=r'HKCU\\Software\\lib_registry_test', value_name='test_name', value='test_string', value_type=winreg.REG_SZ)
         >>> assert registry.get_value_ex(key=r'HKCU\\Software\\lib_registry_test', value_name='test_name') == ('test_string', 1)
 
