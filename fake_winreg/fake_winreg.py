@@ -232,7 +232,7 @@ def ConnectRegistry(computer_name: Union[None, str], key: Handle) -> PyHKEY:    
     OSError: [WinError 1707] The network address is invalid
         if the computer name can not be resolved
 
-    SystemError: System error 53 has occurred. The network path was not found
+    FileNotFoundError: [WinError 53] The network path was not found
         if the network path is invalid
 
     OSError: [WinError 6] The handle is invalid
@@ -278,7 +278,7 @@ def ConnectRegistry(computer_name: Union[None, str], key: Handle) -> PyHKEY:    
     >>> ConnectRegistry(r'localhost\\invalid\\path', HKEY_LOCAL_MACHINE)
     Traceback (most recent call last):
         ...
-    SystemError: System error 53 has occurred. The network path was not found
+    FileNotFoundError: [WinError 53] The network path was not found
 
     >>> # provoke wrong key type Error
     >>> ConnectRegistry('fake_registry_test_computer', 'fake_registry_key')  # noqa
@@ -306,7 +306,7 @@ def ConnectRegistry(computer_name: Union[None, str], key: Handle) -> PyHKEY:    
     if computer_name:
         if helpers.is_computer_reachable(computer_name):
             # SystemError: System error 53 has occurred. The network path was not found
-            system_error = SystemError('System error 53 has occurred. The network path was not found')
+            system_error = FileNotFoundError('[WinError 53] The network path was not found')
             setattr(system_error, 'winerror', 53)
             raise system_error
         else:
@@ -1802,10 +1802,10 @@ def SetValue(key: Handle, sub_key: Union[str, None], type: int, value: str) -> N
     >>> assert QueryValue(reg_handle, r'SOFTWARE\\lib_registry_test\\ham\\spam') == 'wonderful spam'
 
     >>> # You can not use other types as string here
-    >>> SetValue(key_handle, '', REG_DWORD, 42)     # noqa
+    >>> SetValue(key_handle, '', REG_DWORD, "42")     # noqa
     Traceback (most recent call last):
         ...
-    TypeError: SetValue() argument 4 must be str, not int
+    TypeError: type must be winreg.REG_SZ
 
     >>> # Tear Down
     >>> DeleteKey(reg_handle,r'SOFTWARE\\lib_registry_test\\ham\\spam')
@@ -2163,6 +2163,11 @@ def __check_reserved2(reserved: Any) -> None:
     Traceback (most recent call last):
         ...
     OverflowError: Python int too large to convert to C long
+
+    >>> __check_reserved2('spam')
+    Traceback (most recent call last):
+        ...
+    TypeError: an integer is required (got type str)
 
     """
     if isinstance(reserved, int):

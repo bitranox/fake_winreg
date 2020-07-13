@@ -11,6 +11,12 @@ planned:
     - KEY_* Permission
     - Admin Permissions
 
+0.4.1
+-----
+2020-07-13 : patch release
+    - 100% coverage
+    - raise correct Exception when try to connect to Network Computer
+
 0.4.0
 -----
 2020-07-13 : feature release
