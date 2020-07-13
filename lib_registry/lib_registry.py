@@ -942,7 +942,7 @@ class Registry(object):
             else:
                 value_type = winreg.REG_BINARY
 
-        key_handle = self._open_key(key)
+        key_handle = self._open_key(key, access=winreg.KEY_ALL_ACCESS)
         try:
             winreg.SetValueEx(key_handle, value_name, 0, value_type, value)
         except Exception:       # ToDo: narrow down
