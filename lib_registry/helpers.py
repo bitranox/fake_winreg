@@ -1,4 +1,3 @@
-
 def strip_backslashes(input_string: str) -> str:
     """
     >>> strip_backslashes(r'\\test\\\\')
