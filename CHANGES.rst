@@ -6,8 +6,10 @@ Changelog
 - new PATCH version for backwards compatible bug fixes
 
 planned:
-    - test matrix parameter errors
+    - test matrix for parameter errors
     - auditing events
+    - KEY_* Permission
+    - Admin Permissions
 
 0.3.2
 -----
@@ -15,6 +17,7 @@ planned:
     - raise [WinError 1707] The network address is invalid if computername is given
     - make HKEYType int convertible
     - make type aliases for better readability
+    - coverage
 
 0.3.1
 -----

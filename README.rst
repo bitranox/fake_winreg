@@ -397,6 +397,10 @@ CloseKey
         >>> hive_key = ConnectRegistry(None, HKEY_LOCAL_MACHINE)
         >>> CloseKey(HKEY_LOCAL_MACHINE)
 
+        >>> # Test hkey = None
+        >>> hive_key = ConnectRegistry(None, HKEY_LOCAL_MACHINE)
+        >>> CloseKey(None)  # noqa
+
         >>> # does not accept keyword parameters
         >>> hive_key = ConnectRegistry(None, HKEY_LOCAL_MACHINE)
         >>> CloseKey(hkey=HKEY_LOCAL_MACHINE)
@@ -1466,8 +1470,16 @@ QueryValue
 
         >>> # set and get default value
         >>> SetValueEx(key_handle_created, '', 0, REG_SZ, 'test1')
-        >>> assert QueryValueEx(key_handle_created, '') == ('test1', 1)
+        >>> assert QueryValueEx(key_handle_created, '') == ('test1', REG_SZ)
         >>> assert QueryValue(reg_handle, r'SOFTWARE\\lib_registry_test') == 'test1'
+
+        >>> # set the default value to non-string type, and try to get it with Query Value
+        >>> SetValueEx(key_handle_created, '', 0, REG_DWORD, 42)
+        >>> assert QueryValueEx(key_handle_created, '') == (42, REG_DWORD)
+        >>> QueryValue(reg_handle, r'SOFTWARE\\lib_registry_test')
+        Traceback (most recent call last):
+            ...
+        OSError: [WinError 13] The data is invalid
 
         >>> # Teardown
         >>> DeleteKey(reg_handle, r'SOFTWARE\\lib_registry_test')
@@ -1719,7 +1731,20 @@ SetValue
         >>> SetValue(reg_handle_software, 'lib_registry_test', REG_SZ, 'test3')
         >>> assert QueryValue(reg_handle, r'SOFTWARE\\lib_registry_test') == 'test3'
 
+        >>> # SetValue creates keys on the fly if they do not exist
+        >>> reg_handle_software = OpenKey(reg_handle, 'SOFTWARE')
+        >>> SetValue(reg_handle_software, r'lib_registry_test\\ham\\spam', REG_SZ, 'wonderful spam')
+        >>> assert QueryValue(reg_handle, r'SOFTWARE\\lib_registry_test\\ham\\spam') == 'wonderful spam'
+
+        >>> # You can not use other types as string here
+        >>> SetValue(key_handle, '', REG_DWORD, 42)     # noqa
+        Traceback (most recent call last):
+            ...
+        TypeError: SetValue() argument 4 must be str, not int
+
         >>> # Tear Down
+        >>> DeleteKey(reg_handle,r'SOFTWARE\\lib_registry_test\\ham\\spam')
+        >>> DeleteKey(reg_handle,r'SOFTWARE\\lib_registry_test\\ham')
         >>> DeleteKey(reg_handle,r'SOFTWARE\\lib_registry_test')
 
         """
@@ -1833,8 +1858,8 @@ SetValueEx
         >>> # Setup
         >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
         >>> load_fake_registry(fake_registry)
-        >>> reg_handle = ConnectRegistry(None, HKEY_LOCAL_MACHINE)
-        >>> key_handle = OpenKey(reg_handle, r'SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion')
+        >>> reg_handle = ConnectRegistry(None, HKEY_CURRENT_USER)
+        >>> key_handle = CreateKey(reg_handle, r'Software\\lib_registry_test')
 
         >>> # Test
         >>> SetValueEx(key_handle, 'some_test', 0, REG_SZ, 'some_test_value')
@@ -1844,8 +1869,17 @@ SetValueEx
         >>> SetValueEx(key_handle, 'some_test', 0, REG_SZ, 'some_test_value2')
         >>> assert QueryValueEx(key_handle, 'some_test') == ('some_test_value2', REG_SZ)
 
+        >>> # Test write Default Value of the Key, with value_name None
+        >>> SetValueEx(key_handle, None, 0, REG_SZ, 'default_value')
+        >>> assert QueryValue(key_handle, '') == 'default_value'
+
+        >>> # Test write Default Value of the Key, with value_name ''
+        >>> SetValueEx(key_handle, '', 0, REG_SZ, 'default_value_overwritten')
+        >>> assert QueryValue(key_handle, '') == 'default_value_overwritten'
+
         >>> # Teardown
         >>> DeleteValue(key_handle, 'some_test')
+        >>> DeleteKey(key_handle, '')
 
         """
 
@@ -1901,8 +1935,10 @@ Changelog
 - new PATCH version for backwards compatible bug fixes
 
 planned:
-    - test matrix parameter errors
+    - test matrix for parameter errors
     - auditing events
+    - KEY_* Permission
+    - Admin Permissions
 
 0.3.2
 -----
@@ -1910,6 +1946,7 @@ planned:
     - raise [WinError 1707] The network address is invalid if computername is given
     - make HKEYType int convertible
     - make type aliases for better readability
+    - coverage
 
 0.3.1
 -----

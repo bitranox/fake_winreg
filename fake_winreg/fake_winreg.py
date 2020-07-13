@@ -170,6 +170,10 @@ def CloseKey(hkey: Union[int, HKEYType]) -> None:      # noqa
     >>> hive_key = ConnectRegistry(None, HKEY_LOCAL_MACHINE)
     >>> CloseKey(HKEY_LOCAL_MACHINE)
 
+    >>> # Test hkey = None
+    >>> hive_key = ConnectRegistry(None, HKEY_LOCAL_MACHINE)
+    >>> CloseKey(None)  # noqa
+
     >>> # does not accept keyword parameters
     >>> hive_key = ConnectRegistry(None, HKEY_LOCAL_MACHINE)
     >>> CloseKey(hkey=HKEY_LOCAL_MACHINE)
@@ -1500,8 +1504,16 @@ def QueryValue(key: Handle, sub_key: Union[str, None]) -> str:        # noqa
 
     >>> # set and get default value
     >>> SetValueEx(key_handle_created, '', 0, REG_SZ, 'test1')
-    >>> assert QueryValueEx(key_handle_created, '') == ('test1', 1)
+    >>> assert QueryValueEx(key_handle_created, '') == ('test1', REG_SZ)
     >>> assert QueryValue(reg_handle, r'SOFTWARE\\lib_registry_test') == 'test1'
+
+    >>> # set the default value to non-string type, and try to get it with Query Value
+    >>> SetValueEx(key_handle_created, '', 0, REG_DWORD, 42)
+    >>> assert QueryValueEx(key_handle_created, '') == (42, REG_DWORD)
+    >>> QueryValue(reg_handle, r'SOFTWARE\\lib_registry_test')
+    Traceback (most recent call last):
+        ...
+    OSError: [WinError 13] The data is invalid
 
     >>> # Teardown
     >>> DeleteKey(reg_handle, r'SOFTWARE\\lib_registry_test')
@@ -1784,7 +1796,20 @@ def SetValue(key: Handle, sub_key: Union[str, None], type: int, value: str) -> N
     >>> SetValue(reg_handle_software, 'lib_registry_test', REG_SZ, 'test3')
     >>> assert QueryValue(reg_handle, r'SOFTWARE\\lib_registry_test') == 'test3'
 
+    >>> # SetValue creates keys on the fly if they do not exist
+    >>> reg_handle_software = OpenKey(reg_handle, 'SOFTWARE')
+    >>> SetValue(reg_handle_software, r'lib_registry_test\\ham\\spam', REG_SZ, 'wonderful spam')
+    >>> assert QueryValue(reg_handle, r'SOFTWARE\\lib_registry_test\\ham\\spam') == 'wonderful spam'
+
+    >>> # You can not use other types as string here
+    >>> SetValue(key_handle, '', REG_DWORD, 42)     # noqa
+    Traceback (most recent call last):
+        ...
+    TypeError: SetValue() argument 4 must be str, not int
+
     >>> # Tear Down
+    >>> DeleteKey(reg_handle,r'SOFTWARE\\lib_registry_test\\ham\\spam')
+    >>> DeleteKey(reg_handle,r'SOFTWARE\\lib_registry_test\\ham')
     >>> DeleteKey(reg_handle,r'SOFTWARE\\lib_registry_test')
 
     """
@@ -1915,8 +1940,8 @@ def SetValueEx(key: Handle, value_name: Optional[str], reserved: int, type: int,
     >>> # Setup
     >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
     >>> load_fake_registry(fake_registry)
-    >>> reg_handle = ConnectRegistry(None, HKEY_LOCAL_MACHINE)
-    >>> key_handle = OpenKey(reg_handle, r'SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion')
+    >>> reg_handle = ConnectRegistry(None, HKEY_CURRENT_USER)
+    >>> key_handle = CreateKey(reg_handle, r'Software\\lib_registry_test')
 
     >>> # Test
     >>> SetValueEx(key_handle, 'some_test', 0, REG_SZ, 'some_test_value')
@@ -1926,8 +1951,17 @@ def SetValueEx(key: Handle, value_name: Optional[str], reserved: int, type: int,
     >>> SetValueEx(key_handle, 'some_test', 0, REG_SZ, 'some_test_value2')
     >>> assert QueryValueEx(key_handle, 'some_test') == ('some_test_value2', REG_SZ)
 
+    >>> # Test write Default Value of the Key, with value_name None
+    >>> SetValueEx(key_handle, None, 0, REG_SZ, 'default_value')
+    >>> assert QueryValue(key_handle, '') == 'default_value'
+
+    >>> # Test write Default Value of the Key, with value_name ''
+    >>> SetValueEx(key_handle, '', 0, REG_SZ, 'default_value_overwritten')
+    >>> assert QueryValue(key_handle, '') == 'default_value_overwritten'
+
     >>> # Teardown
     >>> DeleteValue(key_handle, 'some_test')
+    >>> DeleteKey(key_handle, '')
 
     """
     # SetValueEx}}}
@@ -1953,7 +1987,7 @@ def __resolve_key(key: Handle) -> PyHKEY:
     >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
     >>> load_fake_registry(fake_registry)
 
-    >>> # Connect
+    >>> # Connect registry and get PyHkey Type
     >>> reg_handle = ConnectRegistry(None, HKEY_CURRENT_USER)
 
     >>> __resolve_key(key=reg_handle).handle.full_key
@@ -1962,9 +1996,33 @@ def __resolve_key(key: Handle) -> PyHKEY:
     >>> __resolve_key(key=HKEY_CURRENT_USER).handle.full_key
     'HKEY_CURRENT_USER'
 
+    >>> # Test PyHKey Type (the most common)
+    >>> discard = __resolve_key(reg_handle)
+
+    >>> # Test int Type
+    >>> discard = __resolve_key(HKEY_CURRENT_USER)
+
+    >>> # Test HKEYType
+    >>> hkey = HKEYType(handle=reg_handle.handle, access=reg_handle._access)
+    >>> discard = __resolve_key(hkey)
+
+    >>> # Test invalid handle
+    >>> discard = __resolve_key(42)
+    Traceback (most recent call last):
+        ...
+    OSError: [WinError 6] The handle is invalid
+
+    >>> # Test invalid type
+    >>> discard = __resolve_key('spam')  # noqa
+    Traceback (most recent call last):
+        ...
+    RuntimeError: unknown Key Type
+
     """
 
-    if isinstance(key, int):
+    if isinstance(key, PyHKEY):
+        key_handle = key
+    elif isinstance(key, int):
         try:
             key_handle = PyHKEY(__fake_registry.hive[key])
         except KeyError:
@@ -1974,7 +2032,7 @@ def __resolve_key(key: Handle) -> PyHKEY:
     elif isinstance(key, HKEYType):
         key_handle = PyHKEY(handle=key.handle, access=key._access)
     else:
-        key_handle = key
+        raise RuntimeError('unknown Key Type')
     return key_handle
 
 
@@ -1996,16 +2054,30 @@ def __key_in_py_hive_handles(key: str) -> bool:
 
 
 def __check_argument_must_be_type_expected(arg_number: int, argument: Any, type_expected: type) -> None:
+    """
+    >>> __check_argument_must_be_type_expected(arg_number=2, argument=None, type_expected=int)
+    Traceback (most recent call last):
+        ...
+    TypeError: ...() argument 2 must be int, not None
+
+    >>> __check_argument_must_be_type_expected(arg_number=2, argument='spam', type_expected=int)
+    Traceback (most recent call last):
+        ...
+    TypeError: ...() argument 2 must be int, not str
+
+    >>> __check_argument_must_be_type_expected(arg_number=2, argument='spam', type_expected=str)
+
+    """
     function_name = inspect.stack()[1].function
     if not isinstance(argument, type_expected):
-        subkey_type = type(argument).__name__
-        if subkey_type == 'NoneType':
-            subkey_type = 'None'
-        error_str = '{function_name}() argument {arg_number} must be {type_expected}, not {subkey_type}'.format(
+        argument_type = type(argument).__name__
+        if argument_type == 'NoneType':
+            argument_type = 'None'
+        error_str = '{function_name}() argument {arg_number} must be {type_expected}, not {argument_type}'.format(
             function_name=function_name,
             arg_number=arg_number,
             type_expected=type_expected.__name__,
-            subkey_type=subkey_type,
+            argument_type=argument_type,
             )
         raise TypeError(error_str)
 
@@ -2033,6 +2105,26 @@ def __check_key(key: Any) -> None:
 
 
 def __check_index(index: Any) -> None:
+    """
+    >>> __check_index(1)
+
+    >>> __check_index(2 ** 64)
+    Traceback (most recent call last):
+        ...
+    OverflowError: Python int too large to convert to C long
+
+    >>> __check_index('spam')
+    Traceback (most recent call last):
+        ...
+    TypeError: an integer is required (got type str)
+
+    >>> __check_index(None)
+    Traceback (most recent call last):
+        ...
+    TypeError: an integer is required (got type NoneType)
+
+    """
+
     index_type = type(index).__name__
     if not isinstance(index, int):
         raise TypeError('an integer is required (got type {access_type})'.format(access_type=index_type))
@@ -2045,6 +2137,13 @@ def __check_access(access: Any) -> None:
 
 
 def __check_reserved(reserved: Any) -> None:
+    """
+    >>> __check_reserved(0)
+    >>> __check_reserved(1)
+    Traceback (most recent call last):
+        ...
+    OSError: [WinError 87] The parameter is incorrect
+    """
     __check_access(reserved)    # same as access
     if isinstance(reserved, int) and reserved != 0:
         error = OSError('[WinError 87] The parameter is incorrect')
@@ -2053,6 +2152,19 @@ def __check_reserved(reserved: Any) -> None:
 
 
 def __check_reserved2(reserved: Any) -> None:
+    """
+    >>> __check_reserved2(0)
+    >>> __check_reserved2(4)
+    Traceback (most recent call last):
+        ...
+    PermissionError: [WinError 5] Access is denied
+
+    >>> __check_reserved2(2 ** 64)
+    Traceback (most recent call last):
+        ...
+    OverflowError: Python int too large to convert to C long
+
+    """
     if isinstance(reserved, int):
         if 3 < reserved < 2 ** 64:
             error = PermissionError('[WinError 5] Access is denied')
