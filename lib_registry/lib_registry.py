@@ -221,16 +221,16 @@ class Registry(object):
         lib_registry.RegistryHKeyError: invalid KEY: "SPAM"
 
         >>> # test invalid hive as integer
-        >>> Registry()._reg_connect(4711)
+        >>> Registry()._reg_connect(42)
         Traceback (most recent call last):
             ...
-        lib_registry.RegistryHKeyError: invalid HIVE KEY: "4711"
+        lib_registry.RegistryHKeyError: invalid HIVE KEY: "42"
 
         >>> # test invalid computer to connect
         >>> Registry()._reg_connect(winreg.HKEY_LOCAL_MACHINE, computer_name='some_unknown_machine')
         Traceback (most recent call last):
             ...
-        lib_registry.RegistryNetworkConnectionError: The network address "test" is invalid
+        lib_registry.RegistryNetworkConnectionError: The network address "some_unknown_machine" is invalid
 
         >>> # test invalid network Path
         >>> Registry()._reg_connect(winreg.HKEY_LOCAL_MACHINE, computer_name=r'localhost\\ham\\spam')
