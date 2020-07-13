@@ -18,6 +18,19 @@
 
 here a more comprehensive description of the winreg methods (which are implemented by fake registry)
 
+following custom data types are defined:
+
+.. include:: ../fake_winreg/fake_winreg.py
+    :code: python
+    :start-after: # DataTypesHandle{{{
+    :end-before: # DataTypesHandle}}}
+
+.. include:: ../fake_winreg/types_custom.py
+    :code: python
+    :start-after: # DataTypesRegData{{{
+    :end-before: # DataTypesRegData}}}
+
+
 ConnectRegistry
 ---------------
 

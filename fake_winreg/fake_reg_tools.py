@@ -1,12 +1,16 @@
 # STDLIB
-from typing import Any, List
+from typing import Any, TypeVar
 
 # PROJ
 try:
+    from .types_custom import *
     from .fake_reg import *
+    from .registry_constants import *
 except (ImportError, ModuleNotFoundError):      # pragma: no cover
     # import for doctest
-    from fake_reg import *                 # type: ignore  # pragma: no cover
+    from types_custom import *                  # type: ignore  # pragma: no cover
+    from fake_reg import *                      # type: ignore  # pragma: no cover
+    from registry_constants import *            # type: ignore  # pragma: no cover
 
 
 def get_minimal_windows_testregistry(fake_registry: Optional[FakeRegistry] = None) -> FakeRegistry:
@@ -83,7 +87,7 @@ def __is_list_of_str(list_of_str: List[Any]) -> bool:
     return True
 
 
-def __check_value_type_matches_type(value: Union[None, bytes, int, str, List[str]], reg_type: int) -> None:
+def __check_value_type_matches_type(value: RegData, reg_type: int) -> None:
     type_error_reg_binary = "Objects of type '{data_type}' can not be used as binary registry values"
     type_error_reg_non_binary = "Could not convert the data to the specified type."
     data_type = type(value).__name__
@@ -105,8 +109,8 @@ def __check_value_type_matches_type(value: Union[None, bytes, int, str, List[str
         if isinstance(value, list) and not __is_list_of_str(value):
             raise ValueError(type_error_reg_non_binary)
     else:
-        # all other REG_* types are accepted and written to the registry and handled as binary - UNUSUAL !!!
-        # so You would be able to encode data in the REG_TYPE for stealth data not easy to spot - who would expect it.
+        # all other integers for REG_TYPE are accepted, and written to the registry. The value is handled as binary.
+        # by that way You would be able to encode data in the REG_TYPE for stealth data not easy to spot - who would expect it.
         valid_types = ['NoneType', 'bytes']
         if data_type not in valid_types:
             raise TypeError(type_error_reg_binary.format(data_type=data_type))

@@ -131,8 +131,8 @@ def test_write_value(key_handle_test_all_access, reg_type, data):
             unittest.TestCase().assertRaises(ValueError, value_write)
             assert str(error) == type_error_reg_non_binary
     else:
-        # all other REG_* types are accepted and written to the registry and handled as binary - UNUSUAL !!!
-        # so You would be able to encode data in the REG_TYPE for stealth data not easy to spot - who would expect it.
+        # all other integers for REG_TYPE are accepted, and written to the registry. The value is handled as binary.
+        # by that way You would be able to encode data in the REG_TYPE for stealth data not easy to spot - who would expect it.
         valid_types = ['NoneType', 'bytes']
         if data_type in valid_types:
             assert is_value_write_ok()

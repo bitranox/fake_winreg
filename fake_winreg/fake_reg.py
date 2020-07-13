@@ -1,17 +1,19 @@
 # STDLIB
 import platform
 import time
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union, Generic
 
 
 is_windows = platform.system().lower() == 'windows'
 
 # PROJ
 try:
+    from .types_custom import *
     from .registry_constants import *
 except (ImportError, ModuleNotFoundError):      # pragma: no cover
     # imports for doctest
-    from registry_constants import *                     # type: ignore  # pragma: no cover
+    from types_custom import *                  # type: ignore  # pragma: no cover
+    from registry_constants import *            # type: ignore  # pragma: no cover
 
 
 class FakeRegistry(object):
@@ -55,7 +57,7 @@ class FakeRegistryValue(object):
         # the name of the value
         self.value_name: str = ''
         # the value
-        self.value: Union[None, bytes, str, List[str], int] = ''
+        self.value: RegData = ''
         # the REG_* type of the Value
         self.value_type: int = REG_SZ
         # used in module fake_winreg, Default = KEY_READ

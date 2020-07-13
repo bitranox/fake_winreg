@@ -1,6 +1,5 @@
 from .fake_winreg import *
 
-
 from . import __init__conf__
 __title__ = __init__conf__.title
 __version__ = __init__conf__.version
