@@ -227,7 +227,7 @@ class Registry(object):
         lib_registry.RegistryHKeyError: invalid HIVE KEY: "4711"
 
         >>> # test invalid computer to connect
-        >>> Registry()._reg_connect(winreg.HKEY_LOCAL_MACHINE, computer_name='test')
+        >>> Registry()._reg_connect(winreg.HKEY_LOCAL_MACHINE, computer_name='some_unknown_machine')
         Traceback (most recent call last):
             ...
         lib_registry.RegistryNetworkConnectionError: The network address "test" is invalid
