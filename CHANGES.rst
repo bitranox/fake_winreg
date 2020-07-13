@@ -11,6 +11,11 @@ planned:
     - KEY_* Permission
     - Admin Permissions
 
+0.4.2
+-----
+2020-xx-xx : development version
+    -
+
 0.4.1
 -----
 2020-07-13 : patch release
