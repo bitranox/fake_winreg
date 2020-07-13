@@ -9,6 +9,8 @@ env:
         - cPYTHON="python"			# command to launch python interpreter (its different on macOs, there we need python3)
         - cPIP="python -m pip"   	# command to launch pip (its different on macOs, there we need pip3)
         - WINEDEBUG=fixme-all       # switch off wine fix me messages
+        - secure: "AP9/YXcfQzCyGCOdgCqO8ryUAanXxQCD3v2oV8r4EYSi0cAZIPfTNayxVyDLkciLjyu5Sh55WbCD9Ky302AOcwLfdGEG30r2f/cckBzQxhtaRrMXWCnmMpiA9t1Xz42T+Zf9kXBeTAB7Tm8AUSAWYjipqk2XfE36a6/mY4htM5fqAWQ7oLn9zZZtL6Ow4LgHG8zhtebOYXrxQLZSnhogF3iFKiNIVurU7C0MJC0iLCJ7lR/u/XtQhcIZPLBMES2DFadQYx6AcNb+t76n11Bi6HuJyoHtyc1NqHiMR64rvohWmwLCFP5PLPD85xQyg0c51KvTqCf4FinEOGHzacRI/5NIOzhGiaDhEwvGPyvmOP0LMipS3T/tnD5woBY3bmbfpfUMzhTslQiCFXwMgpLdzkBj4bzRtf/ceTq8ymv7i6w+MMpirYOAXJ88V3+oEPDZ2jf2KfJqyB9GTIiuyq9Z/ySQLbWa1XtDjY0E8W5Di8Kbvd9bF9oQTIy7+ED5Qwg510TOmu+JJjrk4T63R8QpP4jxbgKZSHSbwEejyNiCn0VLumpenesNz5T06IdFFteliIA7MzG1DESoEEQxztvxSiXz8ly+7Gu8Oi58LbTB1MiEhuX7BjDA0HyzTGeXZ27Hp/V6MIaEnH2daGaAkE5QzKFc8BXPwLrFk8Cmtv+gCmo="  # CC_TEST_REPORTER_ID.secret
+        - secure: "UFMGTftIzCCfs7uSK11z1bmzw+AkWEBnY1pbkBudNz3WfzgAC/3KsLsU3JuGr+1rXM0dJGxyPMd4Y3h44vikd8uQbMcs6uKLXbb4LYphcVlnic7PPM9gRZSbaNnkLU4O2swOtPFXhN5AnAFiAIepglaBICeLPZ8piTmbwNNIs1rfBypbcjbJ+QkVxJiRFEHIR/3rCNCQ6cB+ANZq6QEv6ftiu3aBnNnwPGlpKet1BcKP4scnZKyzM4yJBgEA1wyM6s3inxZvFrYbxnl7iMBXlHMVmB+nbDiXXenvmKC+pxUPUfGIpoomfQe6y+si3h+4OD7hwZuFauTOUds+LywGvrIArG0O+GUMpkW1bPfOs5inxE69GgLrydpr6W1jrudEEGN3DlFHAQ90Sx8eiC7qVEiYWJ92/ZKp/tjj9i+pILiC1WEfn8Q2rqLWS737+WKjZOey0BerGm9/Qa/6fqZn304Ljyh5umSzUYADrzx5hmdO77g5VTB01bYTgwEk9v3dNySCMCXimA0ePp9YHsAfmkX0gfgkvunhLXJe9fTTWx44rnydX6RAhrEJ1fyh0r59cvBzkuxD4Eoj+iqHFrZFix/QzRgh8QYC9pE41yweCPkgE8OmPwmoQsi8HZEbYCErjYTithMTMOhlLSOySt1yxa4uE5B6NnC5B5GMK1HVEaU="  # pypi_password.secret
 
 
 addons:
