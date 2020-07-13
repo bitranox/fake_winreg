@@ -1,7 +1,7 @@
 # STDLIB
 import platform
 import time
-from typing import Dict, List, Optional, Union, Generic
+from typing import Dict, Optional
 
 
 is_windows = platform.system().lower() == 'windows'
