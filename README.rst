@@ -281,7 +281,7 @@ ConnectRegistry
         OSError: [WinError 1707] The network address is invalid
             if the computer name can not be resolved
 
-        SystemError: System error 53 has occurred. The network path was not found
+        FileNotFoundError: [WinError 53] The network path was not found
             if the network path is invalid
 
         OSError: [WinError 6] The handle is invalid
@@ -327,7 +327,7 @@ ConnectRegistry
         >>> ConnectRegistry(r'localhost\\invalid\\path', HKEY_LOCAL_MACHINE)
         Traceback (most recent call last):
             ...
-        SystemError: System error 53 has occurred. The network path was not found
+        FileNotFoundError: [WinError 53] The network path was not found
 
         >>> # provoke wrong key type Error
         >>> ConnectRegistry('fake_registry_test_computer', 'fake_registry_key')  # noqa
@@ -1737,10 +1737,10 @@ SetValue
         >>> assert QueryValue(reg_handle, r'SOFTWARE\\lib_registry_test\\ham\\spam') == 'wonderful spam'
 
         >>> # You can not use other types as string here
-        >>> SetValue(key_handle, '', REG_DWORD, 42)     # noqa
+        >>> SetValue(key_handle, '', REG_DWORD, "42")     # noqa
         Traceback (most recent call last):
             ...
-        TypeError: SetValue() argument 4 must be str, not int
+        TypeError: type must be winreg.REG_SZ
 
         >>> # Tear Down
         >>> DeleteKey(reg_handle,r'SOFTWARE\\lib_registry_test\\ham\\spam')
@@ -1939,6 +1939,12 @@ planned:
     - auditing events
     - KEY_* Permission
     - Admin Permissions
+
+0.4.1
+-----
+2020-07-13 : patch release
+    - 100% coverage
+    - raise correct Exception when try to connect to Network Computer
 
 0.4.0
 -----

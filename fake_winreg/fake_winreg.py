@@ -232,7 +232,7 @@ def ConnectRegistry(computer_name: Union[None, str], key: Handle) -> PyHKEY:    
     OSError: [WinError 1707] The network address is invalid
         if the computer name can not be resolved
 
-    SystemError: System error 53 has occurred. The network path was not found
+    FileNotFoundError: [WinError 53] The network path was not found
         if the network path is invalid
 
     OSError: [WinError 6] The handle is invalid
@@ -278,7 +278,7 @@ def ConnectRegistry(computer_name: Union[None, str], key: Handle) -> PyHKEY:    
     >>> ConnectRegistry(r'localhost\\invalid\\path', HKEY_LOCAL_MACHINE)
     Traceback (most recent call last):
         ...
-    SystemError: System error 53 has occurred. The network path was not found
+    FileNotFoundError: [WinError 53] The network path was not found
 
     >>> # provoke wrong key type Error
     >>> ConnectRegistry('fake_registry_test_computer', 'fake_registry_key')  # noqa
@@ -306,7 +306,7 @@ def ConnectRegistry(computer_name: Union[None, str], key: Handle) -> PyHKEY:    
     if computer_name:
         if helpers.is_computer_reachable(computer_name):
             # SystemError: System error 53 has occurred. The network path was not found
-            system_error = SystemError('System error 53 has occurred. The network path was not found')
+            system_error = FileNotFoundError('[WinError 53] The network path was not found')
             setattr(system_error, 'winerror', 53)
             raise system_error
         else:

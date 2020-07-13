@@ -13,8 +13,9 @@ planned:
 
 0.4.1
 -----
-2020-??-?? : patch release
+2020-07-13 : patch release
     - 100% coverage
+    - raise correct Exception when try to connect to Network Computer
 
 0.4.0
 -----
