@@ -252,6 +252,10 @@ class Registry(object):
                 self.reg_hive_connections[hive_key] = hive_handle
                 self._is_computer_name_set = True
             return hive_handle
+        except FileNotFoundError as e_fnf:
+            if hasattr(e_fnf, 'winerror') and e_fnf.winerror == 53:    # type: ignore
+                raise RegistryNetworkConnectionError('The network path to "{}" was not found'.format(computer_name))
+
         except OSError as e_os:
             if hasattr(e_os, 'winerror'):
                 if e_os.winerror == 1707:       # type: ignore
@@ -259,9 +263,6 @@ class Registry(object):
                     raise RegistryNetworkConnectionError('The network address "{}" is invalid'.format(computer_name))
                 elif e_os.winerror == 6:        # type: ignore
                     raise RegistryHKeyError('invalid KEY: "{}"'.format(key))
-        except SystemError as e_sys:
-            if hasattr(e_sys, 'winerror') and e_sys.winerror == 53:    # type: ignore
-                raise RegistryNetworkConnectionError('The network path to "{}" was not found'.format(computer_name))
 
     def _open_key(self, key: Union[str, int], sub_key: str = '', access: int = winreg.KEY_READ) -> winreg.HKEYType:
         """
