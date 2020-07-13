@@ -11,6 +11,11 @@ planned:
     - KEY_* Permission
     - Admin Permissions
 
+0.4.1
+-----
+2020-??-?? : patch release
+    - 100% coverage
+
 0.4.0
 -----
 2020-07-13 : feature release

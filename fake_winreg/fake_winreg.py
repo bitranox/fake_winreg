@@ -1802,10 +1802,10 @@ def SetValue(key: Handle, sub_key: Union[str, None], type: int, value: str) -> N
     >>> assert QueryValue(reg_handle, r'SOFTWARE\\lib_registry_test\\ham\\spam') == 'wonderful spam'
 
     >>> # You can not use other types as string here
-    >>> SetValue(key_handle, '', REG_DWORD, 42)     # noqa
+    >>> SetValue(key_handle, '', REG_DWORD, "42")     # noqa
     Traceback (most recent call last):
         ...
-    TypeError: SetValue() argument 4 must be str, not int
+    TypeError: type must be winreg.REG_SZ
 
     >>> # Tear Down
     >>> DeleteKey(reg_handle,r'SOFTWARE\\lib_registry_test\\ham\\spam')
@@ -2163,6 +2163,11 @@ def __check_reserved2(reserved: Any) -> None:
     Traceback (most recent call last):
         ...
     OverflowError: Python int too large to convert to C long
+
+    >>> __check_reserved2('spam')
+    Traceback (most recent call last):
+        ...
+    TypeError: an integer is required (got type str)
 
     """
     if isinstance(reserved, int):
