@@ -242,9 +242,9 @@ ConnectRegistry
 
 .. code-block:: python
 
-    def ConnectRegistry(computer_name: Union[None, str], key: Handle) -> PyHKEY:     # noqa
+    def ConnectRegistry(computer_name: Optional[str], key: Handle) -> PyHKEY:     # noqa
         """
-        Establishes a connection to a predefined registry handle on another computer, and returns a handle object.
+        Establishes a connection to a predefined registry handle on another computer, and returns a new handle object.
         the function does NOT accept named parameters, only positional parameters
 
 
@@ -415,10 +415,161 @@ CreateKey
 
 .. code-block:: python
 
-    def CreateKey(key: Handle, sub_key: Union[str, None]) -> PyHKEY:      # noqa
+    def CreateKey(key: Handle, sub_key: Optional[str]) -> PyHKEY:      # noqa
         """
-        Creates or opens the specified key, returning a handle object.
+        Creates or opens the specified key.
+
         The sub_key can contain a directory structure like r'Software\\xxx\\yyy' - all the parents to yyy will be created
+
+        the function does NOT accept named parameters, only positional parameters
+
+
+        Result
+        ------
+
+        If key is one of the predefined keys, sub_key may be None or empty string,
+        and a new handle will be returned with access KEY_WRITE
+
+        If the key already exists, this function opens the existing key.
+        otherwise it will return the handle to the new created key with access KEY_WRITE
+
+
+        From original winreg description (this is wrong):
+            If key is one of the predefined keys, sub_key may be None.
+            In that case, the handle returned is the same key handle passed in to the function.
+            I always get back a different handle, this seems to be wrong (needs testing)
+
+        Parameter
+        ---------
+
+        key:
+            an already open key, or one of the predefined HKEY_* constants.
+
+        sub_key:
+            a string that names the key this method opens or creates.
+            sub_key can be None or empty string when the key is one of the predefined hkeys
+
+
+        Exceptions
+        ----------
+
+        PermissionError: [WinError 5] Access is denied
+            if You dont have the right to Create the Key (at least KEY_CREATE_SUBKEY)
+
+        OSError: [WinError 1010] The configuration registry key is invalid
+            if the function fails to create the Key
+
+        OSError: [WinError 6] The handle is invalid
+            if parameter key is invalid
+
+        TypeError: None is not a valid HKEY in this context
+            if parameter key is None
+
+        TypeError: The object is not a PyHKEY object
+            if parameter key is not integer or PyHKEY type
+
+        OverflowError: int too big to convert
+            if parameter key is > 64 Bit Integer Value
+
+        TypeError: CreateKey() argument 2 must be str or None, not <type>
+            if the subkey is anything else then str or None
+
+        OSError: [WinError 1010] The configuration registry key is invalid
+            if the subkey is None or empty string, and key is not one of the predefined HKEY Constants
+
+
+
+        Events
+        ------
+
+        Raises an auditing event winreg.CreateKey with arguments key, sub_key, access. (NOT IMPLEMENTED)
+
+        Raises an auditing event winreg.OpenKey/result with argument key. (NOT IMPLEMENTED)
+
+
+
+        Examples and Tests
+        ------------------
+
+        >>> # Setup
+        >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
+        >>> load_fake_registry(fake_registry)
+
+        >>> # Connect
+        >>> reg_handle = ConnectRegistry(None, HKEY_CURRENT_USER)
+
+        >>> # create key
+        >>> key_handle_created = CreateKey(reg_handle, r'SOFTWARE\\xxxx\\yyyy')
+
+        >>> # create an existing key - we should NOT get the same handle back
+        >>> key_handle_existing = CreateKey(reg_handle, r'SOFTWARE\\xxxx\\yyyy')
+        >>> assert key_handle_existing != key_handle_created
+
+        >>> # provoke Error key None
+        >>> CreateKey(None, r'SOFTWARE\\xxxx\\yyyy')    # noqa
+        Traceback (most recent call last):
+            ...
+        TypeError: None is not a valid HKEY in this context
+
+        >>> # provoke Error key wrong type
+        >>> CreateKey('test_fake_key_invalid', r'SOFTWARE\\xxxx\\yyyy')    # noqa
+        Traceback (most recent call last):
+            ...
+        TypeError: The object is not a PyHKEY object
+
+        >>> # provoke Error key >= 2 ** 64
+        >>> CreateKey(2 ** 64, r'SOFTWARE\\xxxx\\yyyy')
+        Traceback (most recent call last):
+            ...
+        OverflowError: int too big to convert
+
+        >>> # provoke invalid handle
+        >>> CreateKey(42, r'SOFTWARE\\xxxx\\yyyy')
+        Traceback (most recent call last):
+        ...
+        OSError: [WinError 6] The handle is invalid
+
+        >>> # provoke Error on empty subkey
+        >>> key_handle_existing = CreateKey(key_handle_created, r'')
+        Traceback (most recent call last):
+            ...
+        OSError: [WinError 1010] The configuration registry key is invalid
+
+        >>> # provoke Error subkey wrong type
+        >>> key_handle_existing = CreateKey(reg_handle, 1)  # noqa
+        Traceback (most recent call last):
+            ...
+        TypeError: CreateKey() argument 2 must be str or None, not int
+
+        >>> # Test subkey=None with key as predefined HKEY - that should pass
+        >>> # the actual behaviour is different to the winreg documentation !
+        >>> key_handle_hkcu = CreateKey(HKEY_CURRENT_USER, None)
+        >>> key_handle_hkcu2 = CreateKey(key_handle_hkcu, None)
+        >>> assert key_handle_hkcu != key_handle_hkcu2
+
+        >>> # Test subkey='' with key as predefined HKEY - that should pass
+        >>> # the actual behaviour is different to the winreg documentation !
+        >>> key_handle_hkcu = CreateKey(HKEY_CURRENT_USER, '')
+        >>> key_handle_hkcu2 = CreateKey(key_handle_hkcu, '')
+        >>> assert key_handle_hkcu != key_handle_hkcu2
+
+        >>> # Teardown
+        >>> DeleteKey(reg_handle, r'SOFTWARE\\xxxx\\yyyy')
+        >>> DeleteKey(reg_handle, r'SOFTWARE\\xxxx')
+
+        """
+
+CreateKeyEx
+---------------
+
+.. code-block:: python
+
+    def CreateKeyEx(key: Handle, sub_key: str, reserved: int = 0, access: int = KEY_WRITE) -> PyHKEY:      # noqa
+        """
+        Creates or opens the specified key, returning a handle object with access as passed in the parameter
+
+        The sub_key can contain a directory structure like r'Software\\xxx\\yyy' - all the parents to yyy will be created
+
         the function does NOT accept named parameters, only positional parameters
 
 
@@ -430,11 +581,16 @@ CreateKey
             an already open key, or one of the predefined HKEY_* constants.
 
         sub_key:
-            None, or a string that names the key this method opens or creates.
-            If key is one of the predefined keys, sub_key may be None. In that case,
-            the handle returned is the same key handle passed in to the function.
-            If the key already exists, this function opens the existing key.
+            a string (can be empty) that names the key this method opens or creates.
+            the sub_key must not be None.
 
+        reserved:
+            reserved is a reserved integer, and has to be zero. The default is zero.
+
+        access:
+            a integer that specifies an access mask that describes the desired security access for returned key handle
+            Default is KEY_WRITE. See Access Rights for other allowed values.
+            (any integer is accepted here in original winreg, bit masked against KEY_* access parameters)
 
 
         Returns
@@ -462,8 +618,13 @@ CreateKey
         OverflowError: int too big to convert
             if parameter key is > 64 Bit Integer Value
 
+        OSError: [WinError 1010] The configuration registry key is invalid
+            if the subkey is None
+
         TypeError: CreateKey() argument 2 must be str or None, not <type>
-            if the subkey is anything else then str or None
+            if the subkey is anything else then str
+
+
 
 
 
@@ -487,47 +648,44 @@ CreateKey
         >>> reg_handle = ConnectRegistry(None, HKEY_CURRENT_USER)
 
         >>> # create key
-        >>> key_handle_created = CreateKey(reg_handle, r'SOFTWARE\\xxxx\\yyyy')
+        >>> key_handle_created = CreateKeyEx(reg_handle, r'SOFTWARE\\xxxx\\yyyy', 0, KEY_WRITE)
 
-        >>> # create an existing key - we get the same handle back
-        >>> key_handle_existing = CreateKey(reg_handle, r'SOFTWARE\\xxxx\\yyyy')
-        >>> assert key_handle_existing == key_handle_created
+        >>> # create an existing key - we get a new handle back
+        >>> key_handle_existing = CreateKeyEx(reg_handle, r'SOFTWARE\\xxxx\\yyyy', 0, KEY_WRITE)
+        >>> assert key_handle_existing != key_handle_created
 
         >>> # provoke Error key None
-        >>> CreateKey(None, r'SOFTWARE\\xxxx\\yyyy')    # noqa
+        >>> CreateKeyEx(None, r'SOFTWARE\\xxxx\\yyyy', 0 ,  KEY_WRITE)   # noqa
         Traceback (most recent call last):
             ...
         TypeError: None is not a valid HKEY in this context
 
         >>> # provoke Error key wrong type
-        >>> CreateKey('test_fake_key_invalid', r'SOFTWARE\\xxxx\\yyyy')    # noqa
+        >>> CreateKeyEx('test_fake_key_invalid', r'SOFTWARE\\xxxx\\yyyy', 0 ,  KEY_WRITE)  # noqa
         Traceback (most recent call last):
             ...
         TypeError: The object is not a PyHKEY object
 
         >>> # provoke Error key >= 2 ** 64
-        >>> CreateKey(2 ** 64, r'SOFTWARE\\xxxx\\yyyy')
+        >>> CreateKeyEx(2 ** 64, r'SOFTWARE\\xxxx\\yyyy', 0 ,  KEY_WRITE)
         Traceback (most recent call last):
             ...
         OverflowError: int too big to convert
 
         >>> # provoke invalid handle
-        >>> CreateKey(42, r'SOFTWARE\\xxxx\\yyyy')
+        >>> CreateKeyEx(42, r'SOFTWARE\\xxxx\\yyyy', 0 ,  KEY_WRITE)
         Traceback (most recent call last):
         ...
         OSError: [WinError 6] The handle is invalid
 
-        >>> # provoke Error on empty subkey
-        >>> key_handle_existing = CreateKey(reg_handle, r'')
-        Traceback (most recent call last):
-            ...
-        OSError: [WinError 1010] The configuration registry key is invalid
+        >>> # empty subkey is valid
+        >>> discard = key_handle_existing = CreateKeyEx(reg_handle, r'', 0 ,  KEY_WRITE)
 
         >>> # provoke Error subkey wrong type
-        >>> key_handle_existing = CreateKey(reg_handle, 1)  # noqa
+        >>> key_handle_existing = CreateKeyEx(reg_handle, 1, 0 ,  KEY_WRITE)  # noqa
         Traceback (most recent call last):
             ...
-        TypeError: CreateKey() argument 2 must be str or None, not int
+        TypeError: CreateKeyEx() argument 2 must be str or None, not int
 
         >>> # Teardown
         >>> DeleteKey(reg_handle, r'SOFTWARE\\xxxx\\yyyy')
@@ -605,10 +763,10 @@ DeleteKey
         >>> key_handle_created = CreateKey(reg_handle, r'SOFTWARE\\xxxx\\yyyy\\zzz')
 
         >>> # Delete key without subkeys
-        >>> assert __key_in_py_hive_handles(r'HKEY_CURRENT_USER\\SOFTWARE\\xxxx\\yyyy\\zzz')
+        >>> # assert __key_in_py_hive_handles(r'HKEY_CURRENT_USER\\SOFTWARE\\xxxx\\yyyy\\zzz')
 
         >>> DeleteKey(reg_handle, r'SOFTWARE\\xxxx\\yyyy\\zzz')
-        >>> assert not __key_in_py_hive_handles(r'HKEY_CURRENT_USER\\SOFTWARE\\xxxx\\yyyy\\zzz')
+        >>> # assert not __key_in_py_hive_handles(r'HKEY_CURRENT_USER\\SOFTWARE\\xxxx\\yyyy\\zzz')
 
         >>> # try to delete non existing key (it was deleted before)
         >>> DeleteKey(reg_handle, r'SOFTWARE\\xxxx\\yyyy\\zzz')
@@ -740,9 +898,9 @@ DeleteKeyEx
         >>> key_handle_created = CreateKey(reg_handle, r'SOFTWARE\\xxxx\\yyyy\\zzz')
 
         >>> # Delete key without subkeys
-        >>> assert __key_in_py_hive_handles(r'HKEY_CURRENT_USER\\SOFTWARE\\xxxx\\yyyy\\zzz')
+        >>> # assert __key_in_py_hive_handles(r'HKEY_CURRENT_USER\\SOFTWARE\\xxxx\\yyyy\\zzz')
         >>> DeleteKeyEx(reg_handle, r'SOFTWARE\\xxxx\\yyyy\\zzz')
-        >>> assert not __key_in_py_hive_handles(r'HKEY_CURRENT_USER\\SOFTWARE\\xxxx\\yyyy\\zzz')
+        >>> # assert not __key_in_py_hive_handles(r'HKEY_CURRENT_USER\\SOFTWARE\\xxxx\\yyyy\\zzz')
 
         >>> # try to delete non existing key (it was deleted before)
         >>> DeleteKeyEx(reg_handle, r'SOFTWARE\\xxxx\\yyyy\\zzz')
@@ -1100,8 +1258,8 @@ OpenKey
 
         access:
             a integer that specifies an access mask that describes the desired security access for the key.
-            Default is KEY_READ. See Access Rights for other allowed values. (NOT IMPLEMENTED)
-            (any integer is accepted here in original winreg)
+            Default is KEY_READ. See Access Rights for other allowed values.
+            (any integer is accepted here in original winreg, bit masked against KEY_* access parameters)
 
 
 
@@ -1195,7 +1353,7 @@ OpenKeyEx
 
     def OpenKeyEx(key: Handle, sub_key: Optional[str], reserved: int = 0, access: int = KEY_READ) -> PyHKEY:        # noqa
         """
-        Opens the specified key, the result is a new handle to the specified key.
+        Opens the specified key, the result is a new handle to the specified key with the given access.
         one of the few functions of winreg that accepts named parameters
 
 
@@ -1215,8 +1373,8 @@ OpenKeyEx
 
         access:
             a integer that specifies an access mask that describes the desired security access for the key.
-            Default is KEY_READ. See Access Rights for other allowed values. (NOT IMPLEMENTED)
-            (any integer is accepted here in original winreg)
+            Default is KEY_READ. See Access Rights for other allowed values.
+            (any integer is accepted here in original winreg, bit masked against KEY_* access parameters)
 
 
 
@@ -1935,10 +2093,16 @@ Changelog
 - new PATCH version for backwards compatible bug fixes
 
 planned:
-    - test matrix for parameter errors
+    - KEY_* Permissions on SetValue, ReadValue, etc ...
+    - test matrix on windows to compare fake and original winreg in detail
     - auditing events
-    - KEY_* Permission
     - Admin Permissions
+
+0.5.0
+-----
+2020-07-13 : feature release
+    - CreateKeyEx added
+    - access rights on CreateKey, CreateKeyEx, OpenKey, OpenKeyEX added
 
 0.4.1
 -----

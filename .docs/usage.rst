@@ -55,6 +55,14 @@ CreateKey
     :start-after: # CreateKey{{{
     :end-before: # CreateKey}}}
 
+CreateKeyEx
+---------------
+
+.. include:: ../fake_winreg/fake_winreg.py
+    :code: python
+    :start-after: # CreateKeyEx{{{
+    :end-before: # CreateKeyEx}}}
+
 
 DeleteKey
 ---------------

@@ -6,10 +6,16 @@ Changelog
 - new PATCH version for backwards compatible bug fixes
 
 planned:
-    - test matrix for parameter errors
+    - KEY_* Permissions on SetValue, ReadValue, etc ...
+    - test matrix on windows to compare fake and original winreg in detail
     - auditing events
-    - KEY_* Permission
     - Admin Permissions
+
+0.5.0
+-----
+2020-07-13 : feature release
+    - CreateKeyEx added
+    - access rights on CreateKey, CreateKeyEx, OpenKey, OpenKeyEX added
 
 0.4.1
 -----
