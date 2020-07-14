@@ -619,8 +619,15 @@ def CreateKeyEx(key: Handle, sub_key: str, reserved: int = 0, access: int = KEY_
     ...
     OSError: [WinError 6] The handle is invalid
 
-    >>> # empty subkey is valid
+    >>> # subkey empty is valid
     >>> discard = key_handle_existing = CreateKeyEx(reg_handle, r'', 0 ,  KEY_WRITE)
+
+    >>> # subkey None is invalid
+    >>> discard = key_handle_existing = CreateKeyEx(reg_handle, None, 0 ,  KEY_WRITE)  # noqa
+    Traceback (most recent call last):
+        ...
+    OSError: [WinError 1010] The configuration registry key is invalid
+
 
     >>> # provoke Error subkey wrong type
     >>> key_handle_existing = CreateKeyEx(reg_handle, 1, 0 ,  KEY_WRITE)  # noqa
@@ -875,21 +882,21 @@ def DeleteKeyEx(key: Handle, sub_key: str, access: int = KEY_WOW64_64KEY, reserv
     >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
     >>> load_fake_registry(fake_registry)
     >>> reg_handle = ConnectRegistry(None, HKEY_CURRENT_USER)
-    >>> key_handle_created = CreateKey(reg_handle, r'SOFTWARE\\xxxx\\yyyy\\zzz')
+    >>> key_handle_created = CreateKey(reg_handle, r'Software\\xxxx\\yyyy\\zzz')
 
     >>> # Delete key without subkeys
     >>> # assert __key_in_py_hive_handles(r'HKEY_CURRENT_USER\\SOFTWARE\\xxxx\\yyyy\\zzz')
-    >>> DeleteKeyEx(reg_handle, r'SOFTWARE\\xxxx\\yyyy\\zzz')
+    >>> DeleteKeyEx(reg_handle, r'Software\\xxxx\\yyyy\\zzz')
     >>> # assert not __key_in_py_hive_handles(r'HKEY_CURRENT_USER\\SOFTWARE\\xxxx\\yyyy\\zzz')
 
     >>> # try to delete non existing key (it was deleted before)
-    >>> DeleteKeyEx(reg_handle, r'SOFTWARE\\xxxx\\yyyy\\zzz')
+    >>> DeleteKeyEx(reg_handle, r'Software\\xxxx\\yyyy\\zzz')
     Traceback (most recent call last):
         ...
     FileNotFoundError: [WinError 2] The system cannot find the file specified
 
     >>> # try to delete key with subkey
-    >>> DeleteKeyEx(reg_handle, r'SOFTWARE\\xxxx')
+    >>> DeleteKeyEx(reg_handle, r'Software\\xxxx')
     Traceback (most recent call last):
         ...
     PermissionError: [WinError 5] Access is denied
@@ -901,14 +908,14 @@ def DeleteKeyEx(key: Handle, sub_key: str, access: int = KEY_WOW64_64KEY, reserv
     TypeError: DeleteKeyEx() argument 2 must be str, not None
 
     >>> # try to delete key with access = KEY_WOW64_32KEY
-    >>> DeleteKeyEx(reg_handle, r'SOFTWARE\\xxxx\\yyyy', KEY_WOW64_32KEY)
+    >>> DeleteKeyEx(reg_handle, r'Software\\xxxx\\yyyy', KEY_WOW64_32KEY)
     Traceback (most recent call last):
         ...
     NotImplementedError: we only support KEY_WOW64_64KEY
 
     >>> # Teardown
-    >>> DeleteKeyEx(reg_handle, r'SOFTWARE\\xxxx\\yyyy')
-    >>> DeleteKeyEx(reg_handle, r'SOFTWARE\\xxxx')
+    >>> DeleteKeyEx(reg_handle, r'Software\\xxxx\\yyyy')
+    >>> DeleteKeyEx(reg_handle, r'Software\\xxxx')
 
     """
     # DeleteKeyEx}}}
@@ -983,7 +990,7 @@ def DeleteValue(key: Handle, value: Optional[str]) -> None:         # noqa
 
     >>> reg_handle = ConnectRegistry(None, HKEY_LOCAL_MACHINE)
     >>> key_handle = OpenKey(reg_handle, r'SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion')
-    >>> # winreg.SetValueEx(reg_key, 'some_test', 0, winreg.REG_SZ, 'some_test_value')
+    >>> SetValueEx(key_handle, 'some_test', 0, REG_SZ, 'some_test_value')
 
     >>> # Delete Default Value, value_name NONE (not set, therefore Error
     >>> DeleteValue(key_handle, None)
@@ -999,9 +1006,6 @@ def DeleteValue(key: Handle, value: Optional[str]) -> None:         # noqa
 
     >>> # Delete Non Existing Value
     >>> DeleteValue(key_handle, 'some_test')
-    Traceback (most recent call last):
-        ...
-    FileNotFoundError: [WinError 2] The system cannot find the file specified
 
     """
     # DeleteValue}}}

@@ -9,7 +9,13 @@ planned:
     - KEY_* Permissions on SetValue, ReadValue, etc ...
     - test matrix on windows to compare fake and original winreg in detail
     - auditing events
+    - investigate SYSWOW32/64 Views
     - Admin Permissions
+
+0.5.1
+-----
+2020-xx-xx : development release
+    - coverage
 
 0.5.0
 -----
