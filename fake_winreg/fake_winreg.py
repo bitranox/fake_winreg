@@ -153,10 +153,13 @@ def CloseKey(hkey: Union[int, HKEYType]) -> None:      # noqa
     OverflowError: int too big to convert
         if parameter key is > 64 Bit Integer Value
 
+    TypeError: CloseKey() got some positional-only arguments passed as keyword arguments: '<key>'
+        if a keyword (named) parameter was passed
 
 
-    Examples and Tests
-    ------------------
+
+    Examples
+    --------
 
     >>> # Setup
     >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -244,6 +247,9 @@ def ConnectRegistry(computer_name: Optional[str], key: Handle) -> PyHKEY:     # 
     OverflowError: int too big to convert
         if parameter key is > 64 Bit Integer Value
 
+    TypeError: ConnectRegistry() got some positional-only arguments passed as keyword arguments: '<key>'
+        if a keyword (named) parameter was passed
+
 
 
     Events
@@ -253,8 +259,8 @@ def ConnectRegistry(computer_name: Optional[str], key: Handle) -> PyHKEY:     # 
 
 
 
-    Examples and Tests
-    ------------------
+    Examples
+    --------
 
     >>> # Setup
     >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -386,6 +392,9 @@ def CreateKey(key: Handle, sub_key: Optional[str]) -> PyHKEY:      # noqa
     OSError: [WinError 1010] The configuration registry key is invalid
         if the subkey is None or empty string, and key is not one of the predefined HKEY Constants
 
+    TypeError: CreateKey() got some positional-only arguments passed as keyword arguments: '<key>'
+        if a keyword (named) parameter was passed
+
 
 
     Events
@@ -397,8 +406,8 @@ def CreateKey(key: Handle, sub_key: Optional[str]) -> PyHKEY:      # noqa
 
 
 
-    Examples and Tests
-    ------------------
+    Examples
+    --------
 
     >>> # Setup
     >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -562,10 +571,11 @@ def CreateKeyEx(key: Handle, sub_key: str, reserved: int = 0, access: int = KEY_
     OSError: [WinError 1010] The configuration registry key is invalid
         if the subkey is None
 
-    TypeError: CreateKey() argument 2 must be str or None, not <type>
+    TypeError: CreateKeyEx() argument 2 must be str or None, not <type>
         if the subkey is anything else then str
 
-
+    TypeError: CreateKeyEx() got some positional-only arguments passed as keyword arguments: '<key>'
+        if a keyword (named) parameter was passed
 
 
 
@@ -578,8 +588,8 @@ def CreateKeyEx(key: Handle, sub_key: str, reserved: int = 0, access: int = KEY_
 
 
 
-    Examples and Tests
-    ------------------
+    Examples
+    --------
 
     >>> # Setup
     >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -709,6 +719,9 @@ def DeleteKey(key: Handle, sub_key: str) -> None:         # noqa
     OverflowError: int too big to convert
         if parameter key is > 64 Bit Integer Value
 
+    TypeError: DeleteKey() got some positional-only arguments passed as keyword arguments: '<key>'
+        if a keyword (named) parameter was passed
+
 
 
     Events
@@ -718,8 +731,8 @@ def DeleteKey(key: Handle, sub_key: str) -> None:         # noqa
 
 
 
-    Examples and Tests
-    ------------------
+    Examples
+    --------
 
     >>> # Setup
     >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -845,7 +858,7 @@ def DeleteKeyEx(key: Handle, sub_key: str, access: int = KEY_WOW64_64KEY, reserv
     NotImplementedError:
         On unsupported Windows versions (NOT IMPLEMENTED)
 
-    TypeError: DeleteKey() argument 2 must be str, not <type>
+    TypeError: DeleteKeyEx() argument 2 must be str, not <type>
         if parameter sub_key type is anything else but string
 
     TypeError: an integer is required (got NoneType)
@@ -866,6 +879,9 @@ def DeleteKeyEx(key: Handle, sub_key: str, access: int = KEY_WOW64_64KEY, reserv
     OSError: WinError 87 The parameter is incorrect
         if parameter reserved is not 0
 
+    TypeError: DeleteKeyEx() got some positional-only arguments passed as keyword arguments: '<key>'
+        if a keyword (named) parameter was passed
+
 
 
     Events
@@ -875,8 +891,8 @@ def DeleteKeyEx(key: Handle, sub_key: str, access: int = KEY_WOW64_64KEY, reserv
 
 
 
-    Examples and Tests
-    ------------------
+    Examples
+    --------
 
     >>> # Setup
     >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -972,6 +988,9 @@ def DeleteValue(key: Handle, value: Optional[str]) -> None:         # noqa
     TypeError: DeleteValue() argument 2 must be str or None, not <type>
         if parameter value type is anything else but string or None
 
+    TypeError: DeleteValue() got some positional-only arguments passed as keyword arguments: '<key>'
+        if a keyword (named) parameter was passed
+
 
 
     Events
@@ -981,8 +1000,8 @@ def DeleteValue(key: Handle, value: Optional[str]) -> None:         # noqa
 
 
 
-    Examples and Tests
-    ------------------
+    Examples
+    --------
 
     >>> # Setup
     >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -1072,6 +1091,9 @@ def EnumKey(key: Handle, index: int) -> str:              # noqa
     OverflowError: Python int too large to convert to C int
         if parameter index is > 64 Bit Integer Value
 
+    TypeError: EnumKey() got some positional-only arguments passed as keyword arguments: '<key>'
+        if a keyword (named) parameter was passed
+
 
 
     Events
@@ -1081,8 +1103,8 @@ def EnumKey(key: Handle, index: int) -> str:              # noqa
 
 
 
-    Examples and Tests:
-    -------------------
+    Examples
+    --------
 
     >>> # Setup
     >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -1188,6 +1210,9 @@ def EnumValue(key: Handle, index: int) -> Tuple[str, RegData, int]:             
     OverflowError: Python int too large to convert to C int
         if parameter index is > 64 Bit Integer Value
 
+    TypeError: EnumValue() got some positional-only arguments passed as keyword arguments: '<key>'
+        if a keyword (named) parameter was passed
+
 
 
     Events
@@ -1226,8 +1251,8 @@ def EnumValue(key: Handle, index: int) -> Tuple[str, RegData, int]:             
 
 
 
-    Examples and Tests
-    ------------------
+    Examples
+    --------
 
     >>> # Setup
     >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -1344,8 +1369,8 @@ def OpenKey(key: Handle, sub_key: Union[str, None], reserved: int = 0, access: i
 
 
 
-    Examples and Tests
-    ------------------
+    Examples
+    --------
 
     >>> # Setup
     >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -1477,8 +1502,8 @@ def OpenKeyEx(key: Handle, sub_key: Optional[str], reserved: int = 0, access: in
 
 
 
-    Examples and Tests
-    ------------------
+    Examples
+    --------
 
     >>> # Setup
     >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -1548,6 +1573,9 @@ def QueryInfoKey(key: Handle) -> Tuple[int, int, int]:            # noqa
 
     OverflowError: int too big to convert
         if parameter key is > 64 Bit Integer Value
+
+    TypeError: QueryInfoKey() got some positional-only arguments passed as keyword arguments: '<key>'
+        if a keyword (named) parameter was passed
 
 
 
@@ -1656,6 +1684,9 @@ def QueryValue(key: Handle, sub_key: Union[str, None]) -> str:        # noqa
     TypeError: QueryValue() argument 2 must be str or None, not <type>
         if the subkey is anything else then str or None
 
+    TypeError: QueryValue() got some positional-only arguments passed as keyword arguments: '<key>'
+        if a keyword (named) parameter was passed
+
 
 
     Events:
@@ -1665,8 +1696,8 @@ def QueryValue(key: Handle, sub_key: Union[str, None]) -> str:        # noqa
 
 
 
-    Examples and Tests
-    ------------------
+    Examples
+    --------
 
     >>> # Setup
     >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -1806,6 +1837,9 @@ def QueryValueEx(key: Handle, value_name: Optional[str]) -> Tuple[RegData, int]:
     TypeError: QueryValueEx() argument 2 must be str or None, not <type>
         if the value_name is anything else then str or None
 
+    TypeError: QueryValueEx() got some positional-only arguments passed as keyword arguments: '<key>'
+        if a keyword (named) parameter was passed
+
 
 
     Events
@@ -1815,8 +1849,8 @@ def QueryValueEx(key: Handle, value_name: Optional[str]) -> Tuple[RegData, int]:
 
 
 
-    Examples and Tests
-    ------------------
+    Examples
+    --------
 
     >>> # Setup
     >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -1941,6 +1975,9 @@ def SetValue(key: Handle, sub_key: Union[str, None], type: int, value: str) -> N
     TypeError: SetValue() argument 4 must be str not <type>
         if the value is anything else but str
 
+    TypeError: SetValue() got some positional-only arguments passed as keyword arguments: '<key>'
+        if a keyword (named) parameter was passed
+
 
 
     Events
@@ -1950,8 +1987,8 @@ def SetValue(key: Handle, sub_key: Union[str, None], type: int, value: str) -> N
 
 
 
-    Examples and Tests
-    ------------------
+    Examples
+    --------
 
     >>> # Setup
     >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -2104,6 +2141,9 @@ def SetValueEx(key: Handle, value_name: Optional[str], reserved: int, type: int,
     TypeError: SetValueEx() argument 4 must be int not <type>
         if the type is anything else but int
 
+    TypeError: SetValueEx() got some positional-only arguments passed as keyword arguments: '<key>'
+        if a keyword (named) parameter was passed
+
 
 
     Events
@@ -2113,8 +2153,8 @@ def SetValueEx(key: Handle, value_name: Optional[str], reserved: int, type: int,
 
 
 
-    Examples and Tests
-    ------------------
+    Examples
+    --------
 
     >>> # Setup
     >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()

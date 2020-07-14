@@ -297,6 +297,9 @@ ConnectRegistry
         OverflowError: int too big to convert
             if parameter key is > 64 Bit Integer Value
 
+        TypeError: ConnectRegistry() got some positional-only arguments passed as keyword arguments: '<key>'
+            if a keyword (named) parameter was passed
+
 
 
         Events
@@ -306,8 +309,8 @@ ConnectRegistry
 
 
 
-        Examples and Tests
-        ------------------
+        Examples
+        --------
 
         >>> # Setup
         >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -384,10 +387,13 @@ CloseKey
         OverflowError: int too big to convert
             if parameter key is > 64 Bit Integer Value
 
+        TypeError: CloseKey() got some positional-only arguments passed as keyword arguments: '<key>'
+            if a keyword (named) parameter was passed
 
 
-        Examples and Tests
-        ------------------
+
+        Examples
+        --------
 
         >>> # Setup
         >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -477,6 +483,9 @@ CreateKey
         OSError: [WinError 1010] The configuration registry key is invalid
             if the subkey is None or empty string, and key is not one of the predefined HKEY Constants
 
+        TypeError: CreateKey() got some positional-only arguments passed as keyword arguments: '<key>'
+            if a keyword (named) parameter was passed
+
 
 
         Events
@@ -488,8 +497,8 @@ CreateKey
 
 
 
-        Examples and Tests
-        ------------------
+        Examples
+        --------
 
         >>> # Setup
         >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -621,10 +630,11 @@ CreateKeyEx
         OSError: [WinError 1010] The configuration registry key is invalid
             if the subkey is None
 
-        TypeError: CreateKey() argument 2 must be str or None, not <type>
+        TypeError: CreateKeyEx() argument 2 must be str or None, not <type>
             if the subkey is anything else then str
 
-
+        TypeError: CreateKeyEx() got some positional-only arguments passed as keyword arguments: '<key>'
+            if a keyword (named) parameter was passed
 
 
 
@@ -637,8 +647,8 @@ CreateKeyEx
 
 
 
-        Examples and Tests
-        ------------------
+        Examples
+        --------
 
         >>> # Setup
         >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -750,6 +760,9 @@ DeleteKey
         OverflowError: int too big to convert
             if parameter key is > 64 Bit Integer Value
 
+        TypeError: DeleteKey() got some positional-only arguments passed as keyword arguments: '<key>'
+            if a keyword (named) parameter was passed
+
 
 
         Events
@@ -759,8 +772,8 @@ DeleteKey
 
 
 
-        Examples and Tests
-        ------------------
+        Examples
+        --------
 
         >>> # Setup
         >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -865,7 +878,7 @@ DeleteKeyEx
         NotImplementedError:
             On unsupported Windows versions (NOT IMPLEMENTED)
 
-        TypeError: DeleteKey() argument 2 must be str, not <type>
+        TypeError: DeleteKeyEx() argument 2 must be str, not <type>
             if parameter sub_key type is anything else but string
 
         TypeError: an integer is required (got NoneType)
@@ -886,6 +899,9 @@ DeleteKeyEx
         OSError: WinError 87 The parameter is incorrect
             if parameter reserved is not 0
 
+        TypeError: DeleteKeyEx() got some positional-only arguments passed as keyword arguments: '<key>'
+            if a keyword (named) parameter was passed
+
 
 
         Events
@@ -895,8 +911,8 @@ DeleteKeyEx
 
 
 
-        Examples and Tests
-        ------------------
+        Examples
+        --------
 
         >>> # Setup
         >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -984,6 +1000,9 @@ DeleteValue
         TypeError: DeleteValue() argument 2 must be str or None, not <type>
             if parameter value type is anything else but string or None
 
+        TypeError: DeleteValue() got some positional-only arguments passed as keyword arguments: '<key>'
+            if a keyword (named) parameter was passed
+
 
 
         Events
@@ -993,8 +1012,8 @@ DeleteValue
 
 
 
-        Examples and Tests
-        ------------------
+        Examples
+        --------
 
         >>> # Setup
         >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -1071,6 +1090,9 @@ EnumKey
         OverflowError: Python int too large to convert to C int
             if parameter index is > 64 Bit Integer Value
 
+        TypeError: EnumKey() got some positional-only arguments passed as keyword arguments: '<key>'
+            if a keyword (named) parameter was passed
+
 
 
         Events
@@ -1080,8 +1102,8 @@ EnumKey
 
 
 
-        Examples and Tests:
-        -------------------
+        Examples
+        --------
 
         >>> # Setup
         >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -1176,6 +1198,9 @@ EnumValue
         OverflowError: Python int too large to convert to C int
             if parameter index is > 64 Bit Integer Value
 
+        TypeError: EnumValue() got some positional-only arguments passed as keyword arguments: '<key>'
+            if a keyword (named) parameter was passed
+
 
 
         Events
@@ -1214,8 +1239,8 @@ EnumValue
 
 
 
-        Examples and Tests
-        ------------------
+        Examples
+        --------
 
         >>> # Setup
         >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -1319,8 +1344,8 @@ OpenKey
 
 
 
-        Examples and Tests
-        ------------------
+        Examples
+        --------
 
         >>> # Setup
         >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -1434,8 +1459,8 @@ OpenKeyEx
 
 
 
-        Examples and Tests
-        ------------------
+        Examples
+        --------
 
         >>> # Setup
         >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -1503,6 +1528,9 @@ QueryInfoKey
 
         OverflowError: int too big to convert
             if parameter key is > 64 Bit Integer Value
+
+        TypeError: QueryInfoKey() got some positional-only arguments passed as keyword arguments: '<key>'
+            if a keyword (named) parameter was passed
 
 
 
@@ -1605,6 +1633,9 @@ QueryValue
         TypeError: QueryValue() argument 2 must be str or None, not <type>
             if the subkey is anything else then str or None
 
+        TypeError: QueryValue() got some positional-only arguments passed as keyword arguments: '<key>'
+            if a keyword (named) parameter was passed
+
 
 
         Events:
@@ -1614,8 +1645,8 @@ QueryValue
 
 
 
-        Examples and Tests
-        ------------------
+        Examples
+        --------
 
         >>> # Setup
         >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -1738,6 +1769,9 @@ QueryValueEx
         TypeError: QueryValueEx() argument 2 must be str or None, not <type>
             if the value_name is anything else then str or None
 
+        TypeError: QueryValueEx() got some positional-only arguments passed as keyword arguments: '<key>'
+            if a keyword (named) parameter was passed
+
 
 
         Events
@@ -1747,8 +1781,8 @@ QueryValueEx
 
 
 
-        Examples and Tests
-        ------------------
+        Examples
+        --------
 
         >>> # Setup
         >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -1859,6 +1893,9 @@ SetValue
         TypeError: SetValue() argument 4 must be str not <type>
             if the value is anything else but str
 
+        TypeError: SetValue() got some positional-only arguments passed as keyword arguments: '<key>'
+            if a keyword (named) parameter was passed
+
 
 
         Events
@@ -1868,8 +1905,8 @@ SetValue
 
 
 
-        Examples and Tests
-        ------------------
+        Examples
+        --------
 
         >>> # Setup
         >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -2005,6 +2042,9 @@ SetValueEx
         TypeError: SetValueEx() argument 4 must be int not <type>
             if the type is anything else but int
 
+        TypeError: SetValueEx() got some positional-only arguments passed as keyword arguments: '<key>'
+            if a keyword (named) parameter was passed
+
 
 
         Events
@@ -2014,8 +2054,8 @@ SetValueEx
 
 
 
-        Examples and Tests
-        ------------------
+        Examples
+        --------
 
         >>> # Setup
         >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
