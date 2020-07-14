@@ -261,6 +261,17 @@ Changelog
 - new MINOR version for added functionality in a backwards compatible manner
 - new PATCH version for backwards compatible bug fixes
 
+2.0.0-beta
+----------
+2020-xx-xx : development version
+    -
+
+2.0.0-alpha
+-----------
+2020-07-13 : intermediate release
+    - start to implement additional pathlib-like interface
+    - implement fake-winreg to be able to develop and test under linux
+
 1.0.4
 -----
 2020-07-08 : patch release
