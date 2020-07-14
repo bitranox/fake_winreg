@@ -814,13 +814,19 @@ class Registry(object):
         >>> registry.delete_key(r'HKCU\\Software\\lib_registry_test', delete_subkeys=True)
         >>> assert registry.key_exist(r'HKCU\\Software\\lib_registry_test') == False
 
+        >>> # Try to delete a Key with missing_ok = True
+        >>> registry.delete_key(r'HKCU\\Software\\lib_registry_test', missing_ok=True)
+
         """
         hive_key, hive_sub_key = resolve_key(key, sub_key)
         _key_exists = self.key_exist(hive_key, hive_sub_key)
 
-        if not _key_exists and not missing_ok:
-            key_str = get_key_as_string(key, sub_key)
-            raise RegistryKeyDeleteError('can not delete key none existing key "{key_str}"'.format(key_str=key_str))
+        if not _key_exists:
+            if missing_ok:
+                return
+            else:
+                key_str = get_key_as_string(key, sub_key)
+                raise RegistryKeyDeleteError('can not delete key none existing key "{key_str}"'.format(key_str=key_str))
 
         if self.has_subkeys(hive_key, hive_sub_key):
             if not delete_subkeys:
