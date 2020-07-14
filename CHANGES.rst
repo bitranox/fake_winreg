@@ -5,10 +5,17 @@ Changelog
 - new MINOR version for added functionality in a backwards compatible manner
 - new PATCH version for backwards compatible bug fixes
 
-2.0.0-beta
+tasks:
+    - test if caching of handles make sense, especially on network
+    - documentation update
+    - pathlib-like Interface
+    - jupyter notebook update
+
+2.0.0
 ----------
-2020-xx-xx : development version
-    -
+2020-07-14 : feature release
+    - fix setup.py for deploy on pypi
+    - fix travis for pypi deploy testing
 
 2.0.0-alpha
 -----------
