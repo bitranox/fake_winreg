@@ -173,7 +173,7 @@ script:
       fi
 
     # Check if Deployment would work on non-tagged builds
-    - if [[ -f setup.py ]] && [[ -z ${TRAVIS_TAG} ]] && [[ -f build_docs.py ]] && [[ ${build_docs} == "True" ]]; then
+    - if [[ -f setup.py ]] && [[ -z ${TRAVIS_TAG} ]] && [[ ${build_docs} == "True" ]]; then
           ${lib_bash_banner} "Testing PyPi Deployment";
           ${cPREFIX} ${cPIP} install readme_renderer > /dev/null 2>&1;
           ${cPREFIX} ${cPIP} install --upgrade twine > /dev/null 2>&1;
