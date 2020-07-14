@@ -1,6 +1,6 @@
 name = 'lib_registry'
 title = 'a more pythonic way to access the windows registry as winreg'
-version = '2.0.0-alpha'
+version = '2.0.0-beta'
 url = 'https://github.com/bitranox/lib_registry'
 author = 'Robert Nowotny'
 author_email = 'bitranox@gmail.com'
@@ -14,7 +14,7 @@ Info for lib_registry:
 
     a more pythonic way to access the windows registry as winreg
 
-    Version : 2.0.0-alpha
+    Version : 2.0.0-beta
     Url     : https://github.com/bitranox/lib_registry
     Author  : Robert Nowotny
     Email   : bitranox@gmail.com""")
