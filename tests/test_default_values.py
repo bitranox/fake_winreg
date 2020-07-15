@@ -64,4 +64,4 @@ def test_write_default_value(key_handle_test_read_only, key_handle_test_all_acce
 
 
 if __name__ == '__main__':
-    pytest.main()
+    pytest.main(['--log-cli-level', 'ERROR'])
