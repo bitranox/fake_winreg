@@ -270,7 +270,7 @@ tasks:
 x.x.x
 ----------
 2020-xx-xx: development version
-    -
+    - corrected error in DeleteKey, missing_ok
 
 
 2.0.0
