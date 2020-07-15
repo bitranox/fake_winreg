@@ -12,6 +12,11 @@ planned:
     - investigate SYSWOW32/64 Views
     - Admin Permissions
 
+0.5.2
+-----
+2020-xx-xx : development
+    -
+
 
 0.5.1
 -----
