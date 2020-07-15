@@ -56,6 +56,7 @@ function clean_caches() {
   sudo find "${project_root_dir}" -name "build" -type d -exec rm -rf {} \; 2>/dev/null
   sudo find "${project_root_dir}" -name "dist" -type d -exec rm -rf {} \; 2>/dev/null
   sudo find "${project_root_dir}" -name "*.egg-info" -type d -exec rm -rf {} \; 2>/dev/null
+  sudo find "${project_root_dir}" -name "__pycache__" -type d -exec rm -rf {} \; 2>/dev/null
   sudo rm -rf "$HOME/.eggs/*"
   sudo rm -rf "$HOME/.mypy_cache"
 }
@@ -134,7 +135,7 @@ function mypy_strict() {
 
 function mypy_strict_with_imports() {
   my_banner "mypy strict including imports"
-  if ! python3 -m mypy "${project_root_dir}" --strict --warn-unused-ignores --implicit-reexport --follow-imports=normal; then
+  if ! python3 -m mypy "${project_root_dir}" --strict --no-warn-unused-ignores --implicit-reexport --follow-imports=normal; then
     my_banner_warning "mypy strict including imports ERROR"
     beep
     sleep "${sleeptime_on_error}"

@@ -297,6 +297,9 @@ ConnectRegistry
         OverflowError: int too big to convert
             if parameter key is > 64 Bit Integer Value
 
+        TypeError: ConnectRegistry() got some positional-only arguments passed as keyword arguments: '<key>'
+            if a keyword (named) parameter was passed
+
 
 
         Events
@@ -306,8 +309,8 @@ ConnectRegistry
 
 
 
-        Examples and Tests
-        ------------------
+        Examples
+        --------
 
         >>> # Setup
         >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -384,10 +387,13 @@ CloseKey
         OverflowError: int too big to convert
             if parameter key is > 64 Bit Integer Value
 
+        TypeError: CloseKey() got some positional-only arguments passed as keyword arguments: '<key>'
+            if a keyword (named) parameter was passed
 
 
-        Examples and Tests
-        ------------------
+
+        Examples
+        --------
 
         >>> # Setup
         >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -477,6 +483,9 @@ CreateKey
         OSError: [WinError 1010] The configuration registry key is invalid
             if the subkey is None or empty string, and key is not one of the predefined HKEY Constants
 
+        TypeError: CreateKey() got some positional-only arguments passed as keyword arguments: '<key>'
+            if a keyword (named) parameter was passed
+
 
 
         Events
@@ -488,8 +497,8 @@ CreateKey
 
 
 
-        Examples and Tests
-        ------------------
+        Examples
+        --------
 
         >>> # Setup
         >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -621,10 +630,11 @@ CreateKeyEx
         OSError: [WinError 1010] The configuration registry key is invalid
             if the subkey is None
 
-        TypeError: CreateKey() argument 2 must be str or None, not <type>
+        TypeError: CreateKeyEx() argument 2 must be str or None, not <type>
             if the subkey is anything else then str
 
-
+        TypeError: CreateKeyEx() got some positional-only arguments passed as keyword arguments: '<key>'
+            if a keyword (named) parameter was passed
 
 
 
@@ -637,8 +647,8 @@ CreateKeyEx
 
 
 
-        Examples and Tests
-        ------------------
+        Examples
+        --------
 
         >>> # Setup
         >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -678,8 +688,15 @@ CreateKeyEx
         ...
         OSError: [WinError 6] The handle is invalid
 
-        >>> # empty subkey is valid
+        >>> # subkey empty is valid
         >>> discard = key_handle_existing = CreateKeyEx(reg_handle, r'', 0 ,  KEY_WRITE)
+
+        >>> # subkey None is invalid
+        >>> discard = key_handle_existing = CreateKeyEx(reg_handle, None, 0 ,  KEY_WRITE)  # noqa
+        Traceback (most recent call last):
+            ...
+        OSError: [WinError 1010] The configuration registry key is invalid
+
 
         >>> # provoke Error subkey wrong type
         >>> key_handle_existing = CreateKeyEx(reg_handle, 1, 0 ,  KEY_WRITE)  # noqa
@@ -743,6 +760,9 @@ DeleteKey
         OverflowError: int too big to convert
             if parameter key is > 64 Bit Integer Value
 
+        TypeError: DeleteKey() got some positional-only arguments passed as keyword arguments: '<key>'
+            if a keyword (named) parameter was passed
+
 
 
         Events
@@ -752,8 +772,8 @@ DeleteKey
 
 
 
-        Examples and Tests
-        ------------------
+        Examples
+        --------
 
         >>> # Setup
         >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -858,7 +878,7 @@ DeleteKeyEx
         NotImplementedError:
             On unsupported Windows versions (NOT IMPLEMENTED)
 
-        TypeError: DeleteKey() argument 2 must be str, not <type>
+        TypeError: DeleteKeyEx() argument 2 must be str, not <type>
             if parameter sub_key type is anything else but string
 
         TypeError: an integer is required (got NoneType)
@@ -879,6 +899,9 @@ DeleteKeyEx
         OSError: WinError 87 The parameter is incorrect
             if parameter reserved is not 0
 
+        TypeError: DeleteKeyEx() got some positional-only arguments passed as keyword arguments: '<key>'
+            if a keyword (named) parameter was passed
+
 
 
         Events
@@ -888,28 +911,28 @@ DeleteKeyEx
 
 
 
-        Examples and Tests
-        ------------------
+        Examples
+        --------
 
         >>> # Setup
         >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
         >>> load_fake_registry(fake_registry)
         >>> reg_handle = ConnectRegistry(None, HKEY_CURRENT_USER)
-        >>> key_handle_created = CreateKey(reg_handle, r'SOFTWARE\\xxxx\\yyyy\\zzz')
+        >>> key_handle_created = CreateKey(reg_handle, r'Software\\xxxx\\yyyy\\zzz')
 
         >>> # Delete key without subkeys
         >>> # assert __key_in_py_hive_handles(r'HKEY_CURRENT_USER\\SOFTWARE\\xxxx\\yyyy\\zzz')
-        >>> DeleteKeyEx(reg_handle, r'SOFTWARE\\xxxx\\yyyy\\zzz')
+        >>> DeleteKeyEx(reg_handle, r'Software\\xxxx\\yyyy\\zzz')
         >>> # assert not __key_in_py_hive_handles(r'HKEY_CURRENT_USER\\SOFTWARE\\xxxx\\yyyy\\zzz')
 
         >>> # try to delete non existing key (it was deleted before)
-        >>> DeleteKeyEx(reg_handle, r'SOFTWARE\\xxxx\\yyyy\\zzz')
+        >>> DeleteKeyEx(reg_handle, r'Software\\xxxx\\yyyy\\zzz')
         Traceback (most recent call last):
             ...
         FileNotFoundError: [WinError 2] The system cannot find the file specified
 
         >>> # try to delete key with subkey
-        >>> DeleteKeyEx(reg_handle, r'SOFTWARE\\xxxx')
+        >>> DeleteKeyEx(reg_handle, r'Software\\xxxx')
         Traceback (most recent call last):
             ...
         PermissionError: [WinError 5] Access is denied
@@ -921,14 +944,14 @@ DeleteKeyEx
         TypeError: DeleteKeyEx() argument 2 must be str, not None
 
         >>> # try to delete key with access = KEY_WOW64_32KEY
-        >>> DeleteKeyEx(reg_handle, r'SOFTWARE\\xxxx\\yyyy', KEY_WOW64_32KEY)
+        >>> DeleteKeyEx(reg_handle, r'Software\\xxxx\\yyyy', KEY_WOW64_32KEY)
         Traceback (most recent call last):
             ...
         NotImplementedError: we only support KEY_WOW64_64KEY
 
         >>> # Teardown
-        >>> DeleteKeyEx(reg_handle, r'SOFTWARE\\xxxx\\yyyy')
-        >>> DeleteKeyEx(reg_handle, r'SOFTWARE\\xxxx')
+        >>> DeleteKeyEx(reg_handle, r'Software\\xxxx\\yyyy')
+        >>> DeleteKeyEx(reg_handle, r'Software\\xxxx')
 
         """
 
@@ -977,6 +1000,9 @@ DeleteValue
         TypeError: DeleteValue() argument 2 must be str or None, not <type>
             if parameter value type is anything else but string or None
 
+        TypeError: DeleteValue() got some positional-only arguments passed as keyword arguments: '<key>'
+            if a keyword (named) parameter was passed
+
 
 
         Events
@@ -986,8 +1012,8 @@ DeleteValue
 
 
 
-        Examples and Tests
-        ------------------
+        Examples
+        --------
 
         >>> # Setup
         >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -995,7 +1021,7 @@ DeleteValue
 
         >>> reg_handle = ConnectRegistry(None, HKEY_LOCAL_MACHINE)
         >>> key_handle = OpenKey(reg_handle, r'SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion')
-        >>> # winreg.SetValueEx(reg_key, 'some_test', 0, winreg.REG_SZ, 'some_test_value')
+        >>> SetValueEx(key_handle, 'some_test', 0, REG_SZ, 'some_test_value')
 
         >>> # Delete Default Value, value_name NONE (not set, therefore Error
         >>> DeleteValue(key_handle, None)
@@ -1011,9 +1037,6 @@ DeleteValue
 
         >>> # Delete Non Existing Value
         >>> DeleteValue(key_handle, 'some_test')
-        Traceback (most recent call last):
-            ...
-        FileNotFoundError: [WinError 2] The system cannot find the file specified
 
         """
 
@@ -1067,6 +1090,9 @@ EnumKey
         OverflowError: Python int too large to convert to C int
             if parameter index is > 64 Bit Integer Value
 
+        TypeError: EnumKey() got some positional-only arguments passed as keyword arguments: '<key>'
+            if a keyword (named) parameter was passed
+
 
 
         Events
@@ -1076,8 +1102,8 @@ EnumKey
 
 
 
-        Examples and Tests:
-        -------------------
+        Examples
+        --------
 
         >>> # Setup
         >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -1172,6 +1198,9 @@ EnumValue
         OverflowError: Python int too large to convert to C int
             if parameter index is > 64 Bit Integer Value
 
+        TypeError: EnumValue() got some positional-only arguments passed as keyword arguments: '<key>'
+            if a keyword (named) parameter was passed
+
 
 
         Events
@@ -1210,8 +1239,8 @@ EnumValue
 
 
 
-        Examples and Tests
-        ------------------
+        Examples
+        --------
 
         >>> # Setup
         >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -1315,8 +1344,8 @@ OpenKey
 
 
 
-        Examples and Tests
-        ------------------
+        Examples
+        --------
 
         >>> # Setup
         >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -1430,8 +1459,8 @@ OpenKeyEx
 
 
 
-        Examples and Tests
-        ------------------
+        Examples
+        --------
 
         >>> # Setup
         >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -1499,6 +1528,9 @@ QueryInfoKey
 
         OverflowError: int too big to convert
             if parameter key is > 64 Bit Integer Value
+
+        TypeError: QueryInfoKey() got some positional-only arguments passed as keyword arguments: '<key>'
+            if a keyword (named) parameter was passed
 
 
 
@@ -1601,6 +1633,9 @@ QueryValue
         TypeError: QueryValue() argument 2 must be str or None, not <type>
             if the subkey is anything else then str or None
 
+        TypeError: QueryValue() got some positional-only arguments passed as keyword arguments: '<key>'
+            if a keyword (named) parameter was passed
+
 
 
         Events:
@@ -1610,8 +1645,8 @@ QueryValue
 
 
 
-        Examples and Tests
-        ------------------
+        Examples
+        --------
 
         >>> # Setup
         >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -1734,6 +1769,9 @@ QueryValueEx
         TypeError: QueryValueEx() argument 2 must be str or None, not <type>
             if the value_name is anything else then str or None
 
+        TypeError: QueryValueEx() got some positional-only arguments passed as keyword arguments: '<key>'
+            if a keyword (named) parameter was passed
+
 
 
         Events
@@ -1743,8 +1781,8 @@ QueryValueEx
 
 
 
-        Examples and Tests
-        ------------------
+        Examples
+        --------
 
         >>> # Setup
         >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -1855,6 +1893,9 @@ SetValue
         TypeError: SetValue() argument 4 must be str not <type>
             if the value is anything else but str
 
+        TypeError: SetValue() got some positional-only arguments passed as keyword arguments: '<key>'
+            if a keyword (named) parameter was passed
+
 
 
         Events
@@ -1864,8 +1905,8 @@ SetValue
 
 
 
-        Examples and Tests
-        ------------------
+        Examples
+        --------
 
         >>> # Setup
         >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -2001,6 +2042,9 @@ SetValueEx
         TypeError: SetValueEx() argument 4 must be int not <type>
             if the type is anything else but int
 
+        TypeError: SetValueEx() got some positional-only arguments passed as keyword arguments: '<key>'
+            if a keyword (named) parameter was passed
+
 
 
         Events
@@ -2010,8 +2054,8 @@ SetValueEx
 
 
 
-        Examples and Tests
-        ------------------
+        Examples
+        --------
 
         >>> # Setup
         >>> fake_registry = fake_reg_tools.get_minimal_windows_testregistry()
@@ -2051,8 +2095,9 @@ Usage from Commandline
      fake winreg, in order to test registry related functions on linux
 
    Options:
-     --version   Show the version and exit.
-     -h, --help  Show this message and exit.
+     --version                     Show the version and exit.
+     --traceback / --no-traceback  return traceback information on cli
+     -h, --help                    Show this message and exit.
 
    Commands:
      info  get program informations
@@ -2096,7 +2141,15 @@ planned:
     - KEY_* Permissions on SetValue, ReadValue, etc ...
     - test matrix on windows to compare fake and original winreg in detail
     - auditing events
+    - investigate SYSWOW32/64 Views
     - Admin Permissions
+
+
+0.5.1
+-----
+2020-07-16 : patch release
+    - fix cli test
+    - enable traceback option on cli errors
 
 0.5.0
 -----

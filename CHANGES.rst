@@ -9,7 +9,15 @@ planned:
     - KEY_* Permissions on SetValue, ReadValue, etc ...
     - test matrix on windows to compare fake and original winreg in detail
     - auditing events
+    - investigate SYSWOW32/64 Views
     - Admin Permissions
+
+
+0.5.1
+-----
+2020-07-16 : patch release
+    - fix cli test
+    - enable traceback option on cli errors
 
 0.5.0
 -----
