@@ -11,11 +11,13 @@ tasks:
     - pathlib-like Interface
     - jupyter notebook update
 
-x.x.x
-----------
-2020-xx-xx: development version
-    - corrected error in DeleteKey, missing_ok
 
+2.0.1
+-----
+2020-07-16: feature release
+    - fix cli test
+    - enable traceback option on cli errors
+    - corrected error in DeleteKey, missing_ok
 
 2.0.0
 ----------
