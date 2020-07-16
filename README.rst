@@ -268,6 +268,9 @@ tasks:
     - pathlib-like Interface
     - jupyter notebook update
 
+2.0.2
+-----
+development
 
 2.0.1
 -----
