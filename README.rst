@@ -220,8 +220,9 @@ Usage from Commandline
      a more pythonic way to access the windows registry as winreg
 
    Options:
-     --version   Show the version and exit.
-     -h, --help  Show this message and exit.
+     --version                     Show the version and exit.
+     --traceback / --no-traceback  return traceback information on cli
+     -h, --help                    Show this message and exit.
 
    Commands:
      info  get program informations
@@ -266,6 +267,14 @@ tasks:
     - documentation update
     - pathlib-like Interface
     - jupyter notebook update
+
+
+2.0.1
+-----
+2020-07-16: feature release
+    - fix cli test
+    - enable traceback option on cli errors
+    - corrected error in DeleteKey, missing_ok
 
 2.0.0
 ----------

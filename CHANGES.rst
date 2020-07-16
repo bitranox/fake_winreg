@@ -11,6 +11,14 @@ tasks:
     - pathlib-like Interface
     - jupyter notebook update
 
+
+2.0.1
+-----
+2020-07-16: feature release
+    - fix cli test
+    - enable traceback option on cli errors
+    - corrected error in DeleteKey, missing_ok
+
 2.0.0
 ----------
 2020-07-14 : feature release

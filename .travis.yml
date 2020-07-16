@@ -156,7 +156,7 @@ script:
 
     # mypy typecheck strict
     - if [[ ${mypy_strict_typecheck} == "True" ]]; then
-          COMMAND="${cPREFIX} ${cPYTHON} -m mypy -p lib_registry --strict --warn-unused-ignores --implicit-reexport --follow-imports=silent"
+          COMMAND="${cPREFIX} ${cPYTHON} -m mypy -p lib_registry --strict --no-warn-unused-ignores --implicit-reexport --follow-imports=silent"
           ${lib_bash_banner} "running '${COMMAND}'";
           if ${COMMAND}; then ${lib_bash_banner} "'${COMMAND}' - OK"; else ${lib_bash_banner_warning} "'${COMMAND}' - FAILED" && exit 1; fi
       else
