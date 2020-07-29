@@ -1,7 +1,7 @@
 - `Try it Online`_
-- `Installation and Upgrade`_
 - `Usage`_
 - `Usage from Commandline`_
+- `Installation and Upgrade`_
 - `Requirements`_
 - `Acknowledgements`_
 - `Contribute`_
