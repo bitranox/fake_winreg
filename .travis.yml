@@ -15,6 +15,8 @@ env:
         - WINEDEBUG=fixme-all
         # mypy path
         - MYPYPATH="./fake_winreg/3rd_party_stubs"
+        # package name
+        - PACKAGE_NAME="fake_winreg"
         # the registered CLI Command
         - CLI_COMMAND=fake_winreg
         # the source file for rst_include (rebuild rst file includes)
