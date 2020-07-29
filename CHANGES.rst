@@ -14,9 +14,9 @@ planned:
 
 0.5.2
 -----
-2020-xx-xx : development
-    -
-
+2020-07-29: feature release
+    - use the new pizzacutter template
+    - use cli_exit_tools
 
 0.5.1
 -----
