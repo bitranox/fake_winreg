@@ -12,6 +12,12 @@ planned:
     - investigate SYSWOW32/64 Views
     - Admin Permissions
 
+
+0.5.3a0
+-------
+2020-07-29: development
+
+
 0.5.2
 -----
 2020-07-29: feature release

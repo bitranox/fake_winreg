@@ -1,4 +1,4 @@
-Version 0.5.2 as of 2020-07-29, see changelog_
+Version 0.5.3a0 as of 2020-07-29, see changelog_
 
 =======================================================
 
@@ -2148,6 +2148,12 @@ planned:
     - auditing events
     - investigate SYSWOW32/64 Views
     - Admin Permissions
+
+
+0.5.3a0
+-------
+2020-07-29: development
+
 
 0.5.2
 -----
