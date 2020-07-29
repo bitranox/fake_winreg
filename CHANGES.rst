@@ -11,6 +11,11 @@ tasks:
     - pathlib-like Interface
     - jupyter notebook update
 
+2.0.2
+-----
+2020-07-29: feature release
+    - use the new pizzacutter template
+    - use cli_exit_tools
 
 2.0.1
 -----

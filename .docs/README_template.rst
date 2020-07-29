@@ -1,3 +1,7 @@
+Version 2.0.2 as of 2020-07-29, see changelog_
+
+=======================================================
+
 lib_registry
 ============
 
@@ -22,10 +26,6 @@ Python version required: 3.6.0 or newer
 
 .. include:: ./try_in_jupyter.rst
 
-Installation and Upgrade
-------------------------
-.. include:: ./installation.rst
-
 Usage
 -----------
 .. include:: ./usage.rst
@@ -33,6 +33,10 @@ Usage
 Usage from Commandline
 ------------------------
 .. include:: ./commandline_help.rst
+
+Installation and Upgrade
+------------------------
+.. include:: ./installation.rst
 
 Requirements
 ------------
