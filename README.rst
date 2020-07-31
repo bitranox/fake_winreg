@@ -276,7 +276,7 @@ tasks:
 
 v2.0.3
 --------
-2020-07-29: feature release
+2020-07-31: fix travis build
 
 
 v2.0.2
