@@ -1,4 +1,4 @@
-Version 0.5.2 as of 2020-07-29, see changelog_
+Version v1.5.3 as of 2020-07-31, see changelog_
 
 =======================================================
 
@@ -2149,52 +2149,58 @@ planned:
     - investigate SYSWOW32/64 Views
     - Admin Permissions
 
-0.5.2
------
+
+v1.5.3
+--------
+2020-07-31: fix travis build
+
+
+v0.5.2
+--------
 2020-07-29: feature release
     - use the new pizzacutter template
     - use cli_exit_tools
 
-0.5.1
------
+v0.5.1
+--------
 2020-07-16 : patch release
     - fix cli test
     - enable traceback option on cli errors
 
-0.5.0
------
+v0.5.0
+--------
 2020-07-13 : feature release
     - CreateKeyEx added
     - access rights on CreateKey, CreateKeyEx, OpenKey, OpenKeyEX added
 
-0.4.1
------
+v0.4.1
+--------
 2020-07-13 : patch release
     - 100% coverage
     - raise correct Exception when try to connect to Network Computer
 
-0.4.0
------
+v0.4.0
+--------
 2020-07-13 : feature release
     - raise [WinError 1707] The network address is invalid if computername is given
     - make HKEYType int convertible
     - make type aliases for better readability
     - coverage
 
-0.3.1
------
+v0.3.1
+--------
 2020-07-12 : patch release
     - corrected types
 
-0.3.0
------
+v0.3.0
+--------
 2020-07-12 : feature release
     - raise Errors on SetValueEx if type is not appropriate
     - raise Errors on wrong parameter types like original winreg
     - comprehensive documentation
 
-0.2.0
------
+v0.2.0
+--------
 2020-07-11 : feature release
     - added EnumValue
     - added Close() and Detach() for PyHKEY Class
@@ -2206,8 +2212,8 @@ planned:
     - added stub file for wrapt
     - added more REG_* Types
 
-0.1.1
------
+v0.1.1
+--------
 2020-07-08 : patch release
     - new click CLI
     - use PizzaCutter Template
@@ -2215,8 +2221,8 @@ planned:
     - reorganized modules and import
     - updated documentation
 
-0.1.0
------
+v0.1.0
+--------
 2020-06-17: initial public release
     - with all docs in place
 
