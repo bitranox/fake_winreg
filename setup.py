@@ -88,7 +88,7 @@ if is_travis_deploy() and is_tagged_commit():
 
 setup_kwargs: Dict[str, Any] = dict()
 setup_kwargs['name'] = 'fake_winreg'
-setup_kwargs['version'] = '1.5.3'
+setup_kwargs['version'] = 'v1.5.3'
 setup_kwargs['url'] = 'https://github.com/bitranox/fake_winreg'
 setup_kwargs['packages'] = find_packages()
 setup_kwargs['package_data'] = {'fake_winreg': ['py.typed', '*.pyi', '__init__.pyi']}

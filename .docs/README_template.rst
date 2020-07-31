@@ -1,4 +1,4 @@
-Version 1.5.3 as of 2020-07-31, see changelog_
+Version v1.5.3 as of 2020-07-31, see changelog_
 
 =======================================================
 
