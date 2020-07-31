@@ -1,4 +1,4 @@
-Version 2.0.3a0 as of 2020-07-29, see changelog_
+Version v2.0.3 as of 2020-07-31, see changelog_
 
 =======================================================
 
@@ -274,38 +274,38 @@ tasks:
     - jupyter notebook update
 
 
-2.0.3a0
--------
+v2.0.3
+--------
 2020-07-29: feature release
 
 
-2.0.2
------
+v2.0.2
+--------
 2020-07-29: feature release
     - use the new pizzacutter template
     - use cli_exit_tools
 
-2.0.1
------
+v2.0.1
+--------
 2020-07-16: feature release
     - fix cli test
     - enable traceback option on cli errors
     - corrected error in DeleteKey, missing_ok
 
-2.0.0
-----------
+v2.0.0
+--------
 2020-07-14 : feature release
     - fix setup.py for deploy on pypi
     - fix travis for pypi deploy testing
 
-2.0.0-alpha
------------
+v2.0.0a0
+--------
 2020-07-13 : intermediate release
     - start to implement additional pathlib-like interface
     - implement fake-winreg to be able to develop and test under linux
 
-1.0.4
------
+v1.0.4
+--------
 2020-07-08 : patch release
     - new click CLI
     - use PizzaCutter Template
@@ -313,19 +313,19 @@ tasks:
     - reorganized modules and import
     - updated documentation
 
-1.0.3
------
+v1.0.3
+--------
 2019-09-02: strict mypy type checking, housekeeping
 
-1.0.2
------
+v1.0.2
+--------
 2019-04-10: initial PyPi release
 
-1.0.1
------
+v1.0.1
+--------
 2019-03-29: prevent import error when importing under linux
 
-1.0.0
------
+v1.0.0
+--------
 2019-03-28: Initial public release
 
