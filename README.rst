@@ -1,9 +1,7 @@
-Version v1.5.3 as of 2020-07-31, see changelog_
-
-=======================================================
-
 fake_winreg
 ===========
+
+Version v1.5.4 as of 2020-08-01, see `Changelog`_.
 
 |travis_build| |license| |jupyter| |pypi|
 
@@ -90,7 +88,7 @@ automated tests, Travis Matrix, Documentation, Badges, etc. are managed with `Pi
 
 Python version required: 3.6.0 or newer
 
-tested on linux "bionic" with python 3.6, 3.7, 3.8, 3.8-dev, pypy3
+tested on linux "bionic" with python 3.6, 3.7, 3.8, 3.8-dev, pypy3 - architectures: amd64, ppc64le, s390x, arm64
 
 `100% code coverage <https://codecov.io/gh/bitranox/fake_winreg>`_, codestyle checking ,mypy static type checking ,tested under `Linux, macOS, Windows <https://travis-ci.org/bitranox/fake_winreg>`_, automatic daily builds and monitoring
 
@@ -2149,6 +2147,9 @@ planned:
     - investigate SYSWOW32/64 Views
     - Admin Permissions
 
+v1.5.4
+---------
+2020-08-01: fix pypi deploy
 
 v1.5.3
 --------

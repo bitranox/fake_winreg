@@ -12,6 +12,9 @@ planned:
     - investigate SYSWOW32/64 Views
     - Admin Permissions
 
+v1.5.4
+---------
+2020-08-01: fix pypi deploy
 
 v1.5.3
 --------
