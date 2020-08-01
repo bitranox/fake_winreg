@@ -1,7 +1,8 @@
 lib_registry
 ============
 
-Version v2.0.4 as of 2020-08-01, see `Changelog`_.
+
+Version v2.0.4 as of 2020-08-01 see `Changelog`_
 
 
 .. include:: ./badges.rst
