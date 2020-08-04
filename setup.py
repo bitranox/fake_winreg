@@ -15,6 +15,8 @@ from setuptools import find_packages
 def is_travis_deploy() -> bool:
     if os.getenv('DEPLOY_SDIST', '') or os.getenv('DEPLOY_WHEEL', ''):
         return is_tagged_commit()
+    else:
+        return False
 
 
 def is_tagged_commit() -> bool:

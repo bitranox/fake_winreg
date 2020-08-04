@@ -705,7 +705,7 @@ class Registry(object):
         >>> registry = Registry()
         >>> for sid in registry.sids():
         ...     try:
-        ...         username = registry._get_username_from_profile_list(sid)
+        ...         username = registry.username_from_sid(sid)
         ...         l_users.append(username)
         ...     except RegistryKeyNotFoundError:
         ...         pass

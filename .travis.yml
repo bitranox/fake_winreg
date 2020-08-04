@@ -71,7 +71,7 @@ matrix:
           - export BUILD_DOCS="False"
           - export DEPLOY_SDIST="False"
           - export DEPLOY_WHEEL="False"
-          - export DEPLOY_TEST="True"
+          - export BUILD_TEST="True"
           - export MYPY_STRICT="True"   
 
     - os: linux
@@ -83,7 +83,7 @@ matrix:
           - export BUILD_DOCS="False"
           - export DEPLOY_SDIST="False"
           - export DEPLOY_WHEEL="False"
-          - export DEPLOY_TEST="True"
+          - export BUILD_TEST="True"
           - export MYPY_STRICT="True"   
 
     - os: linux
@@ -95,7 +95,7 @@ matrix:
           - export BUILD_DOCS="True"
           - export DEPLOY_SDIST="True"
           - export DEPLOY_WHEEL="True"
-          - export DEPLOY_TEST="True"
+          - export BUILD_TEST="True"
           - export MYPY_STRICT="True"   
 
     - os: linux
@@ -107,7 +107,7 @@ matrix:
           - export BUILD_DOCS="False"
           - export DEPLOY_SDIST="False"
           - export DEPLOY_WHEEL="False"
-          - export DEPLOY_TEST="True"
+          - export BUILD_TEST="True"
           - export MYPY_STRICT="True"   
 
     - os: linux
@@ -119,7 +119,7 @@ matrix:
           - export BUILD_DOCS="False"
           - export DEPLOY_SDIST="False"
           - export DEPLOY_WHEEL="False"
-          - export DEPLOY_TEST="True"
+          - export BUILD_TEST="True"
           - export MYPY_STRICT="False"   
 
     - os: linux
@@ -130,8 +130,8 @@ matrix:
       before_install:
           - export BUILD_DOCS="False"
           - export DEPLOY_SDIST="False"
-          - export DEPLOY_WHEEL="True"
-          - export DEPLOY_TEST="True"
+          - export DEPLOY_WHEEL="False"
+          - export BUILD_TEST="True"
           - export MYPY_STRICT="True"   
 
     - os: linux
@@ -142,8 +142,8 @@ matrix:
       before_install:
           - export BUILD_DOCS="False"
           - export DEPLOY_SDIST="False"
-          - export DEPLOY_WHEEL="True"
-          - export DEPLOY_TEST="True"
+          - export DEPLOY_WHEEL="False"
+          - export BUILD_TEST="True"
           - export MYPY_STRICT="True"   
 
     - os: linux
@@ -154,8 +154,8 @@ matrix:
       before_install:
           - export BUILD_DOCS="False"
           - export DEPLOY_SDIST="False"
-          - export DEPLOY_WHEEL="True"
-          - export DEPLOY_TEST="True"
+          - export DEPLOY_WHEEL="False"
+          - export BUILD_TEST="True"
           - export MYPY_STRICT="True"   
 
     - os: osx
