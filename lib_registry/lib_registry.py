@@ -136,8 +136,65 @@ class RegistryNetworkConnectionError(RegistryError):
     pass
 
 
+# Registry{{{
 class Registry(object):
     def __init__(self, key: Union[None, str, int] = None, computer_name: Optional[str] = None):
+        """
+        The Registry Class, to create the registry object.
+        If a key is passed, a connection to the hive is established.
+
+        Parameter
+        ---------
+
+        key:
+            the predefined handle to connect to,
+            or a key string with the hive as the first part (everything else but the hive will be ignored)
+            or None (then no connection will be established)
+        computer_name:
+            the name of the remote computer, of the form r"\\computer_name" or "computer_name". If None, the local computer is used.
+
+        Exceptions
+        ----------
+            RegistryNetworkConnectionError      if can not reach target computer
+            RegistryHKeyError                   if can not connect to the hive
+            winreg.ConnectRegistry              auditing event
+
+        Examples
+        --------
+
+        >>> # just create the instance without connection
+        >>> registry = Registry()
+
+        >>> # test connect at init:
+        >>> registry = Registry('HKCU')
+
+        >>> # test invalid hive as string
+        >>> Registry()._reg_connect('SPAM')
+        Traceback (most recent call last):
+            ...
+        lib_registry.RegistryHKeyError: invalid KEY: "SPAM"
+
+        >>> # test invalid hive as integer
+        >>> Registry()._reg_connect(42)
+        Traceback (most recent call last):
+            ...
+        lib_registry.RegistryHKeyError: invalid HIVE KEY: "42"
+
+        >>> # test invalid computer to connect
+        >>> Registry()._reg_connect(winreg.HKEY_LOCAL_MACHINE, computer_name='some_unknown_machine')
+        Traceback (most recent call last):
+            ...
+        lib_registry.RegistryNetworkConnectionError: The network address "some_unknown_machine" is invalid
+
+        >>> # test invalid network Path
+        >>> Registry()._reg_connect(winreg.HKEY_LOCAL_MACHINE, computer_name=r'localhost\\ham\\spam')
+        Traceback (most recent call last):
+            ...
+        lib_registry.RegistryNetworkConnectionError: The network path to "localhost\\ham\\spam" was not found
+
+        """
+        # Registry}}}
+
         # this holds all connections to the hives stated on init
         # or even later. We dont limit access to the selected hive,
         # but we connect to another hive if needed
@@ -168,26 +225,28 @@ class Registry(object):
         Establishes a connection to a predefined registry handle on another computer, and returns a handle object.
         The user should not need to use this method - hives are opened, reused and closed automatically
 
-        :parameter
-        computer_name:
-            the name of the remote computer, of the form r"\\computer_name" or "computer_name". If None, the local computer is used.
+        Parameter
+        ---------
+
         key:
             the predefined handle to connect to,
             or a key string with the hive as the first part (everything else but the hive will be ignored)
+        computer_name:
+            the name of the remote computer, of the form r"\\computer_name" or "computer_name". If None, the local computer is used.
 
-        :returns
+        Result
+        ------
             the handle of the opened hive
 
-        :raises
+        Exceptions
+        ----------
             RegistryNetworkConnectionError      if can not reach target computer
             RegistryHKeyError                   if can not connect to the hive
             winreg.ConnectRegistry              auditing event
 
-        :examples
-            get_registry_connection('/hklm/software/....') -> reg_handle to hklm
-            get_registry_connection(winreg.HKEY_LOCAL_MACHINE) -> reg_handle to hklm
+        Examples
+        --------
 
-        >>> # DONE #3
         >>> # test connect at init:
         >>> registry = Registry('HKCU')
         >>> registry.reg_hive_connections[winreg.HKEY_CURRENT_USER]
@@ -271,16 +330,20 @@ class Registry(object):
         The user should not need to use this method - keys are opened , reused and closed automatically
 
 
-        Parameters :    key         can be either a predefined HKEY_* constant,
-                                    a string containing the root key,
-                                    or an already open key
+        Parameter
+        ---------
+        key
+          either a predefined HKEY_* constant,
+          a string containing the root key,
+          or an already open key
 
-                        sub_key     a string with the desired subkey relative to the key
+        sub_key
+          a string with the desired subkey relative to the key
 
-                        access      access is an integer that specifies an access mask that
-                                    describes the desired security access for the key. Default is winreg.KEY_READ
+        access
+          access is an integer that specifies an access mask that
+          describes the desired security access for the key. Default is winreg.KEY_READ
 
-        >>> # DONE #3
         >>> registry = Registry()
         >>> reg_handle1 = registry._open_key(winreg.HKEY_LOCAL_MACHINE, sub_key=r'SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList')
         >>> reg_handle2 = registry._open_key(r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList')
@@ -307,27 +370,35 @@ class Registry(object):
                 raise RegistryKeyNotFoundError('registry key "{}" not found'.format(key_str))
         return key_handle
 
-    def key_exist(self, key: Union[str, int], sub_key: str = '') -> bool:
-        """
-        >>> # DONE #3
-        >>> Registry().key_exist(r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion')
-        True
-        >>> Registry().key_exist(r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\DoesNotExist')
-        False
-
-        """
-
-        try:
-            self._open_key(key=key, sub_key=sub_key)
-            return True
-        except RegistryKeyNotFoundError:
-            return False
-
+    # create_key{{{
     def create_key(self, key: Union[str, int], sub_key: str = '', exist_ok: bool = True, parents: bool = False) -> winreg.HKEYType:
         """
         Creates a Key, and returns a Handle to the new key
 
-        >>> # DONE 3
+
+        Parameter
+        ---------
+        key
+          either a predefined HKEY_* constant,
+          a string containing the root key,
+          or an already open key
+        sub_key
+          a string with the desired subkey relative to the key
+        exist_ok
+          bool, default = True
+        parents
+          bool, default = false
+
+
+        Exceptions
+        ----------
+        RegistryKeyCreateError
+            if can not create the key
+
+
+        Examples
+        --------
+
         >>> # Setup
         >>> registry = Registry()
         >>> # create a key
@@ -358,6 +429,7 @@ class Registry(object):
         >>> registry.delete_key(r'HKCU\\Software\\lib_registry_test', delete_subkeys=True)
 
         """
+        # create_key}}}
 
         hive_key, hive_sub_key = resolve_key(key, sub_key)
         _key_exists = self.key_exist(hive_key, hive_sub_key)
@@ -378,6 +450,143 @@ class Registry(object):
         self.reg_key_handles[(hive_key, hive_sub_key, winreg.KEY_ALL_ACCESS)] = new_key_handle
 
         return new_key_handle
+
+    # delete_key{{{
+    def delete_key(self, key: Union[str, int], sub_key: str = '', missing_ok: bool = False, delete_subkeys: bool = False) -> None:
+        """
+        deletes the specified key, this method can delete keys with subkeys.
+        If the method succeeds, the entire key, including all of its values, is removed.
+
+        Parameter
+        ---------
+        key
+          either a predefined HKEY_* constant,
+          a string containing the root key,
+          or an already open key
+        sub_key
+          a string with the desired subkey relative to the key
+        missing_ok
+          bool, default = False
+        delete_subkeys
+          bool, default = False
+
+        Exceptions
+        ----------
+            RegistryKeyDeleteError  If the key does not exist,
+            RegistryKeyDeleteError  If the key has subkeys and delete_subkeys = False
+
+        >>> # Setup
+        >>> registry = Registry()
+        >>> # create a key, parent not existing, with parents = True
+        >>> registry.create_key(r'HKCU\\Software\\lib_registry_test\\a\\b', parents=True)
+        <...PyHKEY object at ...>
+
+        >>> # Delete a Key
+        >>> assert registry.key_exist(r'HKCU\\Software\\lib_registry_test\\a\\b') == True
+        >>> registry.delete_key(r'HKCU\\Software\\lib_registry_test\\a\\b')
+        >>> assert registry.key_exist(r'HKCU\\Software\\lib_registry_test\\a\\b') == False
+
+        >>> # Try to delete a missing Key
+        >>> registry.delete_key(r'HKCU\\Software\\lib_registry_test\\a\\b')
+        Traceback (most recent call last):
+            ...
+        lib_registry.RegistryKeyDeleteError: can not delete key none existing key ...
+
+        >>> # Try to delete a missing Key, missing_ok = True
+        >>> registry.delete_key(r'HKCU\\Software\\lib_registry_test\\a\\b')
+        Traceback (most recent call last):
+            ...
+        lib_registry.RegistryKeyDeleteError: can not delete key none existing key ...
+
+        >>> # Try to delete a Key with subkeys
+        >>> registry.delete_key(r'HKCU\\Software\\lib_registry_test')
+        Traceback (most recent call last):
+            ...
+        lib_registry.RegistryKeyDeleteError: can not delete none empty key ...
+
+        >>> # Try to delete a Key with subkeys, delete_subkeys = True
+        >>> registry.delete_key(r'HKCU\\Software\\lib_registry_test', delete_subkeys=True)
+        >>> assert registry.key_exist(r'HKCU\\Software\\lib_registry_test') == False
+
+        >>> # Try to delete a Key with missing_ok = True
+        >>> registry.delete_key(r'HKCU\\Software\\lib_registry_test', missing_ok=True)
+
+        """
+        # delete_key}}}
+
+        hive_key, hive_sub_key = resolve_key(key, sub_key)
+        _key_exists = self.key_exist(hive_key, hive_sub_key)
+
+        if not _key_exists:
+            if missing_ok:
+                return
+            else:
+                key_str = get_key_as_string(key, sub_key)
+                raise RegistryKeyDeleteError('can not delete key none existing key "{key_str}"'.format(key_str=key_str))
+
+        if self.has_subkeys(hive_key, hive_sub_key):
+            if not delete_subkeys:
+                key_str = get_key_as_string(key, sub_key)
+                raise RegistryKeyDeleteError('can not delete none empty key "{key_str}"'.format(key_str=key_str))
+            else:
+                for sub_key in self.subkeys(hive_key, hive_sub_key):
+                    hive_subkey_child = '\\'.join([hive_sub_key, sub_key])
+                    self.delete_key(hive_key, hive_subkey_child, missing_ok=True, delete_subkeys=True)
+
+        # we know only two access methods - KEY_READ and KEY_ALL_ACCESS
+        # we close the handles before we delete the key
+        if (hive_key, hive_sub_key, winreg.KEY_READ) in self.reg_key_handles:
+            self.reg_key_handles[(hive_key, hive_sub_key, winreg.KEY_READ)].Close()
+        if (hive_key, hive_sub_key, winreg.KEY_ALL_ACCESS) in self.reg_key_handles:
+            self.reg_key_handles[(hive_key, hive_sub_key, winreg.KEY_ALL_ACCESS)].Close()
+
+        try:
+            winreg.DeleteKey(hive_key, hive_sub_key)
+        # On Windows sometimes this Error occurs, if we try to delete a key that is already marked for deletion
+        # OSError: [WinError 1018] Illegal operation attempted on a registry key that has been marked for deletion.
+        except OSError as e:
+            if hasattr(e, 'winerror') and e.winerror == 1018:   # type: ignore
+                pass
+            else:
+                raise e
+
+        # we know only two access methods - KEY_READ and KEY_ALL_ACCESS
+        # we delete here key_handles from the cache
+        self.reg_key_handles.pop((hive_key, hive_sub_key, winreg.KEY_READ), None)
+        self.reg_key_handles.pop((hive_key, hive_sub_key, winreg.KEY_ALL_ACCESS), None)
+
+    # key_exist{{{
+    def key_exist(self, key: Union[str, int], sub_key: str = '') -> bool:
+        """
+        True if the given key exists
+
+        Parameter
+        ---------
+        key
+          either a predefined HKEY_* constant,
+          a string containing the root key,
+          or an already open key
+
+        sub_key
+          a string with the desired subkey relative to the key
+
+
+        Examples
+        --------
+
+        >>> Registry().key_exist(r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion')
+        True
+        >>> Registry().key_exist(r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\DoesNotExist')
+        False
+
+        """
+        # key_exist}}}
+
+        try:
+            self._open_key(key=key, sub_key=sub_key)
+            return True
+        except RegistryKeyNotFoundError:
+            return False
 
     def key_info(self, key: Union[str, int], sub_key: str = '') -> Tuple[int, int, int]:
         """
@@ -778,87 +987,6 @@ class Registry(object):
         assert isinstance(value, str)
         return str(value)
 
-    def delete_key(self, key: Union[str, int], sub_key: str = '', missing_ok: bool = False, delete_subkeys: bool = False) -> None:
-        """
-        Deletes the specified key.
-        key is a key by string, or one of the predefined HKEY_* constants.
-        sub_key is a string that must be a subkey of the key identified by the key parameter or ''.
-        This method can delete keys with subkeys.
-        If the method succeeds, the entire key, including all of its values, is removed.
-
-        :raises :
-            RegistryKeyDeleteError  If the Key does not exist,
-            RegistryKeyDeleteError  If the has Subkeys and delete_subkeys = False
-
-        >>> # Setup
-        >>> registry = Registry()
-        >>> # create a key, parent not existing, with parents = True
-        >>> registry.create_key(r'HKCU\\Software\\lib_registry_test\\a\\b', parents=True)
-        <...PyHKEY object at ...>
-
-        >>> # Delete a Key
-        >>> assert registry.key_exist(r'HKCU\\Software\\lib_registry_test\\a\\b') == True
-        >>> registry.delete_key(r'HKCU\\Software\\lib_registry_test\\a\\b')
-        >>> assert registry.key_exist(r'HKCU\\Software\\lib_registry_test\\a\\b') == False
-
-        >>> # Try to delete a missing Key
-        registry.delete_key(r'HKCU\\Software\\lib_registry_test\\a\\b')
-
-        >>> # Try to delete a missing Key, missing_ok = True
-        registry.delete_key(r'HKCU\\Software\\lib_registry_test\\a\\b')
-
-        >>> # Try to delete a Key with subkeys
-        registry.delete_key(r'HKCU\\Software\\lib_registry_test')
-
-        >>> # Try to delete a Key with subkeys, delete_subkeys = True
-        >>> registry.delete_key(r'HKCU\\Software\\lib_registry_test', delete_subkeys=True)
-        >>> assert registry.key_exist(r'HKCU\\Software\\lib_registry_test') == False
-
-        >>> # Try to delete a Key with missing_ok = True
-        >>> registry.delete_key(r'HKCU\\Software\\lib_registry_test', missing_ok=True)
-
-        """
-        hive_key, hive_sub_key = resolve_key(key, sub_key)
-        _key_exists = self.key_exist(hive_key, hive_sub_key)
-
-        if not _key_exists:
-            if missing_ok:
-                return
-            else:
-                key_str = get_key_as_string(key, sub_key)
-                raise RegistryKeyDeleteError('can not delete key none existing key "{key_str}"'.format(key_str=key_str))
-
-        if self.has_subkeys(hive_key, hive_sub_key):
-            if not delete_subkeys:
-                key_str = get_key_as_string(key, sub_key)
-                raise RegistryKeyDeleteError('can not delete none empty key "{key_str}"'.format(key_str=key_str))
-            else:
-                for sub_key in self.subkeys(hive_key, hive_sub_key):
-                    hive_subkey_child = '\\'.join([hive_sub_key, sub_key])
-                    self.delete_key(hive_key, hive_subkey_child, missing_ok=True, delete_subkeys=True)
-
-        # we know only two access methods - KEY_READ and KEY_ALL_ACCESS
-        # we close the handles before we delete the key
-        if (hive_key, hive_sub_key, winreg.KEY_READ) in self.reg_key_handles:
-            self.reg_key_handles[(hive_key, hive_sub_key, winreg.KEY_READ)].Close()
-        if (hive_key, hive_sub_key, winreg.KEY_ALL_ACCESS) in self.reg_key_handles:
-            self.reg_key_handles[(hive_key, hive_sub_key, winreg.KEY_ALL_ACCESS)].Close()
-
-        try:
-            winreg.DeleteKey(hive_key, hive_sub_key)
-        # On Windows sometimes this Error occurs, if we try to delete a key that is already marked for deletion
-        # OSError: [WinError 1018] Illegal operation attempted on a registry key that has been marked for deletion.
-        except OSError as e:
-            if hasattr(e, 'winerror') and e.winerror == 1018:   # type: ignore
-                pass
-            else:
-                raise e
-
-        # we know only two access methods - KEY_READ and KEY_ALL_ACCESS
-        # we delete here key_handles from the cache
-        self.reg_key_handles.pop((hive_key, hive_sub_key, winreg.KEY_READ), None)
-        self.reg_key_handles.pop((hive_key, hive_sub_key, winreg.KEY_ALL_ACCESS), None)
-
     def set_value(self, key: Union[str, int], value_name: Optional[str], value: RegData, value_type: Optional[int] = None) -> None:
         """
         Stores data in the value field of an open registry key.
@@ -961,29 +1089,37 @@ class Registry(object):
 
     def delete_value(self, key: Union[str, int], value_name: Optional[str]) -> None:
         """
-        Stores data in the value field of an open registry key.
-        key is a key by string, or one of the predefined HKEY_* constants.
+        deletes the value field of an open registry key, if value_name == '' or 'None',
+        then delete the default value of the key
 
-        value_name is a string that names the subkey with which the value is associated.
-        if value_name is None or '' it will write to the default value of the Key
+
+        Parameter
+        ---------
+
+        key
+            by string, or one of the predefined HKEY_* constants.
+
+        value_name
+            a string that names the subkey with which the value is associated.
+            if value_name is None or '' it will delete the default value of the Key*
 
         * Remark : this is the Value what is shown in Regedit as "(Standard)" or "(Default)" - it is usually not set.
         Nethertheless, even if the Default Value is not set, winreg.QueryValue will deliver ''
 
-        value_type is an integer that specifies the type of the data.
-        if value_type is not given, it will be set automatically to an appropriate winreg.REG_TYPE:
 
-        Value lengths are limited by available memory. Long values (more than 2048 bytes)
-        should be stored as files with the filenames stored in the configuration registry. This helps the registry perform efficiently.
-        Raises an auditing event winreg.SetValue with arguments key, sub_key, type, value.
-
-
+        Examples
+        --------
 
         >>> # Setup
         >>> registry = Registry()
         >>> key_handle = registry.create_key(r'HKCU\\Software\\lib_registry_test', parents=True)
         >>> registry.set_value(key=r'HKCU\\Software\\lib_registry_test', value_name='test_name', value='test_string', value_type=winreg.REG_SZ)
         >>> assert registry.get_value_ex(key=r'HKCU\\Software\\lib_registry_test', value_name='test_name') == ('test_string', 1)
+        >>> registry.delete_value(key=r'HKCU\\Software\\lib_registry_test', value_name='test_name')
+        >>> registry.get_value_ex(key=r'HKCU\\Software\\lib_registry_test', value_name='test_name')
+        Traceback (most recent call last):
+            ...
+        lib_registry.RegistryValueNotFoundError: value "test_name" not found in key "HKEY_CURRENT_USER..."
 
         >>> # Teardown
         >>> registry.delete_key(r'HKCU\\Software\\lib_registry_test', missing_ok=True, delete_subkeys=True)
@@ -1116,14 +1252,6 @@ def remove_hive_from_key_str_if_present(key_name: str) -> str:
     if key_part_one.upper() in l_hive_names:
         result = helpers.strip_backslashes(key_name[len(key_part_one):])
     return result
-
-
-def delete_value(key_name: str, value_name: str) -> None:
-    root_key = get_hkey_int(key_name)
-    reg_path = remove_hive_from_key_str_if_present(key_name)
-    registry_key = winreg.OpenKey(root_key, reg_path, 0, winreg.KEY_ALL_ACCESS)
-    winreg.DeleteValue(registry_key, value_name)
-    winreg.CloseKey(registry_key)
 
 
 if __name__ == '__main__':

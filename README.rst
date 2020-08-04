@@ -84,45 +84,225 @@ repository_slug}}/master?filepath=lib_registry.ipynb>`_
 Usage
 -----------
 
-.. code-block:: py
+python methods:
 
-    >>> from lib_registry import *
+- Registry Object
 
-    >>> # Read a Value from the Registry
-    >>> key =  'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\S-1-5-20'
-    >>> get_value(key_name=key, value_name='ProfileImagePath')
-    '%systemroot%\\\\ServiceProfiles\\\\NetworkService'
+.. code-block:: python
 
-    >>> # Create a Key
-    >>> create_key(r'HKCU\\Software\\lib_registry_test')
+    class Registry(object):
+        def __init__(self, key: Union[None, str, int] = None, computer_name: Optional[str] = None):
+            """
+            The Registry Class, to create the registry object.
+            If a key is passed, a connection to the hive is established.
 
-    >>> # Delete a Key
-    >>> delete_key(r'HKCU\\Software\\lib_registry_test')
+            Parameter
+            ---------
+
+            key:
+                the predefined handle to connect to,
+                or a key string with the hive as the first part (everything else but the hive will be ignored)
+                or None (then no connection will be established)
+            computer_name:
+                the name of the remote computer, of the form r"\\computer_name" or "computer_name". If None, the local computer is used.
+
+            Exceptions
+            ----------
+                RegistryNetworkConnectionError      if can not reach target computer
+                RegistryHKeyError                   if can not connect to the hive
+                winreg.ConnectRegistry              auditing event
+
+            Examples
+            --------
+
+            >>> # just create the instance without connection
+            >>> registry = Registry()
+
+            >>> # test connect at init:
+            >>> registry = Registry('HKCU')
+
+            >>> # test invalid hive as string
+            >>> Registry()._reg_connect('SPAM')
+            Traceback (most recent call last):
+                ...
+            lib_registry.RegistryHKeyError: invalid KEY: "SPAM"
+
+            >>> # test invalid hive as integer
+            >>> Registry()._reg_connect(42)
+            Traceback (most recent call last):
+                ...
+            lib_registry.RegistryHKeyError: invalid HIVE KEY: "42"
+
+            >>> # test invalid computer to connect
+            >>> Registry()._reg_connect(winreg.HKEY_LOCAL_MACHINE, computer_name='some_unknown_machine')
+            Traceback (most recent call last):
+                ...
+            lib_registry.RegistryNetworkConnectionError: The network address "some_unknown_machine" is invalid
+
+            >>> # test invalid network Path
+            >>> Registry()._reg_connect(winreg.HKEY_LOCAL_MACHINE, computer_name=r'localhost\\ham\\spam')
+            Traceback (most recent call last):
+                ...
+            lib_registry.RegistryNetworkConnectionError: The network path to "localhost\\ham\\spam" was not found
+
+            """
+
+- create_key
+
+.. code-block:: python
+
+        def create_key(self, key: Union[str, int], sub_key: str = '', exist_ok: bool = True, parents: bool = False) -> winreg.HKEYType:
+            """
+            Creates a Key, and returns a Handle to the new key
 
 
-    >>> # Write a Value to the Registry
-    >>> create_key(r'HKCU\\Software\\lib_registry_test')
-    >>> set_value(key_name=r'HKCU\\Software\\lib_registry_test', value_name='test_name', value='test_string', value_type=REG_SZ)
-    >>> result = get_value(key_name=r'HKCU\\Software\\lib_registry_test', value_name='test_name')
-    >>> assert result == 'test_string'
+            Parameter
+            ---------
+            key
+              either a predefined HKEY_* constant,
+              a string containing the root key,
+              or an already open key
+            sub_key
+              a string with the desired subkey relative to the key
+            exist_ok
+              bool, default = True
+            parents
+              bool, default = false
 
-    >>> # Delete a Value from the Registry
-    >>> delete_value(key_name=r'HKCU\\Software\\lib_registry_test', value_name='test_name')
-    >>> delete_key(r'HKCU\\Software\\lib_registry_test')
 
-    >>> # Check if a key exists
-    >>> key_exist('HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProfileList\\S-1-5-20'
-    True
-    >>> key_exist('HKEY_LOCAL_MACHINE\\Software\\DoesNotExist')
-    False
+            Exceptions
+            ----------
+            RegistryKeyCreateError
+                if can not create the key
 
-    >>> # get the SIDs of all Windows users
-    >>> get_ls_user_sids()
-    ['.DEFAULT', 'S-1-5-18', 'S-1-5-19', 'S-1-5-20', ...]
 
-    >>> # get the Username from SID
-    >>> get_username_from_sid(sid='S-1-5-20')
-    'NetworkService'
+            Examples
+            --------
+
+            >>> # Setup
+            >>> registry = Registry()
+            >>> # create a key
+            >>> registry.create_key(r'HKCU\\Software')
+            <...PyHKEY object at ...>
+
+            >>> # create an existing key, with exist_ok = True
+            >>> registry.create_key(r'HKCU\\Software\\lib_registry_test', exist_ok=True)
+            <...PyHKEY object at ...>
+
+            >>> # create an existing key, with exist_ok = False (parent existing)
+            >>> registry.create_key(r'HKCU\\Software\\lib_registry_test', exist_ok=False)
+            Traceback (most recent call last):
+                ...
+            lib_registry.RegistryKeyCreateError: can not create key, it already exists: HKEY_CURRENT_USER...lib_registry_test
+
+            >>> # create a key, parent not existing, with parents = False
+            >>> registry.create_key(r'HKCU\\Software\\lib_registry_test\\a\\b', parents=False)
+            Traceback (most recent call last):
+                ...
+            lib_registry.RegistryKeyCreateError: can not create key, the parent key to "HKEY_CURRENT_USER...b" does not exist
+
+            >>> # create a key, parent not existing, with parents = True
+            >>> registry.create_key(r'HKCU\\Software\\lib_registry_test\\a\\b', parents=True)
+            <...PyHKEY object at ...>
+
+            >>> # TEARDOWN
+            >>> registry.delete_key(r'HKCU\\Software\\lib_registry_test', delete_subkeys=True)
+
+            """
+
+- delete_key
+
+.. code-block:: python
+
+        def delete_key(self, key: Union[str, int], sub_key: str = '', missing_ok: bool = False, delete_subkeys: bool = False) -> None:
+            """
+            deletes the specified key, this method can delete keys with subkeys.
+            If the method succeeds, the entire key, including all of its values, is removed.
+
+            Parameter
+            ---------
+            key
+              either a predefined HKEY_* constant,
+              a string containing the root key,
+              or an already open key
+            sub_key
+              a string with the desired subkey relative to the key
+            missing_ok
+              bool, default = False
+            delete_subkeys
+              bool, default = False
+
+            Exceptions
+            ----------
+                RegistryKeyDeleteError  If the key does not exist,
+                RegistryKeyDeleteError  If the key has subkeys and delete_subkeys = False
+
+            >>> # Setup
+            >>> registry = Registry()
+            >>> # create a key, parent not existing, with parents = True
+            >>> registry.create_key(r'HKCU\\Software\\lib_registry_test\\a\\b', parents=True)
+            <...PyHKEY object at ...>
+
+            >>> # Delete a Key
+            >>> assert registry.key_exist(r'HKCU\\Software\\lib_registry_test\\a\\b') == True
+            >>> registry.delete_key(r'HKCU\\Software\\lib_registry_test\\a\\b')
+            >>> assert registry.key_exist(r'HKCU\\Software\\lib_registry_test\\a\\b') == False
+
+            >>> # Try to delete a missing Key
+            >>> registry.delete_key(r'HKCU\\Software\\lib_registry_test\\a\\b')
+            Traceback (most recent call last):
+                ...
+            lib_registry.RegistryKeyDeleteError: can not delete key none existing key ...
+
+            >>> # Try to delete a missing Key, missing_ok = True
+            >>> registry.delete_key(r'HKCU\\Software\\lib_registry_test\\a\\b')
+            Traceback (most recent call last):
+                ...
+            lib_registry.RegistryKeyDeleteError: can not delete key none existing key ...
+
+            >>> # Try to delete a Key with subkeys
+            >>> registry.delete_key(r'HKCU\\Software\\lib_registry_test')
+            Traceback (most recent call last):
+                ...
+            lib_registry.RegistryKeyDeleteError: can not delete none empty key ...
+
+            >>> # Try to delete a Key with subkeys, delete_subkeys = True
+            >>> registry.delete_key(r'HKCU\\Software\\lib_registry_test', delete_subkeys=True)
+            >>> assert registry.key_exist(r'HKCU\\Software\\lib_registry_test') == False
+
+            >>> # Try to delete a Key with missing_ok = True
+            >>> registry.delete_key(r'HKCU\\Software\\lib_registry_test', missing_ok=True)
+
+            """
+
+- key_exists
+
+.. code-block:: python
+
+        def key_exist(self, key: Union[str, int], sub_key: str = '') -> bool:
+            """
+            True if the given key exists
+
+            Parameter
+            ---------
+            key
+              either a predefined HKEY_* constant,
+              a string containing the root key,
+              or an already open key
+
+            sub_key
+              a string with the desired subkey relative to the key
+
+
+            Examples
+            --------
+
+            >>> Registry().key_exist(r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion')
+            True
+            >>> Registry().key_exist(r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\DoesNotExist')
+            False
+
+            """
 
 Usage from Commandline
 ------------------------
