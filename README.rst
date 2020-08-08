@@ -2,7 +2,7 @@ lib_registry
 ============
 
 
-Version v2.0.4 as of 2020-08-04 see `Changelog`_
+Version v2.0.5 as of 2020-08-08 see `Changelog`_
 
 |travis_build| |license| |jupyter| |pypi|
 
@@ -56,7 +56,7 @@ Python version required: 3.6.0 or newer
 
 tested on linux "bionic" with python 3.6, 3.7, 3.8, 3.8-dev, pypy3 - architectures: amd64, ppc64le, s390x, arm64
 
-`100% code coverage <https://codecov.io/gh/bitranox/lib_registry>`_, codestyle checking ,mypy static type checking ,tested under `Linux, macOS, Windows <https://travis-ci.org/bitranox/lib_registry>`_, automatic daily builds and monitoring
+`100% code coverage <https://codecov.io/gh/bitranox/lib_registry>`_, flake8 style checking ,mypy static type checking ,tested under `Linux, macOS, Windows <https://travis-ci.org/bitranox/lib_registry>`_, automatic daily builds and monitoring
 
 ----
 
@@ -331,31 +331,19 @@ Installation and Upgrade
 
     python -m pip --upgrade pip
     python -m pip --upgrade setuptools
-    python -m pip --upgrade wheel
 
 - to install the latest release from PyPi via pip (recommended):
 
 .. code-block:: bash
 
-    # install latest release from PyPi
     python -m pip install --upgrade lib_registry
 
-    # test latest release from PyPi without installing (can be skipped)
-    python -m pip install lib_registry --install-option test
-
-- to install the latest development version from github via pip:
+- to install the latest version from github via pip:
 
 
 .. code-block:: bash
 
-    # normal install
     python -m pip install --upgrade git+https://github.com/bitranox/lib_registry.git
-
-    # to test without installing (can be skipped)
-    python -m pip install git+https://github.com/bitranox/lib_registry.git --install-option test
-
-    # to install and upgrade all dependencies regardless of version number
-    python -m pip install --upgrade git+https://github.com/bitranox/lib_registry.git --upgrade-strategy eager
 
 
 - include it into Your requirements.txt:
@@ -373,7 +361,6 @@ Installation and Upgrade
     python -m pip install --upgrade -r /<path>/requirements.txt
 
 
-
 - to install the latest development version from source code:
 
 .. code-block:: bash
@@ -381,11 +368,6 @@ Installation and Upgrade
     # cd ~
     $ git clone https://github.com/bitranox/lib_registry.git
     $ cd lib_registry
-
-    # to test without installing (can be skipped)
-    python setup.py test
-
-    # normal install
     python setup.py install
 
 - via makefile:
@@ -452,6 +434,13 @@ tasks:
     - pathlib-like Interface
     - jupyter notebook update
 
+v2.0.5
+--------
+2020-08-08: service release
+    - fix documentation
+    - fix travis
+    - deprecate pycodestyle
+    - implement flake8
 
 v2.0.4
 ---------
@@ -460,7 +449,6 @@ v2.0.4
 v2.0.3
 --------
 2020-07-31: fix travis build
-
 
 v2.0.2
 --------

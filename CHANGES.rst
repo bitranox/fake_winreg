@@ -11,6 +11,13 @@ tasks:
     - pathlib-like Interface
     - jupyter notebook update
 
+v2.0.5
+--------
+2020-08-08: service release
+    - fix documentation
+    - fix travis
+    - deprecate pycodestyle
+    - implement flake8
 
 v2.0.4
 ---------
@@ -19,7 +26,6 @@ v2.0.4
 v2.0.3
 --------
 2020-07-31: fix travis build
-
 
 v2.0.2
 --------
