@@ -42,7 +42,7 @@ def hostname_found_in_dns(hostname: str) -> bool:
     >>> assert not hostname_found_in_dns('unknown_host')
     """
     try:
-        host_ip = socket.gethostbyname(hostname)
+        socket.gethostbyname(hostname)
         return True
     except Exception:   # noqa
         return False

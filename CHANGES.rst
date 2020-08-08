@@ -12,6 +12,14 @@ planned:
     - investigate SYSWOW32/64 Views
     - Admin Permissions
 
+v1.5.5
+--------
+2020-08-08: service release
+    - fix documentation
+    - fix travis
+    - deprecate pycodestyle
+    - implement flake8
+
 v1.5.4
 ---------
 2020-08-01: fix pypi deploy
