@@ -1411,7 +1411,6 @@ def OpenKey(key: Handle, sub_key: Union[str, None], reserved: int = 0, access: i
 
     try:
         key_handle = __resolve_key(key)
-        original_access = key_handle._access
         reg_key = fake_reg.get_fake_reg_key(key_handle.handle, sub_key=sub_key)
         key_handle = PyHKEY(reg_key, access=access)
         return key_handle
