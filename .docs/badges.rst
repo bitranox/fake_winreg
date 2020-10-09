@@ -1,4 +1,4 @@
-|travis_build| |license| |jupyter| |pypi|
+|travis_build| |license| |jupyter| |pypi| 
 
 |codecov| |better_code| |cc_maintain| |cc_issues| |cc_coverage| |snyk|
 
@@ -36,3 +36,6 @@
 
 .. |snyk| image:: https://img.shields.io/snyk/vulnerabilities/github/bitranox/fake_winreg
    :target: https://snyk.io/test/github/bitranox/fake_winreg
+
+.. |black| image:: https://img.shields.io/badge/code%20style-black-000000.svg
+   :target: https://github.com/psf/black

@@ -12,6 +12,12 @@ planned:
     - investigate SYSWOW32/64 Views
     - Admin Permissions
 
+v1.5.6
+--------
+2020-10-09: service release
+    - update travis build matrix for linux 3.9-dev
+    - update travis build matrix (paths) for windows 3.9 / 3.10
+
 v1.5.5
 --------
 2020-08-08: service release
