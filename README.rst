@@ -2,7 +2,7 @@ fake_winreg
 ===========
 
 
-Version v1.5.5 as of 2020-08-08 see `Changelog`_
+Version v1.5.6 as of 2020-10-09 see `Changelog`_
 
 |travis_build| |license| |jupyter| |pypi|
 
@@ -42,6 +42,9 @@ Version v1.5.5 as of 2020-08-08 see `Changelog`_
 
 .. |snyk| image:: https://img.shields.io/snyk/vulnerabilities/github/bitranox/fake_winreg
    :target: https://snyk.io/test/github/bitranox/fake_winreg
+
+.. |black| image:: https://img.shields.io/badge/code%20style-black-000000.svg
+   :target: https://github.com/psf/black
 
 FUNCTION
 ========
@@ -89,7 +92,7 @@ automated tests, Travis Matrix, Documentation, Badges, etc. are managed with `Pi
 
 Python version required: 3.6.0 or newer
 
-tested on linux "bionic" with python 3.6, 3.7, 3.8, 3.8-dev, pypy3 - architectures: amd64, ppc64le, s390x, arm64
+tested on linux "bionic" with python 3.6, 3.7, 3.8, 3.9-dev, pypy3 - architectures: amd64, ppc64le, s390x, arm64
 
 `100% code coverage <https://codecov.io/gh/bitranox/fake_winreg>`_, flake8 style checking ,mypy static type checking ,tested under `Linux, macOS, Windows <https://travis-ci.org/bitranox/fake_winreg>`_, automatic daily builds and monitoring
 
@@ -2129,6 +2132,12 @@ planned:
     - auditing events
     - investigate SYSWOW32/64 Views
     - Admin Permissions
+
+v1.5.6
+--------
+2020-10-09: service release
+    - update travis build matrix for linux 3.9-dev
+    - update travis build matrix (paths) for windows 3.9 / 3.10
 
 v1.5.5
 --------
