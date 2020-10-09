@@ -1129,7 +1129,7 @@ class Registry(object):
         if value_name is None:
             value_name = ''
 
-        key_handle = self._open_key(key)
+        key_handle = self._open_key(key, access=winreg.KEY_ALL_ACCESS)
         try:
             winreg.DeleteValue(key_handle, value_name)
         except FileNotFoundError as e:
