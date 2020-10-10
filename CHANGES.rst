@@ -11,6 +11,10 @@ tasks:
     - pathlib-like Interface
     - jupyter notebook update
 
+v2.0.7
+--------
+2020-10-10: fix minor bugs
+
 v2.0.6
 --------
 2020-10-09: service release

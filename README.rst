@@ -2,7 +2,7 @@ lib_registry
 ============
 
 
-Version v2.0.6 as of 2020-10-09 see `Changelog`_
+Version v2.0.7 as of 2020-10-10 see `Changelog`_
 
 |travis_build| |license| |jupyter| |pypi|
 
@@ -436,6 +436,10 @@ tasks:
     - documentation update
     - pathlib-like Interface
     - jupyter notebook update
+
+v2.0.7
+--------
+2020-10-10: fix minor bugs
 
 v2.0.6
 --------
