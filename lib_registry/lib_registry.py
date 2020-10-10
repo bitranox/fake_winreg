@@ -28,8 +28,8 @@ if is_platform_windows:
 else:
     import fake_winreg as winreg            # type: ignore
     # an empty Registry at the Moment
-    fake_registry = winreg.fake_reg_tools.get_minimal_windows_testregistry()
-    winreg.load_fake_registry(fake_registry)
+    fake_registry = winreg.fake_reg_tools.get_minimal_windows_testregistry()    # type: ignore
+    winreg.load_fake_registry(fake_registry)                                    # type: ignore
 
 
 main_key_hashed_by_name: Dict[str, int] = \
@@ -311,17 +311,24 @@ class Registry(object):
                 self.reg_hive_connections[hive_key] = hive_handle
                 self._is_computer_name_set = True
             return hive_handle
+
         except FileNotFoundError as e_fnf:
             if hasattr(e_fnf, 'winerror') and e_fnf.winerror == 53:    # type: ignore
-                raise RegistryNetworkConnectionError('The network path to "{}" was not found'.format(computer_name))
+                raise RegistryNetworkConnectionError(f'The network path to "{computer_name}" was not found')
+            else:
+                raise RegistryConnectionError('unknown error connecting to registry')
 
         except OSError as e_os:
             if hasattr(e_os, 'winerror'):
                 if e_os.winerror == 1707:       # type: ignore
                     # OSError: [WinError 1707] The network address is invalid
-                    raise RegistryNetworkConnectionError('The network address "{}" is invalid'.format(computer_name))
+                    raise RegistryNetworkConnectionError(f'The network address "{computer_name}" is invalid')
                 elif e_os.winerror == 6:        # type: ignore
-                    raise RegistryHKeyError('invalid KEY: "{}"'.format(key))
+                    raise RegistryHKeyError(f'invalid KEY: "{key}"')
+            else:
+                raise RegistryConnectionError('unknown error connecting to registry')
+
+        assert False
 
     def _open_key(self, key: Union[str, int], sub_key: str = '', access: int = winreg.KEY_READ) -> winreg.HKEYType:
         """
@@ -367,7 +374,7 @@ class Registry(object):
                 self.reg_key_handles[(hive_key, hive_sub_key, access)] = key_handle
             except FileNotFoundError:
                 key_str = get_key_as_string(key, sub_key)
-                raise RegistryKeyNotFoundError('registry key "{}" not found'.format(key_str))
+                raise RegistryKeyNotFoundError(f'registry key "{key_str}" not found')
         return key_handle
 
     # create_key{{{
@@ -435,7 +442,7 @@ class Registry(object):
         _key_exists = self.key_exist(hive_key, hive_sub_key)
         if (not exist_ok) and _key_exists:
             key_string = get_key_as_string(hive_key, hive_sub_key)
-            raise RegistryKeyCreateError('can not create key, it already exists: {key_string}'.format(key_string=key_string))
+            raise RegistryKeyCreateError(f'can not create key, it already exists: {key_string}')
         elif _key_exists:
             key_handle = self._open_key(hive_key, hive_sub_key, winreg.KEY_ALL_ACCESS)
             return key_handle
@@ -444,7 +451,7 @@ class Registry(object):
             hive_sub_key_parent = '\\'.join(hive_sub_key.split('\\')[:-1])
             if not self.key_exist(hive_key, hive_sub_key_parent):
                 key_str = get_key_as_string(hive_key, hive_sub_key)
-                raise RegistryKeyCreateError('can not create key, the parent key to "{key_str}" does not exist'.format(key_str=key_str))
+                raise RegistryKeyCreateError(f'can not create key, the parent key to "{key_str}" does not exist')
 
         new_key_handle = winreg.CreateKey(hive_key, hive_sub_key)
         self.reg_key_handles[(hive_key, hive_sub_key, winreg.KEY_ALL_ACCESS)] = new_key_handle
@@ -522,12 +529,12 @@ class Registry(object):
                 return
             else:
                 key_str = get_key_as_string(key, sub_key)
-                raise RegistryKeyDeleteError('can not delete key none existing key "{key_str}"'.format(key_str=key_str))
+                raise RegistryKeyDeleteError(f'can not delete key none existing key "{key_str}"')
 
         if self.has_subkeys(hive_key, hive_sub_key):
             if not delete_subkeys:
                 key_str = get_key_as_string(key, sub_key)
-                raise RegistryKeyDeleteError('can not delete none empty key "{key_str}"'.format(key_str=key_str))
+                raise RegistryKeyDeleteError(f'can not delete none empty key "{key_str}"')
             else:
                 for sub_key in self.subkeys(hive_key, hive_sub_key):
                     hive_subkey_child = '\\'.join([hive_sub_key, sub_key])
@@ -904,7 +911,7 @@ class Registry(object):
             return reg_value, reg_type
         except FileNotFoundError:
             key_str = get_key_as_string(key)
-            raise RegistryValueNotFoundError('value "{}" not found in key "{}"'.format(value_name, key_str))
+            raise RegistryValueNotFoundError(f'value "{value_name}" not found in key "{key_str}"')
 
     def username_from_sid(self, sid: str) -> str:
         """
@@ -933,9 +940,9 @@ class Registry(object):
         try:
             username = self._get_username_from_profile_list(sid)
         except RegistryError:
-            raise RegistryError('can not determine User for SID "{}"'.format(sid))
+            raise RegistryError(f'can not determine User for SID "{sid}"')
         if not username:
-            raise RegistryError('can not determine User for SID "{}"'.format(sid))
+            raise RegistryError(f'can not determine User for SID "{sid}"')
         return username
 
     def _get_username_from_profile_list(self, sid: str) -> str:
@@ -959,7 +966,7 @@ class Registry(object):
         lib_registry.RegistryKeyNotFoundError: registry key "...unknown" not found
 
         """
-        value, value_type = self.get_value_ex(r'HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\{}'.format(sid), 'ProfileImagePath')
+        value, value_type = self.get_value_ex(fr'HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\{sid}', 'ProfileImagePath')
         assert isinstance(value, str)
         username = pathlib.PureWindowsPath(value).name
         return username
@@ -983,7 +990,7 @@ class Registry(object):
         '...'
 
         """
-        value, value_type = self.get_value_ex(r'HKEY_USERS\{}\Volatile Environment'.format(sid), 'USERNAME')
+        value, value_type = self.get_value_ex(fr'HKEY_USERS\{sid}\Volatile Environment', 'USERNAME')
         assert isinstance(value, str)
         return str(value)
 
@@ -1078,14 +1085,14 @@ class Registry(object):
 
         key_handle = self._open_key(key, access=winreg.KEY_ALL_ACCESS)
         try:
-            winreg.SetValueEx(key_handle, value_name, 0, value_type, value)
+            winreg.SetValueEx(key_handle, value_name, 0, value_type, value)     # type: ignore
         except Exception:       # ToDo: narrow down
             # different Errors can occur here :
             # TypeError: Objects of type 'str' can not be used as binary registry values (if try to write string to REG_NONE type)
             # others to explore ...
             key_str = get_key_as_string(key)
             value_type_str = get_value_type_as_string(value_type)
-            raise RegistryValueWriteError('can not write data to key "{}", value_name "{}", value_type "{}"'.format(key_str, value_name, value_type_str))
+            raise RegistryValueWriteError(f'can not write data to key "{key_str}", value_name "{value_name}", value_type "{value_type_str}"')
 
     def delete_value(self, key: Union[str, int], value_name: Optional[str]) -> None:
         """
@@ -1135,7 +1142,7 @@ class Registry(object):
         except FileNotFoundError as e:
             if hasattr(e, 'winerror') and e.winerror == 2:  # type: ignore
                 key_str = get_key_as_string(key)
-                raise RegistryValueDeleteError('can not delete value "{}" from key "{}"'.format(value_name, key_str))
+                raise RegistryValueDeleteError(f'can not delete value "{value_name}" from key "{key_str}"')
             else:
                 raise e
 
@@ -1207,7 +1214,7 @@ def resolve_key(key: Union[str, int], sub_key: str = '') -> Tuple[int, str]:
     else:
         hive_key = key
         if hive_key not in hive_names_hashed_by_int:
-            raise RegistryHKeyError('invalid HIVE KEY: "{hive_key}"'.format(hive_key=hive_key))
+            raise RegistryHKeyError(f'invalid HIVE KEY: "{hive_key}"')
     return hive_key, sub_key
 
 
@@ -1232,7 +1239,7 @@ def get_hkey_int(key_name: str) -> int:
         main_key = int(main_key_hashed_by_name[main_key_name_lower])
         return main_key
     else:
-        raise RegistryHKeyError('invalid KEY: "{main_key_name}"'.format(main_key_name=main_key_name))
+        raise RegistryHKeyError(f'invalid KEY: "{main_key_name}"')
 
 
 def remove_hive_from_key_str_if_present(key_name: str) -> str:
