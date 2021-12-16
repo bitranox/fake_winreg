@@ -10,17 +10,16 @@ winreg.load_fake_registry(fake_registry)
 def key_handle_test_read_only():
     reg_handle = winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_USER)
     key_handle = winreg.CreateKey(reg_handle, 'Software\\lib_registry_test')
-    key_handle_read_only = winreg.OpenKeyEx(key_handle, '', 0, winreg.KEY_READ)
-    yield key_handle_read_only
-    # teardown code
-    try:
-        winreg.DeleteKey(key_handle, '')
-    # On Windows sometimes this Error occurs, if we try again to delete a key
-    # that is already marked for deletion
-    # OSError: [WinError 1018]
-    except OSError:
-        pass
-    winreg.CloseKey(key_handle)
+    with winreg.OpenKeyEx(key_handle, '', 0, winreg.KEY_READ) as key_handle_read_only:
+        yield key_handle_read_only
+        # teardown code
+        try:
+            winreg.DeleteKey(key_handle, '')
+        # On Windows sometimes this Error occurs, if we try again to delete a key
+        # that is already marked for deletion
+        # OSError: [WinError 1018]
+        except OSError:
+            pass
 
 
 @pytest.fixture(scope="function")

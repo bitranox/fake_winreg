@@ -105,6 +105,12 @@ class PyHKEY(HKEYType):
     def __init__(self, handle: fake_reg.FakeRegistryKey, access: int = KEY_READ):
         super().__init__(handle, access)
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.Close()
+
 
 # DataTypesHandle{{{
 
