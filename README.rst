@@ -2,7 +2,7 @@ fake_winreg
 ===========
 
 
-Version v1.5.6 as of 2020-10-09 see `Changelog`_
+Version v1.5.7 as of 2021-12-16 see `Changelog`_
 
 |travis_build| |license| |jupyter| |pypi|
 
@@ -2132,6 +2132,11 @@ planned:
     - auditing events
     - investigate SYSWOW32/64 Views
     - Admin Permissions
+
+v1.5.7
+--------
+2021-12-16: feature release
+    - allow PyHKEY to act as a context manager
 
 v1.5.6
 --------

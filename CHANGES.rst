@@ -12,6 +12,11 @@ planned:
     - investigate SYSWOW32/64 Views
     - Admin Permissions
 
+v1.5.7
+--------
+2021-12-16: feature release
+    - allow PyHKEY to act as a context manager
+
 v1.5.6
 --------
 2020-10-09: service release
