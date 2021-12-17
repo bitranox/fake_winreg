@@ -33,8 +33,7 @@ _last_int_handle_lock = threading.Lock()
 def check_for_kwargs_wrapt(wrapped: F, instance: object = None, args: Any = (), kwargs: Any = dict()) -> F:     # noqa
     if kwargs:                                            # pragma: no cover
         keys = ', '.join([key for key in kwargs.keys()])  # pragma: no cover
-        raise TypeError("{fn}() got some positional-only arguments passed as keyword arguments: '{keys}'".format(
-            fn=wrapped.__name__, keys=keys))              # pragma: no cover
+        raise TypeError(f"{wrapped.__name__}() got some positional-only arguments passed as keyword arguments: '{keys}'")              # pragma: no cover
     return cast(F, wrapped(*args, **kwargs))
 
 
@@ -2287,11 +2286,7 @@ def __check_argument_must_be_str_or_none(arg_number: int, argument: Any) -> None
     function_name = inspect.stack()[1].function
     if not isinstance(argument, str) and argument is not None:
         subkey_type = type(argument).__name__
-        error_str = '{function_name}() argument {arg_number} must be str or None, not {subkey_type}'.format(
-            function_name=function_name,
-            arg_number=arg_number,
-            subkey_type=subkey_type,
-            )
+        error_str = f'{function_name}() argument {arg_number} must be str or None, not {subkey_type}'
         raise TypeError(error_str)
 
 

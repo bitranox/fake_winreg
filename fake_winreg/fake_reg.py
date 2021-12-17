@@ -125,7 +125,7 @@ def get_fake_reg_key(fake_reg_key: FakeRegistryKey, sub_key: str) -> FakeRegistr
             try:
                 current_fake_reg_key = current_fake_reg_key.subkeys[key_part]
             except KeyError:
-                raise FileNotFoundError('subkey not found, key="{}", subkey="{}"'.format(current_fake_reg_key.full_key, key_part))
+                raise FileNotFoundError(f'subkey not found, key="{current_fake_reg_key.full_key}", subkey="{key_part}"')
     return current_fake_reg_key
 
 
