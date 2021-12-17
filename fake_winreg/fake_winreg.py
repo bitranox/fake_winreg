@@ -84,6 +84,8 @@ class PyHKEY(HKEYType):
     To guarantee cleanup, you can call either the Close() method on the object, or the CloseKey() function.
     All registry functions in this module return one of these objects.
 
+    This wrapper can also be used as a context manager, to guarantee that the key will be closed after use.
+
     # Not implemented features of the Original Object - its not hard, but I did not need it ATM:
     All registry functions in this module which accept a handle object also accept an integer, however, use of the handle object is encouraged.
     Handle objects provide semantics for __bool__() – thus
@@ -103,6 +105,12 @@ class PyHKEY(HKEYType):
 
     def __init__(self, handle: fake_reg.FakeRegistryKey, access: int = KEY_READ):
         super().__init__(handle, access)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.Close()
 
 
 # DataTypesHandle{{{
