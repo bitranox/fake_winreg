@@ -6,11 +6,11 @@ try:
     from .types_custom import *
     from .fake_reg import *
     from .registry_constants import *
-except (ImportError, ModuleNotFoundError):      # pragma: no cover
+except (ImportError, ModuleNotFoundError):  # pragma: no cover
     # import for doctest
-    from types_custom import *                  # type: ignore  # pragma: no cover
-    from fake_reg import *                      # type: ignore  # pragma: no cover
-    from registry_constants import *            # type: ignore  # pragma: no cover
+    from types_custom import *  # type: ignore  # pragma: no cover
+    from fake_reg import *  # type: ignore  # pragma: no cover
+    from registry_constants import *  # type: ignore  # pragma: no cover
 
 
 def get_minimal_windows_testregistry(fake_registry: Optional[FakeRegistry] = None) -> FakeRegistry:
@@ -25,27 +25,46 @@ def get_minimal_windows_testregistry(fake_registry: Optional[FakeRegistry] = Non
         assert fake_registry is not None
 
     # Current Build
-    set_fake_reg_value(fake_registry.hive[HKEY_LOCAL_MACHINE], r'SOFTWARE\Microsoft\Windows NT\CurrentVersion', 'CurrentBuild', '18363')
+    set_fake_reg_value(fake_registry.hive[HKEY_LOCAL_MACHINE], r"SOFTWARE\Microsoft\Windows NT\CurrentVersion", "CurrentBuild", "18363")
 
     # Profile List in Windows10
-    set_fake_reg_value(fake_registry.hive[HKEY_LOCAL_MACHINE], r'SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\S-1-5-18',
-                       'ProfileImagePath', r'%systemroot%\system32\config\systemprofile', REG_EXPAND_SZ)
-    set_fake_reg_value(fake_registry.hive[HKEY_LOCAL_MACHINE], r'SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\S-1-5-19',
-                       'ProfileImagePath', r'%systemroot%\ServiceProfiles\LocalService', REG_EXPAND_SZ)
-    set_fake_reg_value(fake_registry.hive[HKEY_LOCAL_MACHINE], r'SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\S-1-5-20',
-                       'ProfileImagePath', r'%systemroot%\ServiceProfiles\NetworkService', REG_EXPAND_SZ)
-    set_fake_reg_value(fake_registry.hive[HKEY_LOCAL_MACHINE],
-                       r'SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\S-1-5-21-206651429-2786145735-121611483-1001',
-                       'ProfileImagePath', r'C:\Users\bitranox', REG_EXPAND_SZ)
+    set_fake_reg_value(
+        fake_registry.hive[HKEY_LOCAL_MACHINE],
+        r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\S-1-5-18",
+        "ProfileImagePath",
+        r"%systemroot%\system32\config\systemprofile",
+        REG_EXPAND_SZ,
+    )
+    set_fake_reg_value(
+        fake_registry.hive[HKEY_LOCAL_MACHINE],
+        r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\S-1-5-19",
+        "ProfileImagePath",
+        r"%systemroot%\ServiceProfiles\LocalService",
+        REG_EXPAND_SZ,
+    )
+    set_fake_reg_value(
+        fake_registry.hive[HKEY_LOCAL_MACHINE],
+        r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\S-1-5-20",
+        "ProfileImagePath",
+        r"%systemroot%\ServiceProfiles\NetworkService",
+        REG_EXPAND_SZ,
+    )
+    set_fake_reg_value(
+        fake_registry.hive[HKEY_LOCAL_MACHINE],
+        r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\S-1-5-21-206651429-2786145735-121611483-1001",
+        "ProfileImagePath",
+        r"C:\Users\bitranox",
+        REG_EXPAND_SZ,
+    )
 
     # User SIDs in Windows10
-    set_fake_reg_key(fake_registry.hive[HKEY_USERS], '.DEFAULT')
-    set_fake_reg_key(fake_registry.hive[HKEY_USERS], 'S-1-5-18')
-    set_fake_reg_key(fake_registry.hive[HKEY_USERS], 'S-1-5-19')
-    set_fake_reg_key(fake_registry.hive[HKEY_USERS], 'S-1-5-20')
-    set_fake_reg_key(fake_registry.hive[HKEY_USERS], 'S-1-5-21-206651429-2786145735-121611483-1001')
-    set_fake_reg_key(fake_registry.hive[HKEY_USERS], 'S-1-5-21-206651429-2786145735-121611483-1001_Classes')
-    set_fake_reg_value(fake_registry.hive[HKEY_USERS], r'S-1-5-21-206651429-2786145735-121611483-1001\Volatile Environment', 'USERNAME', 'bitranox', REG_SZ)
+    set_fake_reg_key(fake_registry.hive[HKEY_USERS], ".DEFAULT")
+    set_fake_reg_key(fake_registry.hive[HKEY_USERS], "S-1-5-18")
+    set_fake_reg_key(fake_registry.hive[HKEY_USERS], "S-1-5-19")
+    set_fake_reg_key(fake_registry.hive[HKEY_USERS], "S-1-5-20")
+    set_fake_reg_key(fake_registry.hive[HKEY_USERS], "S-1-5-21-206651429-2786145735-121611483-1001")
+    set_fake_reg_key(fake_registry.hive[HKEY_USERS], "S-1-5-21-206651429-2786145735-121611483-1001_Classes")
+    set_fake_reg_value(fake_registry.hive[HKEY_USERS], r"S-1-5-21-206651429-2786145735-121611483-1001\Volatile Environment", "USERNAME", "bitranox", REG_SZ)
 
     return fake_registry
 
@@ -63,19 +82,24 @@ def get_minimal_wine_testregistry(_fake_registry: Optional[FakeRegistry] = None)
         assert _fake_registry is not None
 
     # Software Key for Wine
-    set_fake_reg_key(_fake_registry.hive[HKEY_LOCAL_MACHINE], r'Software\Wine')
+    set_fake_reg_key(_fake_registry.hive[HKEY_LOCAL_MACHINE], r"Software\Wine")
 
     # Current Build
-    set_fake_reg_value(_fake_registry.hive[HKEY_LOCAL_MACHINE], r'Software\Microsoft\Windows NT\CurrentVersion', 'CurrentBuild', '7601')
+    set_fake_reg_value(_fake_registry.hive[HKEY_LOCAL_MACHINE], r"Software\Microsoft\Windows NT\CurrentVersion", "CurrentBuild", "7601")
 
     # Profile List in Wine
-    set_fake_reg_value(_fake_registry.hive[HKEY_LOCAL_MACHINE], r'Software\Microsoft\Windows NT\CurrentVersion\ProfileList\S-1-5-21-0-0-0-1000',
-                       'ProfileImagePath', r'C:\users\bitranox', REG_EXPAND_SZ)
+    set_fake_reg_value(
+        _fake_registry.hive[HKEY_LOCAL_MACHINE],
+        r"Software\Microsoft\Windows NT\CurrentVersion\ProfileList\S-1-5-21-0-0-0-1000",
+        "ProfileImagePath",
+        r"C:\users\bitranox",
+        REG_EXPAND_SZ,
+    )
 
     # User SIDs in Wine
-    set_fake_reg_key(_fake_registry.hive[HKEY_USERS], r'.Default')
-    set_fake_reg_key(_fake_registry.hive[HKEY_USERS], r'S-1-5-21-0-0-0-1000')
-    set_fake_reg_value(_fake_registry.hive[HKEY_USERS], r'S-1-5-21-0-0-0-1000\Volatile Environment', 'USERNAME', 'bitranox', REG_SZ)
+    set_fake_reg_key(_fake_registry.hive[HKEY_USERS], r".Default")
+    set_fake_reg_key(_fake_registry.hive[HKEY_USERS], r"S-1-5-21-0-0-0-1000")
+    set_fake_reg_value(_fake_registry.hive[HKEY_USERS], r"S-1-5-21-0-0-0-1000\Volatile Environment", "USERNAME", "bitranox", REG_SZ)
 
     return _fake_registry
 
@@ -93,17 +117,17 @@ def __check_value_type_matches_type(value: RegData, reg_type: int) -> None:
     data_type = type(value).__name__
 
     if reg_type == REG_SZ or reg_type == REG_EXPAND_SZ:
-        valid_types = ['NoneType', 'str']
+        valid_types = ["NoneType", "str"]
         if data_type not in valid_types:
             raise ValueError(type_error_reg_non_binary)
 
     elif reg_type == REG_DWORD or reg_type == REG_QWORD:
-        valid_types = ['NoneType', 'int']
+        valid_types = ["NoneType", "int"]
         if data_type not in valid_types:
             raise ValueError(type_error_reg_non_binary)
 
     elif reg_type == REG_MULTI_SZ:
-        valid_types = ['NoneType', 'list']
+        valid_types = ["NoneType", "list"]
         if data_type not in valid_types:
             raise ValueError(type_error_reg_non_binary)
         if isinstance(value, list) and not __is_list_of_str(value):
@@ -111,6 +135,6 @@ def __check_value_type_matches_type(value: RegData, reg_type: int) -> None:
     else:
         # all other integers for REG_TYPE are accepted, and written to the registry. The value is handled as binary.
         # by that way You would be able to encode data in the REG_TYPE for stealth data not easy to spot - who would expect it.
-        valid_types = ['NoneType', 'bytes']
+        valid_types = ["NoneType", "bytes"]
         if data_type not in valid_types:
             raise TypeError(type_error_reg_binary.format(data_type=data_type))

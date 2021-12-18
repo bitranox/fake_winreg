@@ -1,16 +1,18 @@
-|travis_build| |license| |jupyter| |pypi| 
+|build_badge| |license| |jupyter| |pypi| |black|
 
 |codecov| |better_code| |cc_maintain| |cc_issues| |cc_coverage| |snyk|
 
 
-.. |travis_build| image:: https://img.shields.io/travis/bitranox/fake_winreg/master.svg
-   :target: https://travis-ci.org/bitranox/fake_winreg
+
+.. |build_badge| image:: https://github.com/bitranox/fake_winreg/actions/workflows/python-package.yml/badge.svg
+   :target: https://github.com/bitranox/fake_winreg/actions/workflows/python-package.yml
+
 
 .. |license| image:: https://img.shields.io/github/license/webcomics/pywine.svg
    :target: http://en.wikipedia.org/wiki/MIT_License
 
 .. |jupyter| image:: https://mybinder.org/badge_logo.svg
- :target: https://mybinder.org/v2/gh/bitranox/fake_winreg/master?filepath=fake_winreg.ipynb
+   :target: https://mybinder.org/v2/gh/bitranox/fake_winreg/master?filepath=fake_winreg.ipynb
 
 .. for the pypi status link note the dashes, not the underscore !
 .. |pypi| image:: https://img.shields.io/pypi/status/fake-winreg?label=PyPI%20Package

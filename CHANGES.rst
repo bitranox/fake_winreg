@@ -12,10 +12,17 @@ planned:
     - investigate SYSWOW32/64 Views
     - Admin Permissions
 
+v1.6.0
+--------
+2021-12-19: feature release
+    - update github actions
+    - fix "setup.py test"
+    - fix typing
+
 v1.5.7
 --------
-2021-12-16: feature release
-    - allow PyHKEY to act as a context manager
+2021-12-18: feature release
+    - allow PyHKEY to act as a context manager, thanks to Ben Rowland
 
 v1.5.6
 --------

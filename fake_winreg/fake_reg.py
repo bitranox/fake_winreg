@@ -4,30 +4,29 @@ import time
 from typing import Dict, Optional
 
 
-is_windows = platform.system().lower() == 'windows'
+is_windows = platform.system().lower() == "windows"
 
 # PROJ
 try:
     from .types_custom import *
     from .registry_constants import *
-except (ImportError, ModuleNotFoundError):      # pragma: no cover
+except (ImportError, ModuleNotFoundError):  # pragma: no cover
     # imports for doctest
-    from types_custom import *                  # type: ignore  # pragma: no cover
-    from registry_constants import *            # type: ignore  # pragma: no cover
+    from types_custom import *  # type: ignore  # pragma: no cover
+    from registry_constants import *  # type: ignore  # pragma: no cover
 
 
 class FakeRegistry(object):
-
     def __init__(self) -> None:
         # the Key of the hive Dict is int or PyHKEY
         self.hive: Dict[object, FakeRegistryKey] = dict()
-        self.hive[HKEY_CLASSES_ROOT] = set_fake_reg_key(FakeRegistryKey(), 'HKEY_CLASSES_ROOT')
-        self.hive[HKEY_CURRENT_CONFIG] = set_fake_reg_key(FakeRegistryKey(), 'HKEY_CURRENT_CONFIG')
-        self.hive[HKEY_CURRENT_USER] = set_fake_reg_key(FakeRegistryKey(), 'HKEY_CURRENT_USER')
-        self.hive[HKEY_DYN_DATA] = set_fake_reg_key(FakeRegistryKey(), 'HKEY_DYN_DATA')
-        self.hive[HKEY_LOCAL_MACHINE] = set_fake_reg_key(FakeRegistryKey(), 'HKEY_LOCAL_MACHINE')
-        self.hive[HKEY_PERFORMANCE_DATA] = set_fake_reg_key(FakeRegistryKey(), 'HKEY_PERFORMANCE_DATA')
-        self.hive[HKEY_USERS] = set_fake_reg_key(FakeRegistryKey(), 'HKEY_USERS')
+        self.hive[HKEY_CLASSES_ROOT] = set_fake_reg_key(FakeRegistryKey(), "HKEY_CLASSES_ROOT")
+        self.hive[HKEY_CURRENT_CONFIG] = set_fake_reg_key(FakeRegistryKey(), "HKEY_CURRENT_CONFIG")
+        self.hive[HKEY_CURRENT_USER] = set_fake_reg_key(FakeRegistryKey(), "HKEY_CURRENT_USER")
+        self.hive[HKEY_DYN_DATA] = set_fake_reg_key(FakeRegistryKey(), "HKEY_DYN_DATA")
+        self.hive[HKEY_LOCAL_MACHINE] = set_fake_reg_key(FakeRegistryKey(), "HKEY_LOCAL_MACHINE")
+        self.hive[HKEY_PERFORMANCE_DATA] = set_fake_reg_key(FakeRegistryKey(), "HKEY_PERFORMANCE_DATA")
+        self.hive[HKEY_USERS] = set_fake_reg_key(FakeRegistryKey(), "HKEY_USERS")
 
 
 class FakeRegistryKey(object):
@@ -36,7 +35,7 @@ class FakeRegistryKey(object):
         >>> fake_reg_root = FakeRegistryKey()
         """
         # the key name including the hive
-        self.full_key: str = ''
+        self.full_key: str = ""
         # the parent fake_key
         self.parent_fake_registry_key: Optional[FakeRegistryKey] = None
         # the subkeys, hashed by reg_key
@@ -53,11 +52,11 @@ class FakeRegistryValue(object):
         >>> fake_reg_value = FakeRegistryValue()
         """
         # the key name including the hive (Not including the Value Name)
-        self.full_key: str = ''
+        self.full_key: str = ""
         # the name of the value
-        self.value_name: str = ''
+        self.value_name: str = ""
         # the value
-        self.value: RegData = ''
+        self.value: RegData = ""
         # the REG_* type of the Value
         self.value_type: int = REG_SZ
         # used in module fake_winreg, Default = KEY_READ
@@ -66,8 +65,7 @@ class FakeRegistryValue(object):
         self.last_modified_ns: Union[None, int] = None
 
 
-def set_fake_reg_key(fake_reg_key: FakeRegistryKey, sub_key: Union[str, None] = None,
-                     last_modified_ns: Union[int, None] = None) -> FakeRegistryKey:
+def set_fake_reg_key(fake_reg_key: FakeRegistryKey, sub_key: Union[str, None] = None, last_modified_ns: Union[int, None] = None) -> FakeRegistryKey:
     """
     Creates a registry key if it does not exist already
 
@@ -79,9 +77,9 @@ def set_fake_reg_key(fake_reg_key: FakeRegistryKey, sub_key: Union[str, None] = 
     if last_modified_ns is None:
         last_modified_ns = get_windows_timestamp_now()
 
-    key_parts_full = fake_reg_key.full_key.split('\\')
+    key_parts_full = fake_reg_key.full_key.split("\\")
     if sub_key:
-        key_parts_sub = sub_key.split('\\')
+        key_parts_sub = sub_key.split("\\")
     else:
         key_parts_sub = []
 
@@ -92,7 +90,7 @@ def set_fake_reg_key(fake_reg_key: FakeRegistryKey, sub_key: Union[str, None] = 
 
         if key_part not in data.subkeys:
             data.subkeys[key_part] = FakeRegistryKey()
-            data.subkeys[key_part].full_key = ('\\'.join(key_parts_full)).strip('\\')
+            data.subkeys[key_part].full_key = ("\\".join(key_parts_full)).strip("\\")
             data.subkeys[key_part].last_modified_ns = last_modified_ns
             data.subkeys[key_part].parent_fake_registry_key = data
         data = data.subkeys[key_part]
@@ -120,7 +118,7 @@ def get_fake_reg_key(fake_reg_key: FakeRegistryKey, sub_key: str) -> FakeRegistr
     """
     current_fake_reg_key = fake_reg_key
     if sub_key:
-        key_parts = sub_key.split('\\')
+        key_parts = sub_key.split("\\")
         for key_part in key_parts:
             try:
                 current_fake_reg_key = current_fake_reg_key.subkeys[key_part]
@@ -129,9 +127,14 @@ def get_fake_reg_key(fake_reg_key: FakeRegistryKey, sub_key: str) -> FakeRegistr
     return current_fake_reg_key
 
 
-def set_fake_reg_value(fake_reg_key: FakeRegistryKey, sub_key: str,
-                       value_name: str, value: Union[None, bytes, str, List[str], int], value_type: int = REG_SZ,
-                       last_modified_ns: Union[int, None] = None) -> FakeRegistryValue:
+def set_fake_reg_value(
+    fake_reg_key: FakeRegistryKey,
+    sub_key: str,
+    value_name: str,
+    value: Union[None, bytes, str, List[str], int],
+    value_type: int = REG_SZ,
+    last_modified_ns: Union[int, None] = None,
+) -> FakeRegistryValue:
     """
     sets the value of the fake key - we create here keys on the fly, but beware of the last_modified_ns time !
     if You need to have correct last_modified_ns time for each subkey, You need to create those keys first
@@ -187,7 +190,7 @@ def get_windows_timestamp_now() -> int:
     >>> assert get_windows_timestamp_now() > save_time
 
     """
-    linux_timestamp_100ns = int(time.time() * 1E7)
-    linux_windows_diff_100ns = int(11644473600 * 1E7)
+    linux_timestamp_100ns = int(time.time() * 1e7)
+    linux_windows_diff_100ns = int(11644473600 * 1e7)
     windows_timestamp_100ns = linux_timestamp_100ns + linux_windows_diff_100ns
     return windows_timestamp_100ns

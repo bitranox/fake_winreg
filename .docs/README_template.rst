@@ -2,7 +2,7 @@ fake_winreg
 ===========
 
 
-Version v1.5.7 as of 2021-12-16 see `Changelog`_
+Version v1.6.0 as of 2021-12-18 see `Changelog`_
 
 
 .. include:: ./badges.rst
