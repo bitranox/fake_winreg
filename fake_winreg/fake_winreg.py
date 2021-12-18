@@ -1,5 +1,6 @@
 # STDLIB
-from typing import Any, Callable, Dict, Optional, Tuple, TypeVar, Union, cast
+from types import TracebackType
+from typing import Any, Callable, Optional, Tuple, Type, TypeVar, Union, cast
 import inspect
 import threading
 
@@ -13,15 +14,15 @@ try:
     from . import fake_reg
     from . import fake_reg_tools
     from . import helpers
-except (ImportError, ModuleNotFoundError):                           # pragma: no cover
+except (ImportError, ModuleNotFoundError):  # pragma: no cover
     # imports for doctest
-    from registry_constants import *    # type: ignore  # pragma: no cover
-    from types_custom import RegData      # type: ignore  # pragma: no cover
-    import fake_reg                     # type: ignore  # pragma: no cover
-    import fake_reg_tools               # type: ignore  # pragma: no cover
-    import helpers                      # type: ignore  # pragma: no cover
+    from registry_constants import *  # type: ignore  # pragma: no cover
+    from types_custom import RegData  # type: ignore  # pragma: no cover
+    import fake_reg  # type: ignore  # pragma: no cover
+    import fake_reg_tools  # type: ignore  # pragma: no cover
+    import helpers  # type: ignore  # pragma: no cover
 
-F = TypeVar('F', bound=Callable[..., Any])
+F = TypeVar("F", bound=Callable[..., Any])
 
 # we start around 600 like winreg - this will be incremented every time a new handle is acquired
 _last_int_handle: int = 600
@@ -30,10 +31,10 @@ _last_int_handle_lock = threading.Lock()
 
 
 @wrapt.decorator
-def check_for_kwargs_wrapt(wrapped: F, instance: object = None, args: Any = (), kwargs: Any = dict()) -> F:     # noqa
-    if kwargs:                                            # pragma: no cover
-        keys = ', '.join([key for key in kwargs.keys()])  # pragma: no cover
-        raise TypeError(f"{wrapped.__name__}() got some positional-only arguments passed as keyword arguments: '{keys}'")              # pragma: no cover
+def check_for_kwargs_wrapt(wrapped: F, instance: object = None, args: Any = (), kwargs: Any = dict()) -> F:  # noqa
+    if kwargs:  # pragma: no cover
+        keys = ", ".join([key for key in kwargs.keys()])  # pragma: no cover
+        raise TypeError(f"{wrapped.__name__}() got some positional-only arguments passed as keyword arguments: '{keys}'")  # pragma: no cover
     return cast(F, wrapped(*args, **kwargs))
 
 
@@ -55,7 +56,7 @@ class HKEYType(object):
         return self._int_handle
 
     @staticmethod
-    def Close() -> None:    # noqa
+    def Close() -> None:  # noqa
         """
         Closes the underlying Windows handle.
         If the handle is already closed, no error is raised.
@@ -106,10 +107,10 @@ class PyHKEY(HKEYType):
     def __init__(self, handle: fake_reg.FakeRegistryKey, access: int = KEY_READ):
         super().__init__(handle, access)
 
-    def __enter__(self):
+    def __enter__(self) -> "PyHKEY":
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: Optional[Type[BaseException]], exc_val: Optional[BaseException], exc_tb: Optional[TracebackType]) -> None:
         self.Close()
 
 
@@ -130,7 +131,7 @@ def load_fake_registry(fake_registry: fake_reg.FakeRegistry) -> None:
 
 @check_for_kwargs_wrapt
 # CloseKey{{{
-def CloseKey(hkey: Union[int, HKEYType]) -> None:      # noqa
+def CloseKey(hkey: Union[int, HKEYType]) -> None:  # noqa
     """
     Closes a previously opened registry key.
 
@@ -190,7 +191,7 @@ def CloseKey(hkey: Union[int, HKEYType]) -> None:      # noqa
     """
     # CloseKey}}}
 
-    if hkey is not None:    # None accepted here
+    if hkey is not None:  # None accepted here
         __check_key(hkey)
     # we could recursively delete all the handles in self.py_hkey_handles by walking the fake registry keys
     # or we can get the hive name and delete all self.py_hkey_handles beginning with hive name
@@ -199,7 +200,7 @@ def CloseKey(hkey: Union[int, HKEYType]) -> None:      # noqa
 
 @check_for_kwargs_wrapt
 # ConnectRegistry{{{
-def ConnectRegistry(computer_name: Optional[str], key: Handle) -> PyHKEY:     # noqa
+def ConnectRegistry(computer_name: Optional[str], key: Handle) -> PyHKEY:  # noqa
     """
     Establishes a connection to a predefined registry handle on another computer, and returns a new handle object.
     the function does NOT accept named parameters, only positional parameters
@@ -315,20 +316,20 @@ def ConnectRegistry(computer_name: Optional[str], key: Handle) -> PyHKEY:     # 
     if computer_name:
         if helpers.is_computer_reachable(computer_name):
             # SystemError: System error 53 has occurred. The network path was not found
-            system_error = FileNotFoundError('[WinError 53] The network path was not found')
-            setattr(system_error, 'winerror', 53)
+            system_error = FileNotFoundError("[WinError 53] The network path was not found")
+            setattr(system_error, "winerror", 53)
             raise system_error
         else:
             # OSError: [WinError 1707] The network address is invalid
-            network_error = OSError('[WinError 1707] The network address is invalid')
-            setattr(network_error, 'winerror', 1707)
+            network_error = OSError("[WinError 1707] The network address is invalid")
+            setattr(network_error, "winerror", 1707)
             raise network_error
 
     try:
         fake_reg_handle = __fake_registry.hive[key]
     except KeyError:
-        error = OSError('[WinError 6] The handle is invalid')
-        setattr(error, 'winerror', 6)
+        error = OSError("[WinError 6] The handle is invalid")
+        setattr(error, "winerror", 6)
         raise error
 
     hive_handle = PyHKEY(handle=fake_reg_handle)
@@ -337,7 +338,7 @@ def ConnectRegistry(computer_name: Optional[str], key: Handle) -> PyHKEY:     # 
 
 @check_for_kwargs_wrapt
 # CreateKey{{{
-def CreateKey(key: Handle, sub_key: Optional[str]) -> PyHKEY:      # noqa
+def CreateKey(key: Handle, sub_key: Optional[str]) -> PyHKEY:  # noqa
     """
     Creates or opens the specified key.
 
@@ -485,15 +486,15 @@ def CreateKey(key: Handle, sub_key: Optional[str]) -> PyHKEY:      # noqa
     """
     # CreateKey}}}
 
-    l_predefined_hkeys = \
-        [
-            'HKEY_CLASSES_ROOT',
-            'HKEY_CURRENT_CONFIG',
-            'HKEY_CURRENT_USER',
-            'HKEY_DYN_DATA',
-            'HKEY_LOCAL_MACHINE',
-            'HKEY_PERFORMANCE_DATA',
-            'HKEY_USERS']
+    l_predefined_hkeys = [
+        "HKEY_CLASSES_ROOT",
+        "HKEY_CURRENT_CONFIG",
+        "HKEY_CURRENT_USER",
+        "HKEY_DYN_DATA",
+        "HKEY_LOCAL_MACHINE",
+        "HKEY_PERFORMANCE_DATA",
+        "HKEY_USERS",
+    ]
 
     __check_key(key)
     __check_argument_must_be_str_or_none(2, sub_key)
@@ -521,7 +522,7 @@ def CreateKey(key: Handle, sub_key: Optional[str]) -> PyHKEY:      # noqa
 
 @check_for_kwargs_wrapt
 # CreateKeyEx{{{
-def CreateKeyEx(key: Handle, sub_key: str, reserved: int = 0, access: int = KEY_WRITE) -> PyHKEY:      # noqa
+def CreateKeyEx(key: Handle, sub_key: str, reserved: int = 0, access: int = KEY_WRITE) -> PyHKEY:  # noqa
     """
     Creates or opens the specified key, returning a handle object with access as passed in the parameter
 
@@ -681,7 +682,7 @@ def CreateKeyEx(key: Handle, sub_key: str, reserved: int = 0, access: int = KEY_
 
 @check_for_kwargs_wrapt
 # DeleteKey{{{
-def DeleteKey(key: Handle, sub_key: str) -> None:         # noqa
+def DeleteKey(key: Handle, sub_key: str) -> None:  # noqa
     """
     Deletes the specified key. This method can not delete keys with subkeys.
     If the method succeeds, the entire key, including all of its values, is removed.
@@ -790,24 +791,24 @@ def DeleteKey(key: Handle, sub_key: str) -> None:         # noqa
     try:
         fake_reg_key = fake_reg.get_fake_reg_key(fake_reg_key=key_handle.handle, sub_key=sub_key)
     except FileNotFoundError:
-        error = FileNotFoundError('[WinError 2] The system cannot find the file specified')
-        setattr(error, 'winerror', 2)
+        error = FileNotFoundError("[WinError 2] The system cannot find the file specified")
+        setattr(error, "winerror", 2)
         raise error
 
     if fake_reg_key.subkeys:
         __raise_permission_error()
 
     full_key_path = fake_reg_key.full_key
-    sub_key = str(full_key_path.rsplit('\\', 1)[1])
+    sub_key = str(full_key_path.rsplit("\\", 1)[1])
     fake_parent_key = fake_reg_key.parent_fake_registry_key
     # get rid of Optional[] mypy
     assert fake_parent_key is not None
-    fake_parent_key.subkeys.pop(sub_key, None)       # delete the subkey
+    fake_parent_key.subkeys.pop(sub_key, None)  # delete the subkey
 
 
 @check_for_kwargs_wrapt
 # DeleteKeyEx{{{
-def DeleteKeyEx(key: Handle, sub_key: str, access: int = KEY_WOW64_64KEY, reserved: int = 0) -> None:     # noqa
+def DeleteKeyEx(key: Handle, sub_key: str, access: int = KEY_WOW64_64KEY, reserved: int = 0) -> None:  # noqa
     """
     Deletes the specified key. This method can not delete keys with subkeys.
     If the method succeeds, the entire key, including all of its values, is removed.
@@ -949,13 +950,13 @@ def DeleteKeyEx(key: Handle, sub_key: str, access: int = KEY_WOW64_64KEY, reserv
     __check_reserved(reserved=reserved)
 
     if access == KEY_WOW64_32KEY:
-        raise NotImplementedError('we only support KEY_WOW64_64KEY')
+        raise NotImplementedError("we only support KEY_WOW64_64KEY")
     DeleteKey(key, sub_key)
 
 
 @check_for_kwargs_wrapt
 # DeleteValue{{{
-def DeleteValue(key: Handle, value: Optional[str]) -> None:         # noqa
+def DeleteValue(key: Handle, value: Optional[str]) -> None:  # noqa
     """
     Removes a named value from a registry key.
     the function does NOT accept named parameters, only positional parameters
@@ -1040,20 +1041,20 @@ def DeleteValue(key: Handle, value: Optional[str]) -> None:         # noqa
     __check_argument_must_be_str_or_none(2, value)
 
     if value is None:
-        value = ''
+        value = ""
 
     key_handle = __resolve_key(key)
     try:
         del key_handle.handle.values[value]
     except KeyError:
-        error = FileNotFoundError('[WinError 2] The system cannot find the file specified')
-        setattr(error, 'winerror', 2)
+        error = FileNotFoundError("[WinError 2] The system cannot find the file specified")
+        setattr(error, "winerror", 2)
         raise error
 
 
 @check_for_kwargs_wrapt
 # EnumKey{{{
-def EnumKey(key: Handle, index: int) -> str:              # noqa
+def EnumKey(key: Handle, index: int) -> str:  # noqa
     """
     Enumerates subkeys of an open registry key, returning a string.
     The function retrieves the name of one subkey each time it is called.
@@ -1151,14 +1152,14 @@ def EnumKey(key: Handle, index: int) -> str:              # noqa
         sub_key_str = list(key_handle.handle.subkeys.keys())[index]
         return sub_key_str
     except IndexError:
-        error = OSError('[WinError 259] No more data is available')
-        setattr(error, 'winerror', 259)
+        error = OSError("[WinError 259] No more data is available")
+        setattr(error, "winerror", 259)
         raise error
 
 
 @check_for_kwargs_wrapt
 # EnumValue{{{
-def EnumValue(key: Handle, index: int) -> Tuple[str, RegData, int]:              # noqa
+def EnumValue(key: Handle, index: int) -> Tuple[str, RegData, int]:  # noqa
     """
     Enumerates values of an open registry key, returning a tuple.
     The function retrieves the name of one value each time it is called.
@@ -1290,14 +1291,14 @@ def EnumValue(key: Handle, index: int) -> Tuple[str, RegData, int]:             
         value_type = key_handle.handle.values[value_name].value_type
         return value_name, value_data, value_type
     except IndexError:
-        error = OSError('[WinError 259] No more data is available')
-        setattr(error, 'winerror', 259)
+        error = OSError("[WinError 259] No more data is available")
+        setattr(error, "winerror", 259)
         raise error
 
 
 # named arguments are allowed here !
 # OpenKey{{{
-def OpenKey(key: Handle, sub_key: Union[str, None], reserved: int = 0, access: int = KEY_READ) -> PyHKEY:         # noqa
+def OpenKey(key: Handle, sub_key: Union[str, None], reserved: int = 0, access: int = KEY_READ) -> PyHKEY:  # noqa
     """
     Opens the specified key, the result is a new handle to the specified key.
     one of the few functions of winreg that accepts named parameters
@@ -1414,7 +1415,7 @@ def OpenKey(key: Handle, sub_key: Union[str, None], reserved: int = 0, access: i
     __check_access(access)
 
     if sub_key is None:
-        sub_key = ''
+        sub_key = ""
 
     try:
         key_handle = __resolve_key(key)
@@ -1422,14 +1423,14 @@ def OpenKey(key: Handle, sub_key: Union[str, None], reserved: int = 0, access: i
         key_handle = PyHKEY(reg_key, access=access)
         return key_handle
     except FileNotFoundError:
-        error = FileNotFoundError('[WinError 2] The system cannot find the file specified')
-        setattr(error, 'winerror', 2)
+        error = FileNotFoundError("[WinError 2] The system cannot find the file specified")
+        setattr(error, "winerror", 2)
         raise error
 
 
 # named arguments are allowed here !
 # OpenKeyEx{{{
-def OpenKeyEx(key: Handle, sub_key: Optional[str], reserved: int = 0, access: int = KEY_READ) -> PyHKEY:        # noqa
+def OpenKeyEx(key: Handle, sub_key: Optional[str], reserved: int = 0, access: int = KEY_READ) -> PyHKEY:  # noqa
     """
     Opens the specified key, the result is a new handle to the specified key with the given access.
     one of the few functions of winreg that accepts named parameters
@@ -1517,8 +1518,12 @@ def OpenKeyEx(key: Handle, sub_key: Optional[str], reserved: int = 0, access: in
     >>> reg_handle = ConnectRegistry(None, HKEY_LOCAL_MACHINE)
 
     >>> # Open Key
-    >>> key_handle = OpenKeyEx(reg_handle, r'SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion')
-    >>> assert key_handle.handle.full_key == r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion'
+    >>> my_key_handle = OpenKeyEx(reg_handle, r'SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion')
+    >>> assert my_key_handle.handle.full_key == r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion'
+
+    >>> # Open Key with Context Manager
+    >>> with OpenKeyEx(reg_handle, r'SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion') as my_key_handle:
+    ...     assert my_key_handle.handle.full_key == r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion'
 
     >>> # Open non existing Key
     >>> OpenKeyEx(reg_handle, r'SOFTWARE\\Microsoft\\Windows NT\\DoesNotExist')
@@ -1535,7 +1540,7 @@ def OpenKeyEx(key: Handle, sub_key: Optional[str], reserved: int = 0, access: in
 
 @check_for_kwargs_wrapt
 # QueryInfoKey{{{
-def QueryInfoKey(key: Handle) -> Tuple[int, int, int]:            # noqa
+def QueryInfoKey(key: Handle) -> Tuple[int, int, int]:  # noqa
     """
     Returns information about a key, as a tuple.
     the function does NOT accept named parameters, only positional parameters
@@ -1627,13 +1632,13 @@ def QueryInfoKey(key: Handle) -> Tuple[int, int, int]:            # noqa
     reg_handle = __resolve_key(key)
     n_subkeys = len(reg_handle.handle.subkeys)
     n_values = len(reg_handle.handle.values)
-    last_modified_nanoseconds = reg_handle.handle.last_modified_ns        # 100’s of nanoseconds since Jan 1, 1601. / 1.Jan.1970 diff = 11644473600 * 1E9
+    last_modified_nanoseconds = reg_handle.handle.last_modified_ns  # 100’s of nanoseconds since Jan 1, 1601. / 1.Jan.1970 diff = 11644473600 * 1E9
     return n_subkeys, n_values, last_modified_nanoseconds
 
 
 @check_for_kwargs_wrapt
 # QueryValue{{{
-def QueryValue(key: Handle, sub_key: Union[str, None]) -> str:        # noqa
+def QueryValue(key: Handle, sub_key: Union[str, None]) -> str:  # noqa
     """
     Retrieves the unnamed value (the default value*) for a key, as string.
 
@@ -1743,22 +1748,22 @@ def QueryValue(key: Handle, sub_key: Union[str, None]) -> str:        # noqa
     key_handle = __resolve_key(key)
     key_handle = OpenKey(key_handle, sub_key)
     try:
-        result = key_handle.handle.values[''].value
+        result = key_handle.handle.values[""].value
         if not isinstance(result, str):
-            error = OSError('[WinError 13] The data is invalid')
-            setattr(error, 'winerror', 13)
+            error = OSError("[WinError 13] The data is invalid")
+            setattr(error, "winerror", 13)
             raise error
         isinstance(result, str)
         default_value = result
     except KeyError:
-        default_value = ''
+        default_value = ""
 
     return default_value
 
 
 @check_for_kwargs_wrapt
 # QueryValueEx{{{
-def QueryValueEx(key: Handle, value_name: Optional[str]) -> Tuple[RegData, int]:     # noqa
+def QueryValueEx(key: Handle, value_name: Optional[str]) -> Tuple[RegData, int]:  # noqa
     """
     Retrieves data and type for a specified value name associated with an open registry key.
 
@@ -1895,20 +1900,20 @@ def QueryValueEx(key: Handle, value_name: Optional[str]) -> Tuple[RegData, int]:
 
     try:
         if value_name is None:
-            value_name = ''
+            value_name = ""
         key_handle = __resolve_key(key)
         value = key_handle.handle.values[value_name].value
         value_type = key_handle.handle.values[value_name].value_type
         return value, value_type
     except KeyError:
-        error = FileNotFoundError('[WinError 2] The system cannot find the file specified')
-        setattr(error, 'winerror', 2)
+        error = FileNotFoundError("[WinError 2] The system cannot find the file specified")
+        setattr(error, "winerror", 2)
         raise error
 
 
 @check_for_kwargs_wrapt
 # SetValue{{{
-def SetValue(key: Handle, sub_key: Union[str, None], type: int, value: str) -> None:      # noqa
+def SetValue(key: Handle, sub_key: Union[str, None], type: int, value: str) -> None:  # noqa
     """
     Associates a value with a specified key. (the Default Value* of the Key, usually not set)
 
@@ -2044,7 +2049,7 @@ def SetValue(key: Handle, sub_key: Union[str, None], type: int, value: str) -> N
 
     if type != REG_SZ:
         # checked - like winreg
-        raise TypeError('type must be winreg.REG_SZ')
+        raise TypeError("type must be winreg.REG_SZ")
 
     key_handle = __resolve_key(key)
     access = key_handle._access
@@ -2053,12 +2058,12 @@ def SetValue(key: Handle, sub_key: Union[str, None], type: int, value: str) -> N
         key_handle = OpenKey(key_handle, sub_key, 0, access=access)
     except FileNotFoundError:
         key_handle = CreateKey(key_handle, sub_key)
-    SetValueEx(key_handle, '', 0, REG_SZ, value)
+    SetValueEx(key_handle, "", 0, REG_SZ, value)
 
 
 @check_for_kwargs_wrapt
 # SetValueEx{{{
-def SetValueEx(key: Handle, value_name: Optional[str], reserved: int, type: int, value: RegData) -> None:    # noqa
+def SetValueEx(key: Handle, value_name: Optional[str], reserved: int, type: int, value: RegData) -> None:  # noqa
     """
     Stores data in the value field of an open registry key.
 
@@ -2198,10 +2203,10 @@ def SetValueEx(key: Handle, value_name: Optional[str], reserved: int, type: int,
 
     # value name = None is the default Value of the Key
     if value_name is None:
-        value_name = ''
+        value_name = ""
     fake_reg_tools.__check_value_type_matches_type(value, type)
     key_handle = __resolve_key(key)
-    fake_reg.set_fake_reg_value(key_handle.handle, sub_key='', value_name=value_name, value=value, value_type=type)
+    fake_reg.set_fake_reg_value(key_handle.handle, sub_key="", value_name=value_name, value=value, value_type=type)
 
 
 def __resolve_key(key: Handle) -> PyHKEY:
@@ -2251,13 +2256,13 @@ def __resolve_key(key: Handle) -> PyHKEY:
         try:
             key_handle = PyHKEY(__fake_registry.hive[key])
         except KeyError:
-            error = OSError('[WinError 6] The handle is invalid')
-            setattr(error, 'winerror', 6)
+            error = OSError("[WinError 6] The handle is invalid")
+            setattr(error, "winerror", 6)
             raise error
     elif isinstance(key, HKEYType):
         key_handle = PyHKEY(handle=key.handle, access=key._access)
     else:
-        raise RuntimeError('unknown Key Type')
+        raise RuntimeError("unknown Key Type")
     return key_handle
 
 
@@ -2279,14 +2284,14 @@ def __check_argument_must_be_type_expected(arg_number: int, argument: Any, type_
     function_name = inspect.stack()[1].function
     if not isinstance(argument, type_expected):
         argument_type = type(argument).__name__
-        if argument_type == 'NoneType':
-            argument_type = 'None'
-        error_str = '{function_name}() argument {arg_number} must be {type_expected}, not {argument_type}'.format(
+        if argument_type == "NoneType":
+            argument_type = "None"
+        error_str = "{function_name}() argument {arg_number} must be {type_expected}, not {argument_type}".format(
             function_name=function_name,
             arg_number=arg_number,
             type_expected=type_expected.__name__,
             argument_type=argument_type,
-            )
+        )
         raise TypeError(error_str)
 
 
@@ -2294,18 +2299,18 @@ def __check_argument_must_be_str_or_none(arg_number: int, argument: Any) -> None
     function_name = inspect.stack()[1].function
     if not isinstance(argument, str) and argument is not None:
         subkey_type = type(argument).__name__
-        error_str = f'{function_name}() argument {arg_number} must be str or None, not {subkey_type}'
+        error_str = f"{function_name}() argument {arg_number} must be str or None, not {subkey_type}"
         raise TypeError(error_str)
 
 
 def __check_key(key: Any) -> None:
     if key is None:
-        raise TypeError('None is not a valid HKEY in this context')
+        raise TypeError("None is not a valid HKEY in this context")
     if not isinstance(key, int) and not isinstance(key, PyHKEY):
-        raise TypeError('The object is not a PyHKEY object')
+        raise TypeError("The object is not a PyHKEY object")
     if isinstance(key, int):
         if key >= 2 ** 64:
-            raise OverflowError('int too big to convert')
+            raise OverflowError("int too big to convert")
 
 
 def __check_index(index: Any) -> None:
@@ -2331,13 +2336,13 @@ def __check_index(index: Any) -> None:
 
     index_type = type(index).__name__
     if not isinstance(index, int):
-        raise TypeError('an integer is required (got type {access_type})'.format(access_type=index_type))
+        raise TypeError("an integer is required (got type {access_type})".format(access_type=index_type))
     elif index >= 2 ** 64:
-        raise OverflowError('Python int too large to convert to C long')
+        raise OverflowError("Python int too large to convert to C long")
 
 
 def __check_access(access: Any) -> None:
-    __check_index(access)   # same as __check_index
+    __check_index(access)  # same as __check_index
 
 
 def __check_reserved(reserved: Any) -> None:
@@ -2348,10 +2353,10 @@ def __check_reserved(reserved: Any) -> None:
         ...
     OSError: [WinError 87] The parameter is incorrect
     """
-    __check_access(reserved)    # same as access
+    __check_access(reserved)  # same as access
     if isinstance(reserved, int) and reserved != 0:
-        error = OSError('[WinError 87] The parameter is incorrect')
-        setattr(error, 'winerror', 87)
+        error = OSError("[WinError 87] The parameter is incorrect")
+        setattr(error, "winerror", 87)
         raise error
 
 
@@ -2381,12 +2386,12 @@ def __check_reserved2(reserved: Any) -> None:
 
 
 def __raise_permission_error() -> None:
-    permission_error = PermissionError('[WinError 5] Access is denied')
-    setattr(permission_error, 'winerror', 5)
+    permission_error = PermissionError("[WinError 5] Access is denied")
+    setattr(permission_error, "winerror", 5)
     raise permission_error
 
 
 def __raise_os_error_1010() -> None:
-    error = OSError('[WinError 1010] The configuration registry key is invalid')
-    setattr(error, 'winerror', 1010)
+    error = OSError("[WinError 1010] The configuration registry key is invalid")
+    setattr(error, "winerror", 1010)
     raise error

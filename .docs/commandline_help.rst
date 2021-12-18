@@ -1,4 +1,4 @@
-.. code-block:: bash
+.. code-block::
 
    Usage: fake_winreg [OPTIONS] COMMAND [ARGS]...
 

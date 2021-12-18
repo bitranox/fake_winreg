@@ -2,21 +2,23 @@ fake_winreg
 ===========
 
 
-Version v1.5.7 as of 2021-12-16 see `Changelog`_
+Version v1.6.0 as of 2021-12-18 see `Changelog`_
 
-|travis_build| |license| |jupyter| |pypi|
+|build_badge| |license| |jupyter| |pypi| |black|
 
 |codecov| |better_code| |cc_maintain| |cc_issues| |cc_coverage| |snyk|
 
 
-.. |travis_build| image:: https://img.shields.io/travis/bitranox/fake_winreg/master.svg
-   :target: https://travis-ci.org/bitranox/fake_winreg
+
+.. |build_badge| image:: https://github.com/bitranox/fake_winreg/actions/workflows/python-package.yml/badge.svg
+   :target: https://github.com/bitranox/fake_winreg/actions/workflows/python-package.yml
+
 
 .. |license| image:: https://img.shields.io/github/license/webcomics/pywine.svg
    :target: http://en.wikipedia.org/wiki/MIT_License
 
 .. |jupyter| image:: https://mybinder.org/badge_logo.svg
- :target: https://mybinder.org/v2/gh/bitranox/fake_winreg/master?filepath=fake_winreg.ipynb
+   :target: https://mybinder.org/v2/gh/bitranox/fake_winreg/master?filepath=fake_winreg.ipynb
 
 .. for the pypi status link note the dashes, not the underscore !
 .. |pypi| image:: https://img.shields.io/pypi/status/fake-winreg?label=PyPI%20Package
@@ -51,7 +53,7 @@ FUNCTION
 
 test winreg functions on a fake registry on windows and linux, without messing up Your real registry.
 
-Fully type annotated and documented, so You can enjoy the type hints in Your favorit IDE
+Fully type annotated and documented, so You can enjoy the type hints in Your favorite IDE
 
 This is perfect for TDD, creating registry related code and covering most issues before You hit a real registry with Your tests.
 
@@ -75,11 +77,11 @@ LIMITATIONS
   That means You can read/write/delete Keys and values in the fake registry,
   even if You opened the key with access right "KEY_READ".
   You can Delete Keys and Values in HKEY_LOCAL_MACHINE and so on, even if You dont have Admin Rights.
-  That is not an security issue, since You test against a fake registry - and You test mostly Your own software.
+  This is not an security issue, since You test against a fake registry - and You test mostly Your own software.
   If You need it, contributions are welcome ! (somehow it would make sense for TDD to have it)
-- you can not dump a real registry at the moment and save it, in order to use it as a fake registry - that means
+- at the moment you can not dump a real registry and save it, in order to use it as a fake registry - that means
   all the keys You need, You have to set manually at the moment.
-  I will polish up my old project "fingerprint" and make a compatible file format to dump / read / write registry branches.
+  if I catch the time, I will polish up my old project "fingerprint" and make a compatible file format to dump / read / write registry branches.
 - some (few) winreg functions are not implemented - if You miss out something, give me a note, i will integrate it
 - obviously we can not connect to the registry of another windows computer over the network
 - KEY_WOW64_32KEY is not supported. We show always the same ...
@@ -92,9 +94,9 @@ automated tests, Travis Matrix, Documentation, Badges, etc. are managed with `Pi
 
 Python version required: 3.6.0 or newer
 
-tested on linux "bionic" with python 3.6, 3.7, 3.8, 3.9-dev, pypy3 - architectures: amd64, ppc64le, s390x, arm64
+tested on recent linux with python 3.6, 3.7, 3.8, 3.9, 3.10.0, pypy-3.8 - architectures: amd64
 
-`100% code coverage <https://codecov.io/gh/bitranox/fake_winreg>`_, flake8 style checking ,mypy static type checking ,tested under `Linux, macOS, Windows <https://travis-ci.org/bitranox/fake_winreg>`_, automatic daily builds and monitoring
+`100% code coverage <https://codecov.io/gh/bitranox/fake_winreg>`_, flake8 style checking ,mypy static type checking ,tested under `Linux, macOS, Windows <https://github.com/bitranox/fake_winreg/actions/workflows/python-package.yml>`_, automatic daily builds and monitoring
 
 ----
 
@@ -159,7 +161,7 @@ ConnectRegistry
 
 .. code-block:: python
 
-    def ConnectRegistry(computer_name: Optional[str], key: Handle) -> PyHKEY:     # noqa
+    def ConnectRegistry(computer_name: Optional[str], key: Handle) -> PyHKEY:  # noqa
         """
         Establishes a connection to a predefined registry handle on another computer, and returns a new handle object.
         the function does NOT accept named parameters, only positional parameters
@@ -274,7 +276,7 @@ CloseKey
 
 .. code-block:: python
 
-    def CloseKey(hkey: Union[int, HKEYType]) -> None:      # noqa
+    def CloseKey(hkey: Union[int, HKEYType]) -> None:  # noqa
         """
         Closes a previously opened registry key.
 
@@ -338,7 +340,7 @@ CreateKey
 
 .. code-block:: python
 
-    def CreateKey(key: Handle, sub_key: Optional[str]) -> PyHKEY:      # noqa
+    def CreateKey(key: Handle, sub_key: Optional[str]) -> PyHKEY:  # noqa
         """
         Creates or opens the specified key.
 
@@ -490,7 +492,7 @@ CreateKeyEx
 
 .. code-block:: python
 
-    def CreateKeyEx(key: Handle, sub_key: str, reserved: int = 0, access: int = KEY_WRITE) -> PyHKEY:      # noqa
+    def CreateKeyEx(key: Handle, sub_key: str, reserved: int = 0, access: int = KEY_WRITE) -> PyHKEY:  # noqa
         """
         Creates or opens the specified key, returning a handle object with access as passed in the parameter
 
@@ -632,7 +634,7 @@ DeleteKey
 
 .. code-block:: python
 
-    def DeleteKey(key: Handle, sub_key: str) -> None:         # noqa
+    def DeleteKey(key: Handle, sub_key: str) -> None:  # noqa
         """
         Deletes the specified key. This method can not delete keys with subkeys.
         If the method succeeds, the entire key, including all of its values, is removed.
@@ -737,7 +739,7 @@ DeleteKeyEx
 
 .. code-block:: python
 
-    def DeleteKeyEx(key: Handle, sub_key: str, access: int = KEY_WOW64_64KEY, reserved: int = 0) -> None:     # noqa
+    def DeleteKeyEx(key: Handle, sub_key: str, access: int = KEY_WOW64_64KEY, reserved: int = 0) -> None:  # noqa
         """
         Deletes the specified key. This method can not delete keys with subkeys.
         If the method succeeds, the entire key, including all of its values, is removed.
@@ -877,7 +879,7 @@ DeleteValue
 
 .. code-block:: python
 
-    def DeleteValue(key: Handle, value: Optional[str]) -> None:         # noqa
+    def DeleteValue(key: Handle, value: Optional[str]) -> None:  # noqa
         """
         Removes a named value from a registry key.
         the function does NOT accept named parameters, only positional parameters
@@ -962,7 +964,7 @@ EnumKey
 
 .. code-block:: python
 
-    def EnumKey(key: Handle, index: int) -> str:              # noqa
+    def EnumKey(key: Handle, index: int) -> str:  # noqa
         """
         Enumerates subkeys of an open registry key, returning a string.
         The function retrieves the name of one subkey each time it is called.
@@ -1056,7 +1058,7 @@ EnumValue
 
 .. code-block:: python
 
-    def EnumValue(key: Handle, index: int) -> Tuple[str, RegData, int]:              # noqa
+    def EnumValue(key: Handle, index: int) -> Tuple[str, RegData, int]:  # noqa
         """
         Enumerates values of an open registry key, returning a tuple.
         The function retrieves the name of one value each time it is called.
@@ -1182,7 +1184,7 @@ OpenKey
 
 .. code-block:: python
 
-    def OpenKey(key: Handle, sub_key: Union[str, None], reserved: int = 0, access: int = KEY_READ) -> PyHKEY:         # noqa
+    def OpenKey(key: Handle, sub_key: Union[str, None], reserved: int = 0, access: int = KEY_READ) -> PyHKEY:  # noqa
         """
         Opens the specified key, the result is a new handle to the specified key.
         one of the few functions of winreg that accepts named parameters
@@ -1297,7 +1299,7 @@ OpenKeyEx
 
 .. code-block:: python
 
-    def OpenKeyEx(key: Handle, sub_key: Optional[str], reserved: int = 0, access: int = KEY_READ) -> PyHKEY:        # noqa
+    def OpenKeyEx(key: Handle, sub_key: Optional[str], reserved: int = 0, access: int = KEY_READ) -> PyHKEY:  # noqa
         """
         Opens the specified key, the result is a new handle to the specified key with the given access.
         one of the few functions of winreg that accepts named parameters
@@ -1385,8 +1387,12 @@ OpenKeyEx
         >>> reg_handle = ConnectRegistry(None, HKEY_LOCAL_MACHINE)
 
         >>> # Open Key
-        >>> key_handle = OpenKeyEx(reg_handle, r'SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion')
-        >>> assert key_handle.handle.full_key == r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion'
+        >>> my_key_handle = OpenKeyEx(reg_handle, r'SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion')
+        >>> assert my_key_handle.handle.full_key == r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion'
+
+        >>> # Open Key with Context Manager
+        >>> with OpenKeyEx(reg_handle, r'SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion') as my_key_handle:
+        ...     assert my_key_handle.handle.full_key == r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion'
 
         >>> # Open non existing Key
         >>> OpenKeyEx(reg_handle, r'SOFTWARE\\Microsoft\\Windows NT\\DoesNotExist')
@@ -1401,7 +1407,7 @@ QueryInfoKey
 
 .. code-block:: python
 
-    def QueryInfoKey(key: Handle) -> Tuple[int, int, int]:            # noqa
+    def QueryInfoKey(key: Handle) -> Tuple[int, int, int]:  # noqa
         """
         Returns information about a key, as a tuple.
         the function does NOT accept named parameters, only positional parameters
@@ -1493,7 +1499,7 @@ QueryValue
 
 .. code-block:: python
 
-    def QueryValue(key: Handle, sub_key: Union[str, None]) -> str:        # noqa
+    def QueryValue(key: Handle, sub_key: Union[str, None]) -> str:  # noqa
         """
         Retrieves the unnamed value (the default value*) for a key, as string.
 
@@ -1601,7 +1607,7 @@ QueryValueEx
 
 .. code-block:: python
 
-    def QueryValueEx(key: Handle, value_name: Optional[str]) -> Tuple[RegData, int]:     # noqa
+    def QueryValueEx(key: Handle, value_name: Optional[str]) -> Tuple[RegData, int]:  # noqa
         """
         Retrieves data and type for a specified value name associated with an open registry key.
 
@@ -1737,7 +1743,7 @@ SetValue
 
 .. code-block:: python
 
-    def SetValue(key: Handle, sub_key: Union[str, None], type: int, value: str) -> None:      # noqa
+    def SetValue(key: Handle, sub_key: Union[str, None], type: int, value: str) -> None:  # noqa
         """
         Associates a value with a specified key. (the Default Value* of the Key, usually not set)
 
@@ -1870,7 +1876,7 @@ SetValueEx
 
 .. code-block:: python
 
-    def SetValueEx(key: Handle, value_name: Optional[str], reserved: int, type: int, value: RegData) -> None:    # noqa
+    def SetValueEx(key: Handle, value_name: Optional[str], reserved: int, type: int, value: RegData) -> None:  # noqa
         """
         Stores data in the value field of an open registry key.
 
@@ -2005,7 +2011,7 @@ SetValueEx
 Usage from Commandline
 ------------------------
 
-.. code-block:: bash
+.. code-block::
 
    Usage: fake_winreg [OPTIONS] COMMAND [ARGS]...
 
@@ -2025,28 +2031,28 @@ Installation and Upgrade
 - Before You start, its highly recommended to update pip and setup tools:
 
 
-.. code-block:: bash
+.. code-block::
 
     python -m pip --upgrade pip
     python -m pip --upgrade setuptools
 
 - to install the latest release from PyPi via pip (recommended):
 
-.. code-block:: bash
+.. code-block::
 
     python -m pip install --upgrade fake_winreg
 
 - to install the latest version from github via pip:
 
 
-.. code-block:: bash
+.. code-block::
 
     python -m pip install --upgrade git+https://github.com/bitranox/fake_winreg.git
 
 
 - include it into Your requirements.txt:
 
-.. code-block:: bash
+.. code-block::
 
     # Insert following line in Your requirements.txt:
     # for the latest Release on pypi:
@@ -2061,7 +2067,7 @@ Installation and Upgrade
 
 - to install the latest development version from source code:
 
-.. code-block:: bash
+.. code-block::
 
     # cd ~
     $ git clone https://github.com/bitranox/fake_winreg.git
@@ -2098,7 +2104,8 @@ following modules will be automatically installed :
 
     ## Project Requirements
     click
-    cli_exit_tools @ git+https://github.com/bitranox/cli_exit_tools.git
+    cli_exit_tools
+    lib_detect_testenv
     wrapt
 
 Acknowledgements
@@ -2133,10 +2140,16 @@ planned:
     - investigate SYSWOW32/64 Views
     - Admin Permissions
 
+v1.6.0
+--------
+2021-12-19: feature release
+    - update github actions
+    - fix "setup.py test"
+
 v1.5.7
 --------
-2021-12-16: feature release
-    - allow PyHKEY to act as a context manager
+2021-12-18: feature release
+    - allow PyHKEY to act as a context manager, thanks to Ben Rowland
 
 v1.5.6
 --------

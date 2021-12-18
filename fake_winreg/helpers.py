@@ -6,7 +6,7 @@ def strip_backslashes(input_string: str) -> str:
     >>> strip_backslashes(r'\\test\\\\')
     'test'
     """
-    input_string = input_string.strip('\\')
+    input_string = input_string.strip("\\")
     return input_string
 
 
@@ -21,7 +21,7 @@ def get_first_part_of_the_key(key_name: str) -> str:
 
     """
     key_name = strip_backslashes(key_name)
-    key_name = key_name.split('\\', 1)[0]
+    key_name = key_name.split("\\", 1)[0]
     return key_name
 
 
@@ -44,5 +44,5 @@ def hostname_found_in_dns(hostname: str) -> bool:
     try:
         socket.gethostbyname(hostname)
         return True
-    except Exception:   # noqa
+    except Exception:  # noqa
         return False
