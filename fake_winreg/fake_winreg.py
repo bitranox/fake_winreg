@@ -2309,7 +2309,7 @@ def __check_key(key: Any) -> None:
     if not isinstance(key, int) and not isinstance(key, PyHKEY):
         raise TypeError("The object is not a PyHKEY object")
     if isinstance(key, int):
-        if key >= 2 ** 64:
+        if key >= 2**64:
             raise OverflowError("int too big to convert")
 
 
@@ -2337,7 +2337,7 @@ def __check_index(index: Any) -> None:
     index_type = type(index).__name__
     if not isinstance(index, int):
         raise TypeError("an integer is required (got type {access_type})".format(access_type=index_type))
-    elif index >= 2 ** 64:
+    elif index >= 2**64:
         raise OverflowError("Python int too large to convert to C long")
 
 
@@ -2380,7 +2380,7 @@ def __check_reserved2(reserved: Any) -> None:
 
     """
     if isinstance(reserved, int):
-        if 3 < reserved < 2 ** 64:
+        if 3 < reserved < 2**64:
             __raise_permission_error()
     __check_access(reserved)  # otherwise same as __check_access
 

@@ -12,6 +12,10 @@ planned:
     - investigate SYSWOW32/64 Views
     - Admin Permissions
 
+v1.6.1
+--------
+2022-03-25: fix github actions windows test
+
 v1.6.0
 --------
 2021-12-19: feature release

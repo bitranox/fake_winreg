@@ -2,9 +2,9 @@ fake_winreg
 ===========
 
 
-Version v1.6.0 as of 2021-12-18 see `Changelog`_
+Version v1.6.1 as of 2022-03-25 see `Changelog`_
 
-|build_badge| |license| |jupyter| |pypi| |black|
+|build_badge| |license| |jupyter| |pypi| |pypi-downloads| |black|
 
 |codecov| |better_code| |cc_maintain| |cc_issues| |cc_coverage| |snyk|
 
@@ -47,6 +47,10 @@ Version v1.6.0 as of 2021-12-18 see `Changelog`_
 
 .. |black| image:: https://img.shields.io/badge/code%20style-black-000000.svg
    :target: https://github.com/psf/black
+
+.. |pypi-downloads| image:: https://img.shields.io/pypi/dm/fake-winreg
+   :target: https://pypi.org/project/fake-winreg/
+   :alt: PyPI - Downloads
 
 FUNCTION
 ========
@@ -2140,11 +2144,16 @@ planned:
     - investigate SYSWOW32/64 Views
     - Admin Permissions
 
+v1.6.1
+--------
+2022-03-25: fix github actions windows test
+
 v1.6.0
 --------
 2021-12-19: feature release
     - update github actions
     - fix "setup.py test"
+    - fix typing
 
 v1.5.7
 --------
