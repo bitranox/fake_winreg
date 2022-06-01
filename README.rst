@@ -2,7 +2,7 @@ fake_winreg
 ===========
 
 
-Version v1.6.2 as of 2022-03-29 see `Changelog`_
+Version v1.6.2.1 as of 2022-06-01 see `Changelog`_
 
 |build_badge| |license| |jupyter| |pypi| |pypi-downloads| |black|
 
@@ -98,7 +98,7 @@ automated tests, Travis Matrix, Documentation, Badges, etc. are managed with `Pi
 
 Python version required: 3.6.0 or newer
 
-tested on recent linux with python 3.6, 3.7, 3.8, 3.9, 3.10.0, pypy-3.8 - architectures: amd64
+tested on recent linux with python 3.6, 3.7, 3.8, 3.9, 3.10, pypy-3.8 - architectures: amd64
 
 `100% code coverage <https://codecov.io/gh/bitranox/fake_winreg>`_, flake8 style checking ,mypy static type checking ,tested under `Linux, macOS, Windows <https://github.com/bitranox/fake_winreg/actions/workflows/python-package.yml>`_, automatic daily builds and monitoring
 
@@ -2143,6 +2143,10 @@ planned:
     - auditing events
     - investigate SYSWOW32/64 Views
     - Admin Permissions
+
+v1.6.2.1
+--------
+2022-06-01: update github actions test matrix
 
 v1.6.2
 --------
