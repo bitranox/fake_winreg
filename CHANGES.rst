@@ -12,6 +12,10 @@ planned:
     - investigate SYSWOW32/64 Views
     - Admin Permissions
 
+v1.6.2.1
+--------
+2022-06-01: update github actions test matrix
+
 v1.6.2
 --------
 2022-03-29: remedy mypy Untyped decorator makes function "cli_info" untyped
