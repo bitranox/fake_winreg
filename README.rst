@@ -2,7 +2,7 @@ fake_winreg
 ===========
 
 
-Version v1.6.2.1 as of 2022-06-01 see `Changelog`_
+Version v1.6.2.2 as of 2022-06-02 see `Changelog`_
 
 |build_badge| |license| |jupyter| |pypi| |pypi-downloads| |black|
 
@@ -2143,6 +2143,10 @@ planned:
     - auditing events
     - investigate SYSWOW32/64 Views
     - Admin Permissions
+
+v1.6.2.2
+--------
+2022-06-01: update to github actions checkout@v3 and setup-python@v3
 
 v1.6.2.1
 --------
