@@ -24,6 +24,8 @@ except (ImportError, ModuleNotFoundError):  # pragma: no cover
 
 F = TypeVar("F", bound=Callable[..., Any])
 
+HKEY_CLASSES_ROOT: int
+
 # we start around 600 like winreg - this will be incremented every time a new handle is acquired
 _last_int_handle: int = 600
 # lock for incrementing the unique _int_handle
