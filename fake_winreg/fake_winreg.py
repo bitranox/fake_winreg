@@ -7,6 +7,8 @@ import threading
 # EXT
 import wrapt
 
+HKEY_CLASSES_ROOT: int
+
 # OWN
 try:
     from .types_custom import RegData
@@ -23,8 +25,6 @@ except (ImportError, ModuleNotFoundError):  # pragma: no cover
     import helpers  # type: ignore  # pragma: no cover
 
 F = TypeVar("F", bound=Callable[..., Any])
-
-HKEY_CLASSES_ROOT: int
 
 # we start around 600 like winreg - this will be incremented every time a new handle is acquired
 _last_int_handle: int = 600
