@@ -7,8 +7,6 @@ import threading
 # EXT
 import wrapt
 
-HKEY_CLASSES_ROOT: int
-
 # OWN
 try:
     from .types_custom import RegData
