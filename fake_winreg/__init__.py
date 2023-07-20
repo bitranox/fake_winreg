@@ -6,7 +6,6 @@ if is_testenv_active():
     add_path_to_syspath(__file__)
 
 from .fake_winreg import *
-from .types_custom import *
 
 from . import __init__conf__
 
