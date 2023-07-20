@@ -43,16 +43,16 @@ Changelog = "https://github.com/bitranox/fake_winreg/blob/master/CHANGES.rst"
 
 [project.optional-dependencies]
 test = [
-    "black ; platform_python_implementation != 'PyPy'",
-    "black==19.3b0 ; platform_python_implementation == 'PyPy'",
+    "black",
     "codecov",
     "coloredlogs",
     "coverage",
     "flake8",
-    "mypy ; platform_python_implementation != 'PyPy'",
+    "mypy",
     "pytest",
     "pytest-cov",
     "pytest-runner",
+    "readme_renderer",
 ]
 
 [project.scripts]
