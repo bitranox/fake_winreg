@@ -36,10 +36,16 @@
 
 Python's [`winreg`](https://docs.python.org/3/library/winreg.html) module is
 only available on Windows. If your code reads or writes the Windows registry,
-you can't test it on Linux or macOS — and you can't run it in CI on
-Ubuntu runners. `fake_winreg` solves this by providing a complete fake
+you can't test it on Linux or macOS - and you can't run it in CI on
+Ubuntu runners.  
+`fake_winreg` solves this by providing a complete fake
 registry that works everywhere Python runs. Just replace `import winreg`
 with `import fake_winreg as winreg` and your tests work on any platform.
+Test your code before it hits the real registry!
+
+You can also export real registry data from Windows via `regedit.exe` as a
+`.reg` file, import it into a SQLite database with `fake-winreg convert
+if=exported.reg of=registry.db`, and run your tests against real-world data.
 
 ## Overview
 
