@@ -70,6 +70,7 @@ def test_module_entry_cli_exports_all_registered_commands() -> None:
         "cli_convert",
         "cli_export_demo_registries",
         "cli_info",
+        "cli_reg",
         "cli_logdemo",
     }
     exported = {name for name in dir(cli_mod) if name.startswith("cli_")}

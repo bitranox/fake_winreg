@@ -136,12 +136,14 @@ def _register_commands() -> None:
         cli_export_demo_registries,
         cli_info,
         cli_logdemo,
+        cli_reg,
     )
 
     for cmd in (
         cli_info,
         cli_convert,
         cli_export_demo_registries,
+        cli_reg,
         cli_config,
         cli_config_deploy,
         cli_config_generate_examples,

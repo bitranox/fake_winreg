@@ -135,7 +135,7 @@ convention = "google"
 # Tests: assert is standard, test fixtures have passwords, magic values are clearer inline, temp paths are fine
 "tests/*.py" = ["T20", "S101", "S105", "S106", "S108", "FBT001", "FBT003", "PLR0913", "PLR2004"]
 # CLI: Click framework injects boolean params; commands have many options
-"src/fake_winreg/adapters/cli/**/*.py" = ["FBT001", "FBT002", "PLR0913"]
+"src/fake_winreg/adapters/cli/**/*.py" = ["FBT001", "FBT002", "PLR0913", "B904"]
 # Protocols/adapters: many-param signatures by design
 "src/fake_winreg/application/*.py" = ["PLR0913"]
 "src/fake_winreg/adapters/config/*.py" = ["PLR0913"]

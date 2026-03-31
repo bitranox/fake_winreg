@@ -16,6 +16,7 @@ from .convert import cli_convert
 from .demo_registries import cli_export_demo_registries
 from .info import cli_info
 from .logging import cli_logdemo
+from .reg import cli_reg
 
 __all__ = [
     "cli_config",
@@ -25,4 +26,5 @@ __all__ = [
     "cli_export_demo_registries",
     "cli_info",
     "cli_logdemo",
+    "cli_reg",
 ]

@@ -23,6 +23,7 @@ from .commands import (
     cli_export_demo_registries,
     cli_info,
     cli_logdemo,
+    cli_reg,
 )
 from .constants import CLICK_CONTEXT_SETTINGS, TRACEBACK_SUMMARY_LIMIT, TRACEBACK_VERBOSE_LIMIT
 from .context import (
@@ -59,4 +60,5 @@ __all__ = [
     "cli_export_demo_registries",
     "cli_info",
     "cli_logdemo",
+    "cli_reg",
 ]

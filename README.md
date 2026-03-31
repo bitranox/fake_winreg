@@ -378,16 +378,33 @@ reg = winreg.fake_reg_tools.get_minimal_wine_testregistry()
 ## CLI Usage
 
 ```bash
+# Query a persistent SQLite registry
+fake-winreg reg --db registry.db list-keys HKEY_LOCAL_MACHINE\SOFTWARE
+fake-winreg reg --db registry.db list-values HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft
+fake-winreg reg --db registry.db get HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\...\CurrentVersion CurrentBuild
+fake-winreg reg --db registry.db info HKEY_LOCAL_MACHINE\SOFTWARE
+
+# Modify a persistent registry
+fake-winreg reg --db registry.db create-key HKEY_LOCAL_MACHINE\SOFTWARE\MyApp
+fake-winreg reg --db registry.db set HKEY_LOCAL_MACHINE\SOFTWARE\MyApp Name "hello"
+fake-winreg reg --db registry.db set HKEY_LOCAL_MACHINE\SOFTWARE\MyApp Count 42 --type REG_DWORD
+fake-winreg reg --db registry.db delete-value HKEY_LOCAL_MACHINE\SOFTWARE\MyApp Name
+fake-winreg reg --db registry.db delete-key HKEY_LOCAL_MACHINE\SOFTWARE\MyApp
+
 # Convert between registry formats
 fake-winreg convert if=registry.db of=export.reg
 fake-winreg convert if=export.reg of=registry.json
 
-# Export demo registries (Windows 10 + Wine) as .json, .reg, .db
+# Export demo registries (Windows 10 + 11 + Wine) as .json, .reg, .db
 fake-winreg export-demo-registries
 
 # Show package information
 fake-winreg info
 ```
+
+The `--db` option can be replaced by configuring `registry.db_path` via TOML config,
+`.env` file (`REGISTRY__DB_PATH=/path/to/db`), or environment variable
+(`FAKE_WINREG___REGISTRY__DB_PATH=/path/to/db`).
 
 ## Development
 

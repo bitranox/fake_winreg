@@ -1,0 +1,23 @@
+# ==============================================================================
+# Registry Persistence Configuration
+# ==============================================================================
+#
+# Configures the default SQLite database path for persistent registry operations.
+#
+# Environment variables:
+#   FAKE_WINREG___REGISTRY__DB_PATH=/path/to/registry.db
+#
+# .env file:
+#   REGISTRY__DB_PATH=/path/to/registry.db
+#
+# CLI override:
+#   fake-winreg --set registry.db_path=/path/to/registry.db reg list-keys ...
+#   fake-winreg reg --db /path/to/registry.db list-keys ...
+
+[registry]
+
+# Path to SQLite database file for persistent registry operations.
+# Used by the `reg` CLI command group when --db is not specified.
+# Type: string (file path)
+# Default: "" (no default database — --db required if not configured)
+db_path = ""
