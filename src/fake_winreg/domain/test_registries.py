@@ -108,7 +108,7 @@ def get_minimal_windows11_testregistry(fake_registry: FakeRegistry | None = None
     set_fake_reg_value(fake_registry.hive[HKEY_LOCAL_MACHINE], cv, "CurrentVersion", "6.3")
     set_fake_reg_value(fake_registry.hive[HKEY_LOCAL_MACHINE], cv, "CurrentMajorVersionNumber", 10, REG_DWORD)
     set_fake_reg_value(fake_registry.hive[HKEY_LOCAL_MACHINE], cv, "CurrentMinorVersionNumber", 0, REG_DWORD)
-    set_fake_reg_value(fake_registry.hive[HKEY_LOCAL_MACHINE], cv, "UBR", 4291, REG_DWORD)
+    set_fake_reg_value(fake_registry.hive[HKEY_LOCAL_MACHINE], cv, "UBR", 4317, REG_DWORD)  # KB5044285, Oct 2024
     set_fake_reg_value(fake_registry.hive[HKEY_LOCAL_MACHINE], cv, "EditionID", "Professional")
     set_fake_reg_value(fake_registry.hive[HKEY_LOCAL_MACHINE], cv, "InstallationType", "Client")
     set_fake_reg_value(fake_registry.hive[HKEY_LOCAL_MACHINE], cv, "BuildBranch", "ni_release")
