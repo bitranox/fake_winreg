@@ -17,7 +17,9 @@
 
 - [Overview](#overview)
 - [Installation](#installation)
+- [Configuration](#configuration)
 - [Quick Start](#quick-start)
+  - [Python API](#python-api)
 - [API Reference](#api-reference)
   - [Registry Functions](#registry-functions)
   - [Backend Management](#backend-management)
@@ -78,7 +80,38 @@ pip install "git+https://github.com/bitranox/fake_winreg"
 
 See [INSTALL.md](INSTALL.md) for all options (pipx, Poetry, PDM, system packages).
 
+## Configuration
+
+See [CONFIG.md](CONFIG.md) for detailed documentation on the layered configuration
+system, including precedence rules, profile support, and customization best practices.
+
 ## Quick Start
+
+```bash
+# Install
+uv tool install fake_winreg
+
+# Verify
+fake-winreg --version
+
+# Deploy config files
+fake-winreg config-deploy --target user
+
+# Export demo registries (Windows 10, 11, Wine) as .json, .reg, .db
+fake-winreg export-demo-registries
+
+# Query a persistent registry
+fake-winreg reg --db windows11.db list-keys HKEY_LOCAL_MACHINE\SOFTWARE
+fake-winreg reg --db windows11.db get HKEY_LOCAL_MACHINE\SOFTWARE\...\CurrentVersion CurrentBuild
+
+# Convert between formats
+fake-winreg convert if=windows11.db of=export.reg
+
+# Show package info
+fake-winreg info
+```
+
+### Python API
 
 ```python
 import fake_winreg as winreg
