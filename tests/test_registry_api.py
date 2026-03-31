@@ -10,6 +10,7 @@ from collections.abc import Generator
 import pytest
 
 import fake_winreg as winreg
+from fake_winreg.domain.api import configure_network_resolver
 
 
 @pytest.fixture(autouse=True)
@@ -262,3 +263,172 @@ def test_handle_int_conversion() -> None:
 def test_pyhkey_detach_returns_zero() -> None:
     reg = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
     assert reg.Detach() == 0
+
+
+# ---------------------------------------------------------------------------
+# Wine test registry
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.os_agnostic
+def test_get_minimal_wine_testregistry() -> None:
+    """Verify the Wine test registry is a FakeRegistry with Wine-specific keys."""
+    wine_reg = winreg.fake_reg_tools.get_minimal_wine_testregistry()
+    assert isinstance(wine_reg, winreg.FakeRegistry)
+
+    winreg.load_fake_registry(wine_reg)
+    reg = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
+    key = winreg.OpenKey(reg, r"Software\Wine")
+    assert "Wine" in key.handle.full_key
+
+
+# ---------------------------------------------------------------------------
+# ConnectRegistry — reachable computer name
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.os_agnostic
+def test_connect_registry_reachable_computer_raises_file_not_found() -> None:
+    """A reachable host should raise FileNotFoundError with winerror 53."""
+    configure_network_resolver(lambda _name: True)
+    try:
+        with pytest.raises(FileNotFoundError, match="network path was not found") as exc_info:
+            winreg.ConnectRegistry("localhost", winreg.HKEY_LOCAL_MACHINE)
+        assert exc_info.value.winerror == 53  # type: ignore[attr-defined]
+    finally:
+        configure_network_resolver(lambda _name: False)
+
+
+# ---------------------------------------------------------------------------
+# CreateKey / CreateKeyEx — sub_key=None edge cases
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.os_agnostic
+def test_create_key_with_none_subkey_on_predefined_hkey() -> None:
+    """CreateKey with sub_key=None on a predefined HKEY should succeed."""
+    reg = winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_USER)
+    key = winreg.CreateKey(reg, None)
+    assert key.handle.full_key == "HKEY_CURRENT_USER"
+
+
+@pytest.mark.os_agnostic
+def test_create_key_ex_with_none_subkey_raises_os_error_1010() -> None:
+    """CreateKeyEx with sub_key=None should raise OSError with winerror 1010."""
+    reg = winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_USER)
+    with pytest.raises(OSError, match="1010") as exc_info:
+        winreg.CreateKeyEx(reg, None, 0, winreg.KEY_WRITE)  # type: ignore[arg-type]
+    assert exc_info.value.winerror == 1010  # type: ignore[attr-defined]
+
+
+# ---------------------------------------------------------------------------
+# DeleteKeyEx — KEY_WOW64_32KEY
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.os_agnostic
+def test_delete_key_ex_wow64_32key_raises_not_implemented() -> None:
+    """DeleteKeyEx with KEY_WOW64_32KEY should raise NotImplementedError."""
+    reg = winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_USER)
+    winreg.CreateKey(reg, r"SOFTWARE\wow64_test")
+    with pytest.raises(NotImplementedError, match="KEY_WOW64_64KEY"):
+        winreg.DeleteKeyEx(reg, r"SOFTWARE\wow64_test", winreg.KEY_WOW64_32KEY)
+    # Clean up
+    winreg.DeleteKey(reg, r"SOFTWARE\wow64_test")
+
+
+# ---------------------------------------------------------------------------
+# QueryValue — non-string default value
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.os_agnostic
+def test_query_value_non_string_default_raises_os_error_13() -> None:
+    """QueryValue should raise OSError winerror 13 when default value is not a string."""
+    reg = winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_USER)
+    key = winreg.CreateKey(reg, r"SOFTWARE\qv_nonstr_test")
+
+    # Set a non-string default value (DWORD) using SetValueEx with empty name
+    winreg.SetValueEx(key, "", 0, winreg.REG_DWORD, 42)
+
+    with pytest.raises(OSError, match="data is invalid") as exc_info:
+        winreg.QueryValue(reg, r"SOFTWARE\qv_nonstr_test")
+    assert exc_info.value.winerror == 13  # type: ignore[attr-defined]
+
+    winreg.DeleteValue(key, "")
+    winreg.DeleteKey(reg, r"SOFTWARE\qv_nonstr_test")
+
+
+# ---------------------------------------------------------------------------
+# SetValue — non-REG_SZ type
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.os_agnostic
+def test_set_value_non_reg_sz_raises_type_error() -> None:
+    """SetValue with a type other than REG_SZ should raise TypeError."""
+    reg = winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_USER)
+    key = winreg.CreateKey(reg, r"SOFTWARE\sv_type_test")
+
+    with pytest.raises(TypeError, match="REG_SZ"):
+        winreg.SetValue(key, "", winreg.REG_DWORD, "value")
+
+    winreg.DeleteKey(reg, r"SOFTWARE\sv_type_test")
+
+
+# ---------------------------------------------------------------------------
+# ExpandEnvironmentStrings
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.os_agnostic
+def test_expand_environment_strings_with_env_var(monkeypatch: pytest.MonkeyPatch) -> None:
+    """ExpandEnvironmentStrings should expand %VAR% using actual env vars."""
+    monkeypatch.setenv("FAKE_WINREG_TEST_VAR", "expanded_value")
+    result = winreg.ExpandEnvironmentStrings(r"%FAKE_WINREG_TEST_VAR%\subpath")
+    assert result == r"expanded_value\subpath"
+
+
+@pytest.mark.os_agnostic
+def test_expand_environment_strings_unknown_var_unchanged() -> None:
+    """ExpandEnvironmentStrings should leave unknown %VAR% references unchanged."""
+    result = winreg.ExpandEnvironmentStrings("%THIS_VAR_DOES_NOT_EXIST_XYZ%")
+    assert result == "%THIS_VAR_DOES_NOT_EXIST_XYZ%"
+
+
+# ---------------------------------------------------------------------------
+# FlushKey
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.os_agnostic
+def test_flush_key_no_error() -> None:
+    """FlushKey should complete without error."""
+    reg = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
+    winreg.FlushKey(reg)
+
+
+# ---------------------------------------------------------------------------
+# Reflection key functions
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.os_agnostic
+def test_disable_reflection_key_no_error() -> None:
+    """DisableReflectionKey should complete without error (no-op)."""
+    reg = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
+    winreg.DisableReflectionKey(reg)
+
+
+@pytest.mark.os_agnostic
+def test_enable_reflection_key_no_error() -> None:
+    """EnableReflectionKey should complete without error (no-op)."""
+    reg = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
+    winreg.EnableReflectionKey(reg)
+
+
+@pytest.mark.os_agnostic
+def test_query_reflection_key_returns_true() -> None:
+    """QueryReflectionKey should return True (reflection enabled)."""
+    reg = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
+    assert winreg.QueryReflectionKey(reg) is True

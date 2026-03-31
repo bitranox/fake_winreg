@@ -1,4 +1,4 @@
-"""Pure conversion between FakeRegistry and plain dicts.
+"""Pure conversion between FakeRegistry and typed dicts.
 
 No I/O — just data transformation. Used by JSON and .reg import/export adapters.
 """
@@ -6,7 +6,7 @@ No I/O — just data transformation. Used by JSON and .reg import/export adapter
 from __future__ import annotations
 
 import base64
-from typing import Any, cast
+from typing import Any, TypedDict, cast
 
 from .constants import (
     hive_name_hashed_by_int,
@@ -18,10 +18,39 @@ from .registry import (
 )
 from .types import RegData
 
+
+class Base64Marker(TypedDict):
+    """Marker for base64-encoded bytes in JSON serialization."""
+
+    _base64: str
+
+
+class ValueDict(TypedDict):
+    """Serialized registry value."""
+
+    data: object
+    type: int
+    last_modified_ns: int | None
+
+
+class KeyDict(TypedDict):
+    """Serialized registry key."""
+
+    last_modified_ns: int
+    values: dict[str, ValueDict]
+    keys: dict[str, KeyDict]
+
+
+class RegistryDict(TypedDict):
+    """Top-level serialized registry structure."""
+
+    hives: dict[str, KeyDict]
+
+
 _HIVE_NAME_TO_INT: dict[str, int] = {v: k for k, v in hive_name_hashed_by_int.items()}
 
 
-def registry_to_dict(registry: FakeRegistry) -> dict[str, object]:
+def registry_to_dict(registry: FakeRegistry) -> RegistryDict:
     """Serialize a FakeRegistry to a JSON-compatible dict.
 
     >>> from fake_winreg.domain.test_registries import get_minimal_windows_testregistry
@@ -30,14 +59,14 @@ def registry_to_dict(registry: FakeRegistry) -> dict[str, object]:
     >>> assert "hives" in data
     >>> assert "HKEY_LOCAL_MACHINE" in data["hives"]
     """
-    hives: dict[str, object] = {}
+    hives: dict[str, KeyDict] = {}
     for hive_int, hive_key in registry.hive.items():
         hive_name = hive_name_hashed_by_int.get(hive_int, str(hive_int))  # type: ignore[arg-type]
         hives[hive_name] = _key_to_dict(hive_key)
-    return {"hives": hives}
+    return RegistryDict(hives=hives)
 
 
-def dict_to_registry(data: dict[str, object]) -> FakeRegistry:
+def dict_to_registry(data: RegistryDict | dict[str, object]) -> FakeRegistry:
     """Deserialize a dict into a FakeRegistry, rebuilding parent pointers.
 
     >>> from fake_winreg.domain.test_registries import get_minimal_windows_testregistry
@@ -62,25 +91,25 @@ def dict_to_registry(data: dict[str, object]) -> FakeRegistry:
     return registry
 
 
-def _key_to_dict(key: FakeRegistryKey) -> dict[str, object]:
-    """Recursively convert a FakeRegistryKey to a dict."""
-    values: dict[str, object] = {}
+def _key_to_dict(key: FakeRegistryKey) -> KeyDict:
+    """Recursively convert a FakeRegistryKey to a typed dict."""
+    values: dict[str, ValueDict] = {}
     for vname, fval in key.values.items():
-        values[vname] = {
-            "data": _encode_value(fval.value),
-            "type": fval.value_type,
-            "last_modified_ns": fval.last_modified_ns,
-        }
+        values[vname] = ValueDict(
+            data=_encode_value(fval.value),
+            type=fval.value_type,
+            last_modified_ns=fval.last_modified_ns,
+        )
 
-    keys: dict[str, object] = {}
+    keys: dict[str, KeyDict] = {}
     for sname, skey in key.subkeys.items():
         keys[sname] = _key_to_dict(skey)
 
-    return {
-        "last_modified_ns": key.last_modified_ns,
-        "values": values,
-        "keys": keys,
-    }
+    return KeyDict(
+        last_modified_ns=key.last_modified_ns,
+        values=values,
+        keys=keys,
+    )
 
 
 def _populate_key_from_dict(
@@ -127,10 +156,10 @@ def _populate_key_from_dict(
 def _encode_value(value: RegData) -> object:
     """Encode a registry value for JSON serialization.
 
-    bytes are base64-encoded with a marker dict. Everything else is native JSON.
+    bytes are base64-encoded with a Base64Marker. Everything else is native JSON.
     """
     if isinstance(value, bytes):
-        return {"_base64": base64.b64encode(value).decode("ascii")}
+        return Base64Marker(_base64=base64.b64encode(value).decode("ascii"))
     return value
 
 
@@ -149,6 +178,10 @@ def _decode_value(data: object) -> RegData:
 
 
 __all__ = [
+    "Base64Marker",
+    "KeyDict",
+    "RegistryDict",
+    "ValueDict",
     "dict_to_registry",
     "registry_to_dict",
 ]

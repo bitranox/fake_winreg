@@ -9,8 +9,8 @@ from __future__ import annotations
 import re
 import struct
 from pathlib import Path
-from typing import cast
 
+from fake_winreg.application.ports import RegistryBackend
 from fake_winreg.domain.api import _get_backend  # pyright: ignore[reportPrivateUsage]
 from fake_winreg.domain.constants import (
     REG_BINARY,
@@ -106,7 +106,7 @@ def _join_continuation_lines(lines: list[str]) -> list[str]:
     return result
 
 
-def _handle_key_line(match: re.Match[str], backend: object) -> FakeRegistryKey | None:
+def _handle_key_line(match: re.Match[str], backend: RegistryBackend) -> FakeRegistryKey | None:
     """Process a key header line, returning the created/opened key or None."""
     delete_flag = match.group(1)
     hive_name = match.group(2)
@@ -115,18 +115,18 @@ def _handle_key_line(match: re.Match[str], backend: object) -> FakeRegistryKey |
     hive_int = _HIVE_NAME_TO_INT.get(hive_name)
     if hive_int is None:
         return None
-    hive_root = cast(FakeRegistryKey, backend.get_hive(hive_int))  # type: ignore[union-attr]
+    hive_root = backend.get_hive(hive_int)
 
     if delete_flag == "-":
         if sub_path:
             try:
-                backend.delete_key(hive_root, sub_path)  # type: ignore[union-attr]
+                backend.delete_key(hive_root, sub_path)
             except (FileNotFoundError, PermissionError):
                 pass
         return None
 
     if sub_path:
-        return cast(FakeRegistryKey, backend.create_key(hive_root, sub_path))  # type: ignore[union-attr]
+        return backend.create_key(hive_root, sub_path)
     return hive_root
 
 
@@ -134,7 +134,7 @@ def _handle_value_assignment(
     value_name: str,
     raw_data: str,
     current_key: FakeRegistryKey,
-    backend: object,
+    backend: RegistryBackend,
 ) -> None:
     """Parse and store a single value assignment."""
     raw_data = raw_data.strip()
@@ -142,7 +142,7 @@ def _handle_value_assignment(
     # Delete value
     if raw_data == "-":
         try:
-            backend.delete_value(current_key, value_name)  # type: ignore[union-attr]
+            backend.delete_value(current_key, value_name)
         except (FileNotFoundError, KeyError):
             pass
         return
@@ -150,14 +150,14 @@ def _handle_value_assignment(
     # REG_SZ string value
     if raw_data.startswith('"') and raw_data.endswith('"'):
         string_value = _unescape_reg_string(raw_data[1:-1])
-        backend.set_value(current_key, value_name, string_value, REG_SZ)  # type: ignore[union-attr]
+        backend.set_value(current_key, value_name, string_value, REG_SZ)
         return
 
     # DWORD
     dword_match = _RE_DWORD.match(raw_data)
     if dword_match:
         int_value = int(dword_match.group(1), 16)
-        backend.set_value(current_key, value_name, int_value, REG_DWORD)  # type: ignore[union-attr]
+        backend.set_value(current_key, value_name, int_value, REG_DWORD)
         return
 
     # hex, hex(N)
@@ -173,7 +173,7 @@ def _handle_hex_value(
     type_code_str: str | None,
     hex_data_str: str,
     current_key: FakeRegistryKey,
-    backend: object,
+    backend: RegistryBackend,
 ) -> None:
     """Parse a hex(...) value and store it."""
     if type_code_str is None:
@@ -185,7 +185,7 @@ def _handle_hex_value(
     raw_bytes = _parse_hex_bytes(hex_data_str)
 
     value = _decode_hex_value(reg_type, raw_bytes)
-    backend.set_value(current_key, value_name, value, reg_type)  # type: ignore[union-attr]
+    backend.set_value(current_key, value_name, value, reg_type)
 
 
 def _parse_hex_bytes(hex_str: str) -> bytes:
@@ -269,25 +269,23 @@ def _export_key_recursive(
     key: FakeRegistryKey,
     full_path: str,
     lines: list[str],
-    backend: object,
+    backend: RegistryBackend,
 ) -> None:
     """Recursively export a key and all its subkeys."""
     lines.append(f"[{full_path}]")
     _export_values(key, lines, backend)
     lines.append("")
 
-    for subkey_name in cast(list[str], backend.enum_keys(key)):  # type: ignore[union-attr]
-        child = cast(FakeRegistryKey, backend.get_key(key, subkey_name))  # type: ignore[union-attr]
+    for subkey_name in backend.enum_keys(key):
+        child = backend.get_key(key, subkey_name)
         _export_key_recursive(child, f"{full_path}\\{subkey_name}", lines, backend)
 
 
-def _export_values(key: FakeRegistryKey, lines: list[str], backend: object) -> None:
+def _export_values(key: FakeRegistryKey, lines: list[str], backend: RegistryBackend) -> None:
     """Export all values of a single key."""
-    from fake_winreg.domain.types import RegData
 
-    raw_values = backend.enum_values(key)  # type: ignore[union-attr]  # pyright: ignore[reportUnknownMemberType, reportAttributeAccessIssue]
-    typed_values = cast(list[tuple[str, RegData, int]], raw_values)
-    for value_name, value_data, value_type in typed_values:
+    values = backend.enum_values(key)
+    for value_name, value_data, value_type in values:
         _export_single_value(value_name, value_data, value_type, lines)
 
 

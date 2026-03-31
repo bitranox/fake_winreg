@@ -12,8 +12,10 @@ from typing import Any, cast
 
 import orjson
 
+from fake_winreg.application.ports import RegistryBackend
 from fake_winreg.domain.api import _get_backend  # pyright: ignore[reportPrivateUsage]
 from fake_winreg.domain.constants import hive_name_hashed_by_int
+from fake_winreg.domain.registry import FakeRegistryKey
 from fake_winreg.domain.serialization import _encode_value  # pyright: ignore[reportPrivateUsage]
 from fake_winreg.domain.types import RegData
 
@@ -51,7 +53,7 @@ def import_json(path: str | Path) -> None:
         _import_key_recursive(backend, hive_key, cast(dict[str, Any], hive_dict))
 
 
-def _import_key_recursive(backend: Any, parent_key: Any, data: dict[str, Any]) -> None:
+def _import_key_recursive(backend: RegistryBackend, parent_key: FakeRegistryKey, data: dict[str, Any]) -> None:
     """Walk a key dict and create subkeys/values in the backend."""
     values_data = data.get("values", {})
     if isinstance(values_data, dict):
@@ -119,7 +121,7 @@ def export_json(path: str | Path) -> None:
     file_path.write_bytes(raw)
 
 
-def _export_key_recursive(backend: Any, key: Any) -> dict[str, object]:
+def _export_key_recursive(backend: RegistryBackend, key: FakeRegistryKey) -> dict[str, object]:
     """Recursively build a dict from the backend's key tree."""
     _num_subkeys, _num_values, last_modified_ns = backend.query_info(key)
 

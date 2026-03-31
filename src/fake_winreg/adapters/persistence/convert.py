@@ -8,17 +8,15 @@ from __future__ import annotations
 
 import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING
 
+from fake_winreg.application.ports import RegistryBackend
 from fake_winreg.domain.api import _get_backend, use_backend  # pyright: ignore[reportPrivateUsage]
 from fake_winreg.domain.constants import hive_name_hashed_by_int
+from fake_winreg.domain.registry import FakeRegistryKey
 
 from .json_io import export_json, import_json
 from .reg_io import export_reg, import_reg
 from .sqlite_backend import SqliteBackend
-
-if TYPE_CHECKING:
-    from fake_winreg.application.ports import RegistryBackend
 
 
 def convert_registry(source: str | Path, target: str | Path) -> int:
@@ -141,51 +139,39 @@ def _stream_backend_to_backend(source: RegistryBackend, target: RegistryBackend)
 def _stream_key_recursive(
     source: RegistryBackend,
     target: RegistryBackend,
-    source_key: object,
-    target_key: object,
+    source_key: FakeRegistryKey,
+    target_key: FakeRegistryKey,
 ) -> int:
     """Recursively stream keys and values from source to target."""
-    from fake_winreg.domain.registry import FakeRegistryKey
-
-    src = source_key if isinstance(source_key, FakeRegistryKey) else FakeRegistryKey()
-    tgt = target_key if isinstance(target_key, FakeRegistryKey) else FakeRegistryKey()
-
     count = 1
     # Copy values
-    for vname, vdata, vtype in source.enum_values(src):
-        target.set_value(tgt, vname, vdata, vtype)
+    for vname, vdata, vtype in source.enum_values(source_key):
+        target.set_value(target_key, vname, vdata, vtype)
 
     # Recurse into subkeys
-    for subkey_name in source.enum_keys(src):
-        child_src = source.get_key(src, subkey_name)
-        child_tgt = target.create_key(tgt, subkey_name)
+    for subkey_name in source.enum_keys(source_key):
+        child_src = source.get_key(source_key, subkey_name)
+        child_tgt = target.create_key(target_key, subkey_name)
         count += _stream_key_recursive(source, target, child_src, child_tgt)
 
     return count
 
 
-def _count_keys(backend: object) -> int:
+def _count_keys(backend: RegistryBackend) -> int:
     """Count total keys in a backend by walking all hives."""
     count = 0
     for hive_int in hive_name_hashed_by_int:
-        from fake_winreg.domain.registry import FakeRegistryKey
-
-        hive = backend.get_hive(hive_int)  # type: ignore[union-attr]
-        if isinstance(hive, FakeRegistryKey):
-            count += _count_keys_recursive(backend, hive)
+        hive = backend.get_hive(hive_int)
+        count += _count_keys_recursive(backend, hive)
     return count
 
 
-def _count_keys_recursive(backend: object, key: object) -> int:
+def _count_keys_recursive(backend: RegistryBackend, key: FakeRegistryKey) -> int:
     """Recursively count keys."""
-    from fake_winreg.domain.registry import FakeRegistryKey
-
-    if not isinstance(key, FakeRegistryKey):
-        return 0
     count = 1
-    for subkey_name in backend.enum_keys(key):  # type: ignore[union-attr]
-        child = backend.get_key(key, subkey_name)  # type: ignore[union-attr]
-        count += _count_keys_recursive(backend, child)  # type: ignore[reportUnknownArgumentType]
+    for subkey_name in backend.enum_keys(key):
+        child = backend.get_key(key, subkey_name)
+        count += _count_keys_recursive(backend, child)
     return count
 
 
