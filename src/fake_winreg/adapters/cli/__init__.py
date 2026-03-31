@@ -20,6 +20,7 @@ from .commands import (
     cli_config_deploy,
     cli_config_generate_examples,
     cli_convert,
+    cli_export_demo_registries,
     cli_info,
     cli_logdemo,
 )
@@ -55,6 +56,7 @@ __all__ = [
     "cli_config_deploy",
     "cli_config_generate_examples",
     "cli_convert",
+    "cli_export_demo_registries",
     "cli_info",
     "cli_logdemo",
 ]

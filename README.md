@@ -378,6 +378,9 @@ reg = winreg.fake_reg_tools.get_minimal_wine_testregistry()
 fake-winreg convert if=registry.db of=export.reg
 fake-winreg convert if=export.reg of=registry.json
 
+# Export demo registries (Windows 10 + Wine) as .json, .reg, .db
+fake-winreg export-demo-registries
+
 # Show package information
 fake-winreg info
 ```
