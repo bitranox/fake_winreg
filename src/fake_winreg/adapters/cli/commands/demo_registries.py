@@ -30,8 +30,9 @@ def cli_export_demo_registries() -> None:
     """Export demo registry files (Windows 10, Wine) to the current directory.
 
     \b
-    Creates 6 files:
+    Creates 9 files:
       windows10.json, windows10.reg, windows10.db
+      windows11.json, windows11.reg, windows11.db
       wine.json, wine.reg, wine.db
 
     Example:
@@ -50,12 +51,14 @@ def cli_export_demo_registries() -> None:
         from fake_winreg.domain.api import use_backend
         from fake_winreg.domain.memory_backend import InMemoryBackend
         from fake_winreg.domain.test_registries import (
+            get_minimal_windows11_testregistry,
             get_minimal_windows_testregistry,
             get_minimal_wine_testregistry,
         )
 
         builders = {
             "windows10": get_minimal_windows_testregistry,
+            "windows11": get_minimal_windows11_testregistry,
             "wine": get_minimal_wine_testregistry,
         }
 
