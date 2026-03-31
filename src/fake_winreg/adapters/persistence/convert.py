@@ -129,7 +129,7 @@ def _do_convert(source: Path, source_fmt: str, target: Path, target_fmt: str) ->
 def _stream_backend_to_backend(source: RegistryBackend, target: RegistryBackend) -> int:
     """Stream all keys and values from source to target backend, key by key."""
     count = 0
-    for hive_int in hive_name_hashed_by_int:
+    for hive_int in sorted(hive_name_hashed_by_int):
         source_hive = source.get_hive(hive_int)
         target_hive = target.get_hive(hive_int)
         count += _stream_key_recursive(source, target, source_hive, target_hive)
@@ -160,7 +160,7 @@ def _stream_key_recursive(
 def _count_keys(backend: RegistryBackend) -> int:
     """Count total keys in a backend by walking all hives."""
     count = 0
-    for hive_int in hive_name_hashed_by_int:
+    for hive_int in sorted(hive_name_hashed_by_int):
         hive = backend.get_hive(hive_int)
         count += _count_keys_recursive(backend, hive)
     return count

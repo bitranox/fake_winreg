@@ -60,7 +60,7 @@ def registry_to_dict(registry: FakeRegistry) -> RegistryDict:
     >>> assert "HKEY_LOCAL_MACHINE" in data["hives"]
     """
     hives: dict[str, KeyDict] = {}
-    for hive_int, hive_key in registry.hive.items():
+    for hive_int, hive_key in sorted(registry.hive.items(), key=lambda kv: str(kv[0])):
         hive_name = hive_name_hashed_by_int.get(hive_int, str(hive_int))  # type: ignore[arg-type]
         hives[hive_name] = _key_to_dict(hive_key)
     return RegistryDict(hives=hives)

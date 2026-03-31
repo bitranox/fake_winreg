@@ -248,7 +248,9 @@ winreg.load_fake_registry(fake_registry)
 
 ### Import/Export
 
-Exchange registry data between formats.
+Exchange registry data between formats. All exports produce deterministic,
+alphabetically sorted output — keys and values are ordered by name regardless
+of which backend is active.
 
 ```python
 import fake_winreg as winreg
@@ -261,8 +263,9 @@ winreg.import_json("/path/to/fixture.json")
 winreg.export_reg("/path/to/export.reg")
 winreg.import_reg("/path/to/import.reg")
 
-# Convert between formats
+# Convert between formats (streaming, memory-efficient for large registries)
 winreg.convert_registry("source.db", "target.reg")
+winreg.convert_registry("source.reg", "target.json")
 ```
 
 ### Constants

@@ -107,7 +107,7 @@ def export_json(path: str | Path) -> None:
     backend = _get_backend()
     hives: dict[str, object] = {}
 
-    for hive_int, hive_name in hive_name_hashed_by_int.items():
+    for hive_int, hive_name in sorted(hive_name_hashed_by_int.items(), key=lambda kv: kv[1]):
         try:
             hive_key = backend.get_hive(hive_int)
         except OSError:
