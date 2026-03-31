@@ -28,6 +28,7 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 - `FakeRegistryValue.value` defaults to `None` instead of `""`
 - `HKEYType` implements `__bool__`, `__eq__`, `__hash__` for handle comparison and dict usage
 - Windows 11 test registry UBR corrected to real value 4317 (KB5044285)
+- .reg export writes bytes directly to avoid Windows text-mode `\r\n` double-escaping
 
 ### Changed
 - Removed email subsystem (adapters, CLI commands, tests, config)

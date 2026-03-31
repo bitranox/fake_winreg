@@ -291,7 +291,8 @@ def export_reg(
     if encoding.lower().replace("-", "") in ("utf16le", "utf16"):
         path.write_bytes(b"\xff\xfe" + content.encode("utf-16-le"))
     else:
-        path.write_text(content, encoding=encoding)
+        # Write as bytes to avoid Python text-mode \n → \r\n on Windows
+        path.write_bytes(content.encode(encoding))
 
 
 def _resolve_target_hives(hives: list[str] | None) -> set[str]:
