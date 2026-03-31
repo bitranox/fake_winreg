@@ -23,6 +23,7 @@ from .__init__conf__ import print_info
 from .adapters.persistence import (
     JsonBackend,
     SqliteBackend,
+    convert_registry,
     export_json,
     export_reg,
     import_json,
@@ -186,6 +187,7 @@ __all__ = [
     "InMemoryBackend",
     "JsonBackend",
     "SqliteBackend",
+    "convert_registry",
     "export_json",
     "export_reg",
     "import_json",

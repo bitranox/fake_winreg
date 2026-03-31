@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from fake_winreg.domain.memory_backend import InMemoryBackend
 
+from .convert import convert_registry
 from .json_backend import JsonBackend
 from .json_io import export_json, import_json
 from .reg_io import export_reg, import_reg
@@ -11,6 +12,7 @@ from .sqlite_backend import SqliteBackend
 
 __all__ = [
     "InMemoryBackend",
+    "convert_registry",
     "JsonBackend",
     "SqliteBackend",
     "export_json",

@@ -132,6 +132,7 @@ def _register_commands() -> None:
         cli_config,
         cli_config_deploy,
         cli_config_generate_examples,
+        cli_convert,
         cli_info,
         cli_logdemo,
         cli_send_email,
@@ -140,6 +141,7 @@ def _register_commands() -> None:
 
     for cmd in (
         cli_info,
+        cli_convert,
         cli_config,
         cli_config_deploy,
         cli_config_generate_examples,
