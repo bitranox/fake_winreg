@@ -15,6 +15,7 @@
 
 ## Table of Contents
 
+- [Why fake_winreg?](#why-fake_winreg)
 - [Overview](#overview)
 - [Installation](#installation)
 - [Configuration](#configuration)
@@ -31,12 +32,20 @@
 - [Development](#development)
 - [License](#license)
 
+## Why fake_winreg?
+
+Python's [`winreg`](https://docs.python.org/3/library/winreg.html) module is
+only available on Windows. If your code reads or writes the Windows registry,
+you can't test it on Linux or macOS — and you can't run it in CI on
+Ubuntu runners. `fake_winreg` solves this by providing a complete fake
+registry that works everywhere Python runs. Just replace `import winreg`
+with `import fake_winreg as winreg` and your tests work on any platform.
+
 ## Overview
 
 `fake_winreg` provides a drop-in replacement for Python's built-in
-[`winreg`](https://docs.python.org/3/library/winreg.html) module, enabling
-testing of Windows registry-dependent code on Linux and macOS without a
-Windows environment.
+`winreg` module, enabling testing of Windows registry-dependent code on
+Linux and macOS without a Windows environment.
 
 **Key capabilities:**
 
@@ -47,7 +56,7 @@ Windows environment.
 - Streaming format conversion between `.db`, `.json`, and `.reg` via CLI or Python API
 - Pre-built test registries mimicking Windows 10, Windows 11 23H2, and Wine environments
 - Positional-only parameter enforcement matching real `winreg` behavior
-- Clean Architecture with `import-linter` enforcement, pyright strict mode, 91% test coverage
+- Clean Architecture with `import-linter` enforcement, pyright strict mode, high test coverage
 
 ## Installation
 
