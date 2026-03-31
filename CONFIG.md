@@ -88,11 +88,8 @@ fake-winreg --profile production config
 
 # Override settings at runtime (repeatable)
 fake-winreg --set lib_log_rich.console_level=DEBUG config
-fake-winreg --set email.from_address=test@example.com --set email.smtp_hosts='["smtp.example.com:587"]' send-email ...
-
 # Load configuration from an explicit .env file
 fake-winreg --env-file /etc/myapp/.env config
-fake-winreg --env-file ./environments/production.env send-notification ...
 
 # Show full traceback for debugging
 fake-winreg --traceback config-deploy --target user
@@ -109,7 +106,7 @@ Display the merged configuration from all sources (defaults → app → host →
 | Option | Required | Description |
 |--------|:--------:|-------------|
 | `--format` | No | Output format: `human` (default) or `json`. |
-| `--section NAME` | No | Show only a specific section (e.g., `lib_log_rich`, `email`). |
+| `--section NAME` | No | Show only a specific section (e.g., `lib_log_rich`). |
 | `--profile NAME` | No | Load configuration for a specific profile. |
 
 #### Examples
@@ -128,7 +125,7 @@ fake-winreg config --section lib_log_rich
 fake-winreg config --profile production
 
 # Combine options
-fake-winreg config --profile staging --format json --section email
+fake-winreg config --profile staging --format json --section lib_log_rich
 ```
 
 ### Deploy Configuration Files
@@ -286,7 +283,7 @@ fake-winreg config-generate-examples --destination .
 | File | Description |
 |------|-------------|
 | `config.toml` | Main configuration file with all sections |
-| `config.d/*.toml` | Modular configuration files (email, logging, etc.) |
+| `config.d/*.toml` | Modular configuration files (logging, etc.) |
 
 Each file contains commented documentation explaining available options and their default values.
 
@@ -313,12 +310,8 @@ fake-winreg --set lib_log_rich.console_level=DEBUG config
 # Override multiple values
 fake-winreg --set lib_log_rich.console_level=DEBUG --set lib_log_rich.console_format_preset=short config
 
-# Override nested values
-fake-winreg --set email.attachments.max_size_bytes=10485760 config
-
 # Override with JSON arrays/objects (use single quotes around the value)
-fake-winreg --set email.smtp_hosts='["smtp.example.com:587"]' config
-fake-winreg --set email.recipients='["admin@example.com", "ops@example.com"]' config
+fake-winreg --set section.hosts='["a.com", "b.com"]' config
 
 # Combine with profile
 fake-winreg --profile production --set lib_log_rich.console_level=DEBUG config
@@ -414,7 +407,7 @@ For any configuration section, use the format: `<PREFIX>___<SECTION>__<KEY>=valu
 
 ```bash
 FAKE_WINREG___LIB_LOG_RICH__CONSOLE_LEVEL=DEBUG fake-winreg hello
-FAKE_WINREG___EMAIL__SMTP_HOSTS='["smtp.example.com:587"]' fake-winreg hello
+FAKE_WINREG___LIB_LOG_RICH__CONSOLE_FORMAT_PRESET=short fake-winreg hello
 ```
 
 **Separator reference:**
@@ -441,7 +434,7 @@ To load a specific `.env` file instead, use `--env-file`:
 ```bash
 # Load from an explicit path (skips upward directory search)
 fake-winreg --env-file /opt/myapp/config/.env config
-fake-winreg --env-file ./environments/staging.env send-notification ...
+fake-winreg --env-file ./environments/staging.env config
 ```
 
 The file must exist and be readable; Click validates this before the command runs.
@@ -486,9 +479,6 @@ Instead, create your own override files in the appropriate layer directory using
 
 [lib_log_rich]
 console_level = "DEBUG"
-
-[email]
-smtp_hosts = ["smtp.mycompany.com:587"]
 ```
 
 This approach keeps your customizations separate and safe from updates while still benefiting from new default values added in future versions.
@@ -508,5 +498,4 @@ print(config.as_dict())
 
 # Access specific sections
 log_config = config.get("lib_log_rich", default={})
-email_config = config.get("email", default={})
 ```

@@ -54,10 +54,18 @@ _RE_HEX_TYPED = re.compile(r"^hex(?:\(([0-9a-fA-F]+)\))?:(.*)$")
 # ---------------------------------------------------------------------------
 
 
-def import_reg(path: str | Path) -> None:
-    """Import a Windows .reg file into the currently active backend."""
+def import_reg(path: str | Path, *, encoding: str | None = None) -> None:
+    """Import a Windows .reg file into the currently active backend.
+
+    Args:
+        path: Path to the .reg file.
+        encoding: Force a specific encoding. If None (default), auto-detects
+            from BOM: UTF-16 LE if BOM ``FF FE`` is present, otherwise UTF-8.
+    """
     path = Path(path)
-    raw_text = path.read_text(encoding="utf-8-sig")
+    if encoding is None:
+        encoding = _detect_reg_encoding(path)
+    raw_text = path.read_text(encoding=encoding)
     lines = _join_continuation_lines(raw_text.splitlines())
     backend = _get_backend()
 
@@ -240,8 +248,21 @@ def _unescape_reg_string(s: str) -> str:
 # ---------------------------------------------------------------------------
 
 
-def export_reg(path: str | Path, hives: list[str] | None = None) -> None:
-    """Export the active backend's state to a .reg file."""
+def export_reg(
+    path: str | Path,
+    hives: list[str] | None = None,
+    *,
+    encoding: str = "utf-16-le",
+) -> None:
+    """Export the active backend's state to a .reg file.
+
+    Args:
+        path: Output file path.
+        hives: Optional list of hive names to export. None exports all.
+        encoding: File encoding. Default ``"utf-16-le"`` produces files
+            compatible with Windows ``regedit.exe`` (with BOM). Use
+            ``"utf-8"`` for human-readable / cross-platform files.
+    """
     path = Path(path)
     backend = _get_backend()
     lines: list[str] = [_REG_FILE_HEADER, ""]
@@ -254,7 +275,11 @@ def export_reg(path: str | Path, hives: list[str] | None = None) -> None:
         hive_root = backend.get_hive(hive_int)
         _export_key_recursive(hive_root, hive_name, lines, backend)
 
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    content = "\r\n".join(lines) + "\r\n"
+    if encoding.lower().replace("-", "") in ("utf16le", "utf16"):
+        path.write_bytes(b"\xff\xfe" + content.encode("utf-16-le"))
+    else:
+        path.write_text(content, encoding=encoding)
 
 
 def _resolve_target_hives(hives: list[str] | None) -> set[str]:
@@ -394,6 +419,18 @@ def _format_hex_line(name_prefix: str, hex_prefix: str, raw_bytes: bytes) -> str
         current_len += len(addition)
 
     return result
+
+
+def _detect_reg_encoding(path: Path) -> str:
+    """Auto-detect .reg file encoding from BOM.
+
+    Returns ``"utf-16-le"`` if the file starts with the UTF-16 LE BOM
+    (``FF FE``), otherwise ``"utf-8-sig"`` (handles optional UTF-8 BOM).
+    """
+    raw = path.read_bytes()[:4]
+    if raw[:2] == b"\xff\xfe":
+        return "utf-16"  # utf-16 codec auto-strips BOM
+    return "utf-8-sig"
 
 
 __all__ = ["import_reg", "export_reg"]

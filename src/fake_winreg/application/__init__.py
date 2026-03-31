@@ -15,9 +15,6 @@ from .ports import (
     GetConfig,
     GetDefaultConfigPath,
     InitLogging,
-    LoadEmailConfigFromDict,
-    SendEmail,
-    SendNotification,
 )
 
 __all__ = [
@@ -26,7 +23,4 @@ __all__ = [
     "GetConfig",
     "GetDefaultConfigPath",
     "InitLogging",
-    "LoadEmailConfigFromDict",
-    "SendEmail",
-    "SendNotification",
 ]

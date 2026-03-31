@@ -61,7 +61,7 @@ def test_export_header(tmp_path):
     _fresh_backend()
     out = tmp_path / "out.reg"
     export_reg(out, hives=["HKEY_LOCAL_MACHINE"])
-    content = out.read_text(encoding="utf-8")
+    content = out.read_text(encoding="utf-16")
     assert content.startswith("Windows Registry Editor Version 5.00\n")
 
 
@@ -74,7 +74,7 @@ def test_export_key_syntax(tmp_path):
 
     out = tmp_path / "out.reg"
     export_reg(out, hives=["HKEY_LOCAL_MACHINE"])
-    content = out.read_text(encoding="utf-8")
+    content = out.read_text(encoding="utf-16")
     assert r"[HKEY_LOCAL_MACHINE\SOFTWARE\MyApp]" in content
 
 
@@ -86,7 +86,7 @@ def test_export_all_value_types(tmp_path):
 
     out = tmp_path / "out.reg"
     export_reg(out, hives=["HKEY_LOCAL_MACHINE"])
-    content = out.read_text(encoding="utf-8")
+    content = out.read_text(encoding="utf-16")
 
     assert '"StringVal"="hello world"' in content
     assert '@="default value"' in content
@@ -394,7 +394,7 @@ def test_export_escapes_strings(tmp_path):
 
     out = tmp_path / "out.reg"
     export_reg(out, hives=["HKEY_LOCAL_MACHINE"])
-    content = out.read_text(encoding="utf-8")
+    content = out.read_text(encoding="utf-16")
 
     assert r'"Path"="C:\\Users\\test"' in content
     assert r'"Quoted"="say \"hi\""' in content
@@ -565,7 +565,7 @@ def test_export_hive_filter(tmp_path):
 
     out = tmp_path / "out.reg"
     export_reg(out, hives=["HKEY_CURRENT_USER"])
-    content = out.read_text(encoding="utf-8")
+    content = out.read_text(encoding="utf-16")
 
     assert "HKEY_CURRENT_USER" in content
     assert "HKEY_LOCAL_MACHINE" not in content

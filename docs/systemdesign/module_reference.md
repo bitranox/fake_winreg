@@ -30,8 +30,6 @@ Complete (v1.5.3+)
 - `src/fake_winreg/adapters/config/deploy.py` — Configuration deployment
 - `src/fake_winreg/adapters/config/display.py` — Configuration display (TOML/JSON output, redaction)
 - `src/fake_winreg/adapters/config/overrides.py` — CLI `--set` override parsing and deep-merge
-- `src/fake_winreg/adapters/email/sender.py` — SMTP email with EmailConfig (Pydantic)
-- `src/fake_winreg/adapters/email/validation.py` — Email recipient validation
 - `src/fake_winreg/adapters/logging/setup.py` — lib_log_rich initialization
 - `src/fake_winreg/adapters/cli/` — CLI adapter package:
   - `__init__.py` — Public facade
@@ -42,14 +40,12 @@ Complete (v1.5.3+)
   - `main.py` — Entry point
   - `commands/info.py` — info command
   - `commands/config.py` — config, config-deploy, config-generate-examples commands
-  - `commands/email/` — send-email, send-notification commands
   - `commands/convert.py` — Registry conversion commands
   - `commands/logging.py` — logdemo command
 
 ### Adapters Layer (In-Memory / Testing)
 - `src/fake_winreg/adapters/memory/__init__.py` — Public facade + Protocol conformance assertions
 - `src/fake_winreg/adapters/memory/config.py` — In-memory config adapters
-- `src/fake_winreg/adapters/memory/email.py` — In-memory email adapters
 - `src/fake_winreg/adapters/memory/logging.py` — In-memory logging (no-op)
 
 ### Composition Layer
@@ -63,7 +59,6 @@ Complete (v1.5.3+)
 ### Configuration Defaults
 - `src/fake_winreg/adapters/config/defaultconfig.toml` — Base defaults
 - `src/fake_winreg/adapters/config/defaultconfig.d/40-layered-config.toml` — lib_layered_config integration docs
-- `src/fake_winreg/adapters/config/defaultconfig.d/50-mail.toml` — Email defaults
 - `src/fake_winreg/adapters/config/defaultconfig.d/90-logging.toml` — Logging defaults
 
 ### Tests
@@ -76,7 +71,6 @@ Complete (v1.5.3+)
 - `tests/test_cache_effectiveness.py` — LRU cache behavior tests
 - `tests/test_cli_core.py` — Core CLI command tests
 - `tests/test_cli_config.py` — Config CLI command tests
-- `tests/test_cli_email.py` — Email CLI command tests
 - `tests/test_cli_env_file.py` — Env file CLI option tests
 - `tests/test_cli_exit_codes.py` — Exit code tests
 - `tests/test_cli_overrides.py` — CLI override tests
@@ -87,12 +81,10 @@ Complete (v1.5.3+)
 - `tests/test_enums.py` — Enum tests
 - `tests/test_errors.py` — Error type tests
 - `tests/test_logging.py` — Logging tests
-- `tests/test_mail.py` — Email configuration and sending tests
 - `tests/test_metadata.py` — Package metadata tests
 - `tests/test_metadata_sync.py` — Metadata sync tests
 - `tests/test_module_entry.py` — `python -m` entry tests
 - `tests/test_ports.py` — Protocol conformance tests
-- `tests/test_property_email.py` — Email property tests
 - `tests/test_property_overrides.py` — Override property tests
 
 ---
@@ -106,7 +98,6 @@ Complete (v1.5.3+)
 | `domain/` | Domain | Pure logic — no I/O, logging, or frameworks |
 | `application/ports.py` | Application | Protocol definitions for adapters |
 | `adapters/config/` | Adapters | Configuration loading, deployment, display |
-| `adapters/email/` | Adapters | SMTP email sending |
 | `adapters/logging/` | Adapters | lib_log_rich initialization |
 | `adapters/cli/` | Adapters | Click CLI framework integration |
 | `adapters/memory/` | Adapters | In-memory implementations for testing |
@@ -133,7 +124,6 @@ POSIX-conventional exit codes defined in `adapters/cli/exit_codes.py`:
 | 2 | `FILE_NOT_FOUND` | Attachment or file not found |
 | 13 | `PERMISSION_DENIED` | Cannot write to target directory |
 | 22 | `INVALID_ARGUMENT` | Invalid CLI argument or section not found |
-| 69 | `SMTP_FAILURE` | SMTP delivery failed |
 | 78 | `CONFIG_ERROR` | Missing required configuration |
 | 110 | `TIMEOUT` | Operation timed out |
 | 130 | `SIGNAL_INT` | Interrupted (SIGINT/Ctrl+C) |
@@ -196,44 +186,6 @@ Generate example configuration files.
 
 **Exit codes:** 0, 1
 
-### send-email
-
-Send email using configured SMTP settings.
-
-| Option | Description |
-|--------|-------------|
-| `--to ADDRESS` | Recipient (repeatable) |
-| `--subject TEXT` | Subject line — required |
-| `--body TEXT` | Plain-text body |
-| `--body-html TEXT` | HTML body |
-| `--from ADDRESS` | Override sender |
-| `--attachment PATH` | File to attach (repeatable) |
-| `--smtp-host HOST:PORT` | Override SMTP host (repeatable) |
-| `--smtp-username USER` | Override username |
-| `--smtp-password PASS` | Override password |
-| `--use-starttls / --no-use-starttls` | Override STARTTLS |
-| `--timeout SECONDS` | Override timeout |
-
-**Exit codes:** 0, 2 (file not found), 22, 69 (SMTP failure), 78 (no SMTP hosts)
-
-### send-notification
-
-Send simple plain-text notification email.
-
-| Option | Description |
-|--------|-------------|
-| `--to ADDRESS` | Recipient (repeatable) |
-| `--subject TEXT` | Subject — required |
-| `--message TEXT` | Message — required |
-| `--from ADDRESS` | Override sender |
-| `--smtp-host HOST:PORT` | Override SMTP host (repeatable) |
-| `--smtp-username USER` | Override username |
-| `--smtp-password PASS` | Override password |
-| `--use-starttls / --no-use-starttls` | Override STARTTLS |
-| `--timeout SECONDS` | Override timeout |
-
-**Exit codes:** 0, 22, 69 (SMTP failure), 78 (no SMTP hosts)
-
 ### logdemo
 
 Run logging demonstration.
@@ -282,59 +234,6 @@ Raises `ValueError` with descriptive message on invalid input.
 
 ---
 
-## Email Configuration
-
-### EmailConfig Fields
-
-The `EmailConfig` Pydantic model (`adapters/email/sender.py`) provides validated, immutable email configuration:
-
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `smtp_hosts` | `list[str]` | `[]` | SMTP servers in `host[:port]` format |
-| `from_address` | `str \| None` | `None` | Default sender address |
-| `recipients` | `list[str]` | `[]` | Default recipient addresses |
-| `smtp_username` | `str \| None` | `None` | SMTP authentication username |
-| `smtp_password` | `str \| None` | `None` | SMTP authentication password |
-| `use_starttls` | `bool` | `True` | Enable STARTTLS negotiation |
-| `timeout` | `float` | `30.0` | Socket timeout in seconds |
-| `raise_on_missing_attachments` | `bool` | `True` | Raise on missing attachment files |
-| `raise_on_invalid_recipient` | `bool` | `True` | Raise on invalid recipient addresses |
-
-### Attachment Security Fields
-
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `attachment_allowed_extensions` | `frozenset[str] \| None` | `None` | Whitelist of allowed extensions |
-| `attachment_blocked_extensions` | `frozenset[str] \| None` | `None` | Blacklist of blocked extensions |
-| `attachment_allowed_directories` | `frozenset[Path] \| None` | `None` | Whitelist of allowed source directories |
-| `attachment_blocked_directories` | `frozenset[Path] \| None` | `None` | Blacklist of blocked directories |
-| `attachment_max_size_bytes` | `int \| None` | `26_214_400` | Maximum file size (25 MiB), `None` to disable |
-| `attachment_allow_symlinks` | `bool` | `False` | Whether symlinks are permitted |
-| `attachment_raise_on_security_violation` | `bool` | `True` | Raise or skip on security violation |
-
-**Notes:**
-- `None` values use `btx_lib_mail`'s OS-specific defaults (blocked extensions/directories)
-- Empty arrays `[]` in TOML configuration are coerced to `None`
-- `max_size_bytes = 0` is coerced to `None` (disable size checking)
-- String paths are converted to `Path` objects during validation
-
-### Configuration Loading
-
-`load_email_config_from_dict()` handles the nested `[email.attachments]` TOML section:
-
-```python
-# TOML structure:
-# [email]
-# smtp_hosts = ["smtp.example.com:587"]
-# [email.attachments]
-# max_size_bytes = 10485760
-
-config = load_email_config_from_dict(config_dict)
-# Flattens to: attachment_max_size_bytes = 10485760
-```
-
----
-
 ## Testing Infrastructure
 
 ### In-Memory Adapters
@@ -344,7 +243,6 @@ The `adapters/memory/` package provides lightweight implementations for testing:
 | Module | Protocols Satisfied |
 |--------|---------------------|
 | `memory/config.py` | `GetConfig`, `GetDefaultConfigPath`, `DeployConfiguration`, `DisplayConfig` |
-| `memory/email.py` | `SendEmail`, `SendNotification`, `LoadEmailConfigFromDict` |
 | `memory/logging.py` | `InitLogging` |
 
 Use `composition.build_testing()` to wire all in-memory adapters.
@@ -362,4 +260,4 @@ Use `composition.build_testing()` to wire all in-memory adapters.
 
 ---
 
-**Last Updated:** 2026-01-30 (attachment security)
+**Last Updated:** 2026-03-31

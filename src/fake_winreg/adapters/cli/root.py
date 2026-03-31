@@ -135,8 +135,6 @@ def _register_commands() -> None:
         cli_convert,
         cli_info,
         cli_logdemo,
-        cli_send_email,
-        cli_send_notification,
     )
 
     for cmd in (
@@ -146,8 +144,6 @@ def _register_commands() -> None:
         cli_config_deploy,
         cli_config_generate_examples,
         cli_logdemo,
-        cli_send_email,
-        cli_send_notification,
     ):
         cli.add_command(cmd)
 

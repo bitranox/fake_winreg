@@ -75,7 +75,7 @@ def test_sqlite_to_reg_to_sqlite(tmp_path: Path) -> None:
     count1 = convert_registry(db1, reg_file)
     assert count1 > 0
     assert reg_file.exists()
-    content = reg_file.read_text()
+    content = reg_file.read_text(encoding="utf-16")
     assert "Windows Registry Editor Version 5.00" in content
 
     count2 = convert_registry(reg_file, db2)
@@ -99,7 +99,7 @@ def test_json_to_reg(tmp_path: Path) -> None:
     convert_registry(db, json_file)
     count = convert_registry(json_file, reg_file)
     assert count > 0
-    assert "ConvertTest" in reg_file.read_text()
+    assert "ConvertTest" in reg_file.read_text(encoding="utf-16")
 
 
 @pytest.mark.os_agnostic

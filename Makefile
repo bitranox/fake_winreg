@@ -49,7 +49,7 @@ _BMK_TARGETS := test t test-human th testintegration testi ti testintegration-hu
 	commit c push psh p release rel r \
 	dependencies deps d dependencies-update \
 	config config-deploy config-generate-examples \
-	send-email send-notification custom \
+	custom \
 	info logdemo
 
 ifneq (,$(filter $(_BMK_TARGETS),$(firstword $(MAKECMDGOALS))))
@@ -187,18 +187,6 @@ config-deploy: _ensure_bmk  ## Deploy configuration to system/user directories
 .PHONY: config-generate-examples
 config-generate-examples: _ensure_bmk  ## Generate example configuration files
 	$(BMK) config-generate-examples $(ARGS)
-
-# ──────────────────────────────────────────────────────────────
-# Email
-# ──────────────────────────────────────────────────────────────
-
-.PHONY: send-email
-send-email: _ensure_bmk  ## Send an email via configured SMTP
-	$(BMK) send-email $(ARGS)
-
-.PHONY: send-notification
-send-notification: _ensure_bmk  ## Send a plain-text notification email
-	$(BMK) send-notification $(ARGS)
 
 # ──────────────────────────────────────────────────────────────
 # Custom Commands

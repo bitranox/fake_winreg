@@ -238,9 +238,6 @@ def inject_deploy_with_permission_capture(
             get_default_config_path=prod.get_default_config_path,
             deploy_configuration=_capturing_deploy,
             display_config=prod.display_config,
-            send_email=prod.send_email,
-            send_notification=prod.send_notification,
-            load_email_config_from_dict=prod.load_email_config_from_dict,
             init_logging=prod.init_logging,
         )
         return lambda: test_services

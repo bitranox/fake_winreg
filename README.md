@@ -255,18 +255,34 @@ of which backend is active.
 ```python
 import fake_winreg as winreg
 
-# JSON format
+# JSON format (always UTF-8, per RFC 8259)
 winreg.export_json("/path/to/snapshot.json")
 winreg.import_json("/path/to/fixture.json")
 
-# Windows .reg format
+# Windows .reg format (UTF-16 LE with BOM by default, like regedit.exe)
 winreg.export_reg("/path/to/export.reg")
 winreg.import_reg("/path/to/import.reg")
+
+# Override encoding for human-readable .reg files
+winreg.export_reg("/path/to/export.reg", encoding="utf-8")
 
 # Convert between formats (streaming, memory-efficient for large registries)
 winreg.convert_registry("source.db", "target.reg")
 winreg.convert_registry("source.reg", "target.json")
 ```
+
+#### Character Encoding
+
+| Format | Default Encoding | Notes |
+|--------|-----------------|-------|
+| `.json` | UTF-8 | Per RFC 8259. Binary values are base64-encoded. |
+| `.reg` export | UTF-16 LE with BOM | Matches Windows `regedit.exe` export. Override with `encoding="utf-8"`. |
+| `.reg` import | Auto-detected | UTF-16 LE if BOM (`FF FE`) present, otherwise UTF-8. Override with `encoding="..."`. |
+| `.db` (SQLite) | N/A | Binary format. String values stored as SQLite TEXT (UTF-8 internally). |
+
+The Windows registry stores all strings as UTF-16 LE internally. Values encoded as
+`hex(2):` (REG_EXPAND_SZ) and `hex(7):` (REG_MULTI_SZ) in `.reg` files use UTF-16 LE
+byte sequences regardless of the file encoding.
 
 ### Constants
 

@@ -1,11 +1,10 @@
 """Adapters layer - infrastructure and framework integrations.
 
 Contains adapter implementations that connect the application to external
-systems and frameworks (CLI, configuration, email, logging).
+systems and frameworks (CLI, configuration, logging).
 
 Contents:
     * :mod:`.config` - Configuration loading, deployment, and display
-    * :mod:`.email` - Email sending via SMTP
     * :mod:`.logging` - Logging setup with lib_log_rich
     * :mod:`.cli` - Click CLI framework integration
 """

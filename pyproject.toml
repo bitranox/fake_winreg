@@ -9,7 +9,6 @@ dependencies = [
     "lib_cli_exit_tools>=2.3.0",
     "lib_log_rich>=6.3.3",
     "lib_layered_config>=5.5.1",
-    "btx_lib_mail>=1.3.1",
     "pydantic>=2.12.5",
     "orjson>=3.11.7",
 ]
@@ -140,7 +139,6 @@ convention = "google"
 # Protocols/adapters: many-param signatures by design
 "src/fake_winreg/application/*.py" = ["PLR0913"]
 "src/fake_winreg/adapters/config/*.py" = ["PLR0913"]
-"src/fake_winreg/adapters/email/*.py" = ["PLR0913"]
 "src/fake_winreg/adapters/memory/*.py" = ["PLR0913"]
 # Persistence: .reg parser complexity, winreg compat errors, many-param backend methods
 "src/fake_winreg/adapters/persistence/*.py" = ["PLR0913", "PLR0915", "PLR0911", "PLR2004", "B904", "PERF401", "PERF203", "SIM105", "PLW0602", "PLW2901", "ERA001", "RUF059"]

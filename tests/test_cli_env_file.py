@@ -45,9 +45,6 @@ def inject_config_with_dotenv_capture(
             get_default_config_path=prod.get_default_config_path,
             deploy_configuration=prod.deploy_configuration,
             display_config=prod.display_config,
-            send_email=prod.send_email,
-            send_notification=prod.send_notification,
-            load_email_config_from_dict=prod.load_email_config_from_dict,
             init_logging=prod.init_logging,
         )
         return lambda: test_services

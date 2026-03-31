@@ -19,7 +19,7 @@ Contents:
 from __future__ import annotations
 
 from .enums import DeployTarget, OutputFormat
-from .errors import ConfigurationError, DeliveryError, InvalidRecipientError
+from .errors import ConfigurationError
 
 __all__ = [
     # Enums
@@ -27,6 +27,4 @@ __all__ = [
     "OutputFormat",
     # Errors
     "ConfigurationError",
-    "DeliveryError",
-    "InvalidRecipientError",
 ]

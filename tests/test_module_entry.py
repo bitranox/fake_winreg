@@ -70,8 +70,6 @@ def test_module_entry_cli_exports_all_registered_commands() -> None:
         "cli_convert",
         "cli_info",
         "cli_logdemo",
-        "cli_send_email",
-        "cli_send_notification",
     }
     exported = {name for name in dir(cli_mod) if name.startswith("cli_")}
     assert expected_commands.issubset(exported)
