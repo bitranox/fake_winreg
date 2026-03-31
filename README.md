@@ -42,11 +42,12 @@ Windows environment.
 
 - All 20 `winreg` API functions (`OpenKey`, `SetValueEx`, `EnumKey`, etc.) with matching signatures and error behavior
 - Three storage backends: **in-memory** (default), **SQLite** (for large registries), **JSON** (for fixtures)
-- Import and export of Windows `.reg` files (Registry Editor Version 5.00 format)
+- Import and export of Windows `.reg` files (Version 5.00 and REGEDIT4 formats)
+- CLI commands for querying and modifying persistent SQLite registries (`fake-winreg reg`)
 - Streaming format conversion between `.db`, `.json`, and `.reg` via CLI or Python API
-- Pre-built test registries mimicking Windows 10 and Wine environments
+- Pre-built test registries mimicking Windows 10, Windows 11 23H2, and Wine environments
 - Positional-only parameter enforcement matching real `winreg` behavior
-- Clean Architecture with `import-linter` enforcement, pyright strict mode, 92% test coverage
+- Clean Architecture with `import-linter` enforcement, pyright strict mode, 91% test coverage
 
 ## Installation
 
