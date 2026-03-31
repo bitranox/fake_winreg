@@ -6,6 +6,33 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-03-31
+
+### Added
+- `reg` CLI command group with 8 subcommands for persistent SQLite registry operations:
+  list-keys, list-values, get, set, create-key, delete-key, delete-value, info
+- `export-demo-registries` CLI command generating Windows 10, 11, and Wine fixtures
+- Windows 11 23H2 Pro test registry (`get_minimal_windows11_testregistry`)
+- REGEDIT4 (version 4) .reg export support via `export_reg(path, version=4)`
+- UTF-16 LE with BOM as default .reg export encoding (matching Windows regedit.exe)
+- Auto-detection of .reg file encoding on import (UTF-16 LE BOM or UTF-8)
+- `registry.db_path` configuration via TOML config, .env, or environment variables
+- 25 end-to-end format tests with full 9-pair conversion matrix
+- `docs/registry_values.md` — Windows registry values reference with version detection guide
+
+### Fixed
+- `EnumKey`/`EnumValue` now return insertion order (matching real winreg), sorted only in exports
+- .reg export escapes `\n` and `\r` in string values
+- .reg hex line continuation uses `\r\n` consistently with file encoding
+- `.reg → .json` conversion uses InMemoryBackend instead of unnecessary temp SQLite
+- `FakeRegistryValue.value` defaults to `None` instead of `""`
+- `HKEYType` implements `__bool__`, `__eq__`, `__hash__` for handle comparison and dict usage
+- Windows 11 test registry UBR corrected to real value 4317 (KB5044285)
+
+### Changed
+- Removed email subsystem (adapters, CLI commands, tests, config)
+- README: added Configuration section, CLI quick start, REGEDIT4 docs, charset table
+
 ## [1.7.0] - 2026-03-31
 
 ### Added
