@@ -7,7 +7,7 @@ real Windows winreg module.
 
 from __future__ import annotations
 
-import inspect
+import sys
 from typing import Any
 
 from .handles import PyHKEY
@@ -55,7 +55,7 @@ def check_reserved2(reserved: Any) -> None:
 
 def check_argument_must_be_type_expected(arg_number: int, argument: Any, type_expected: type) -> None:
     """Validate argument type, raising TypeError with caller's function name."""
-    function_name = inspect.stack()[1].function
+    function_name = sys._getframe(1).f_code.co_name  # type: ignore[reportPrivateUsage]
     if not isinstance(argument, type_expected):
         argument_type = type(argument).__name__
         if argument_type == "NoneType":
@@ -67,7 +67,7 @@ def check_argument_must_be_type_expected(arg_number: int, argument: Any, type_ex
 
 def check_argument_must_be_str_or_none(arg_number: int, argument: Any) -> None:
     """Validate argument is str or None, raising TypeError with caller's function name."""
-    function_name = inspect.stack()[1].function
+    function_name = sys._getframe(1).f_code.co_name  # type: ignore[reportPrivateUsage]
     if not isinstance(argument, str) and argument is not None:
         subkey_type = type(argument).__name__
         raise TypeError(f"{function_name}() argument {arg_number} must be str or None, not {subkey_type}")

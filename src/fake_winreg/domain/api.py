@@ -59,6 +59,8 @@ if TYPE_CHECKING:
 # Match real winreg module's ``error`` export (alias for OSError)
 error = OSError
 
+_RE_PERCENT_VAR = re.compile(r"%([^%]+)%")
+
 # ---------------------------------------------------------------------------
 # Module-level state
 # ---------------------------------------------------------------------------
@@ -554,12 +556,11 @@ def ExpandEnvironmentStrings(string: str, /) -> str:
     >>> ExpandEnvironmentStrings('unchanged')
     'unchanged'
     """
-    import re
 
     def _replace(match: re.Match[str]) -> str:
         return os.environ.get(match.group(1), match.group(0))
 
-    return re.sub(r"%([^%]+)%", _replace, string)
+    return _RE_PERCENT_VAR.sub(_replace, string)
 
 
 # ---------------------------------------------------------------------------

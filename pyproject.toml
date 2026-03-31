@@ -153,7 +153,8 @@ convention = "google"
 # Domain memory backend: exception chaining not needed for winreg compat
 "src/fake_winreg/domain/memory_backend.py" = ["B904", "PLR0913"]
 # Domain validators: magic values from Windows API spec
-"src/fake_winreg/domain/_validators.py" = ["PLR2004"]
+# Domain validators: magic values from Windows API, sys._getframe for caller name (perf)
+"src/fake_winreg/domain/_validators.py" = ["PLR2004", "SLF001"]
 
 [tool.pyright]
 typeCheckingMode = "strict"
