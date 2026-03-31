@@ -6,6 +6,36 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-03-31
+
+### Added
+- Integrated the full fake Windows registry implementation into clean architecture scaffold
+- All 20 winreg-compatible API functions: ConnectRegistry, OpenKey, CreateKey, SetValueEx, EnumKey, QueryInfoKey, etc.
+- 6 additional winreg functions: FlushKey, ExpandEnvironmentStrings, DisableReflectionKey, EnableReflectionKey, QueryReflectionKey, error
+- RegistryBackend Protocol with three implementations:
+  - InMemoryBackend (default, backward-compatible)
+  - SqliteBackend (live DB for large registries)
+  - JsonBackend (load-into-memory on open)
+- Import/export for JSON and Windows .reg file formats (import_json, export_json, import_reg, export_reg)
+- Streaming format conversion: convert_registry() Python API and `fake-winreg convert if=... of=...` CLI command
+- Pre-built test registries: get_minimal_windows_testregistry(), get_minimal_wine_testregistry()
+- TypedDicts for serialization format (RegistryDict, KeyDict, ValueDict, Base64Marker)
+- Domain layer: registry data structures, handles, constants, types, validation, helpers, serialization
+- Network adapter for DNS-based computer reachability (injected via composition)
+- CLI convert command with dd-style syntax
+
+### Changed
+- Replaced wrapt dependency with Python 3.10+ positional-only parameter syntax (/)
+- Replaced inspect.stack() with sys._getframe() in validators (47% faster test suite)
+- Compiled regex pattern at module level in ExpandEnvironmentStrings
+- All exports produce deterministic, alphabetically sorted output across all backends
+- Updated all documentation: README with full API reference and TOC, pyproject.toml keywords, CONFIG.md, notebooks
+- Project description updated to "A fake Windows registry for testing registry-related code on non-Windows platforms"
+
+### Removed
+- Placeholder greeting code (build_greeting, cli_hello, cli_fail, behaviors.py)
+- wrapt dependency
+
 ## [1.5.3] - 2026-03-30
 
 ### Changed

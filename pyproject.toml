@@ -1,6 +1,6 @@
 [project]
 name = "fake_winreg"
-version = "1.5.3"
+version = "1.7.0"
 description = "A fake Windows registry for testing registry-related code on non-Windows platforms"
 readme = "README.md"
 requires-python = ">=3.10"
