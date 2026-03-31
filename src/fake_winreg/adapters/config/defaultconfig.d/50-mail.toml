@@ -1,0 +1,222 @@
+# ==============================================================================
+# Email Configuration - SMTP settings for sending notifications
+# ==============================================================================
+#
+# Documentation: Uses btx_lib_mail for SMTP functionality
+# Settings are loaded via lib_layered_config and can be overridden via:
+#   - Host/User config files (see precedence list in defaultconfig.toml)
+#   - Environment variables (see below)
+#
+# Environment Variable Naming
+# ---------------------------
+# Use lib_layered_config format for all environment variable overrides:
+#
+#   Format: <SLUG>___<SECTION>__<KEY>=<VALUE>
+#
+#   Examples:
+#     FAKE_WINREG___EMAIL__SMTP_USERNAME=user@example.com
+#     FAKE_WINREG___EMAIL__SMTP_PASSWORD=secret
+#     FAKE_WINREG___EMAIL__FROM_ADDRESS=alerts@example.com
+#
+# .env File Support
+# -----------------
+# In .env files (no prefix needed), use double underscore for nesting:
+#
+#   EMAIL__SMTP_USERNAME=user@example.com
+#   EMAIL__SMTP_PASSWORD=secret
+#   EMAIL__FROM_ADDRESS=alerts@example.com
+#
+# Precedence (lowest to highest):
+#   defaults → app config → host config → user config → .env file → env vars
+#
+# IMPORTANT: Never commit .env files containing secrets to version control
+#
+#
+[email]
+
+# Purpose: SMTP servers to use for email delivery (tried in order)
+# Type: array of strings in "host[:port]" format
+# Default: [] (empty, must be configured to send email)
+# Environment Variable: FAKE_WINREG___EMAIL__SMTP_HOSTS=smtp.example.com:587,smtp-backup.example.com:587
+# .env: EMAIL__SMTP_HOSTS=smtp.example.com:587,smtp-backup.example.com:587
+# Note: Port 587 is standard for STARTTLS, 465 for implicit TLS, 25 for plain
+smtp_hosts = []
+
+# Purpose: Default sender address for outgoing emails, or "" if not configured
+# Type: string (valid email address or empty string)
+# Default: "" (not set, must be configured or passed via --from)
+# Environment Variable: FAKE_WINREG___EMAIL__FROM_ADDRESS=noreply@example.com
+# .env: EMAIL__FROM_ADDRESS=noreply@example.com
+from_address = ""
+
+# Purpose: Default recipient addresses for outgoing emails
+# Type: array of strings (valid email addresses)
+# Default: [] (empty, must be configured or passed via --to)
+# Environment Variable: FAKE_WINREG___EMAIL__RECIPIENTS=admin@example.com,ops@example.com
+# .env: EMAIL__RECIPIENTS=admin@example.com,ops@example.com
+# Note: When set, emails will be sent to these addresses unless overridden via --to
+recipients = []
+
+# Purpose: SMTP authentication username
+# Type: string
+# Default: "" (no authentication)
+# Environment Variable: FAKE_WINREG___EMAIL__SMTP_USERNAME=noreply@example.com
+# .env: EMAIL__SMTP_USERNAME=noreply@example.com
+# Note: Both username and password must be set to enable authentication
+smtp_username = ""
+
+# Purpose: SMTP authentication password
+# Type: string
+# Default: "" (no authentication)
+# Environment Variable: FAKE_WINREG___EMAIL__SMTP_PASSWORD=your-app-password
+# .env: EMAIL__SMTP_PASSWORD=your-app-password
+# Note: Store in environment variable or user config, not in defaults
+smtp_password = ""
+
+# Purpose: Enable STARTTLS negotiation before authentication
+# Type: boolean
+# Default: true
+# Environment Variable: FAKE_WINREG___EMAIL__USE_STARTTLS=true
+# .env: EMAIL__USE_STARTTLS=true
+# Note: Standard for port 587; disable for implicit TLS (port 465)
+use_starttls = true
+
+# Purpose: Socket timeout in seconds for SMTP operations
+# Type: float
+# Default: 30.0
+# Environment Variable: FAKE_WINREG___EMAIL__TIMEOUT=30.0
+# .env: EMAIL__TIMEOUT=30.0
+timeout = 30.0
+
+# Purpose: Behavior when attachment files are missing
+# Type: boolean
+# Default: true (raise FileNotFoundError)
+# Environment Variable: FAKE_WINREG___EMAIL__RAISE_ON_MISSING_ATTACHMENTS=true
+# .env: EMAIL__RAISE_ON_MISSING_ATTACHMENTS=true
+# Note: When false, logs warning and continues without attachment
+raise_on_missing_attachments = true
+
+# Purpose: Behavior when recipient email addresses are invalid
+# Type: boolean
+# Default: true (raise ValueError)
+# Environment Variable: FAKE_WINREG___EMAIL__RAISE_ON_INVALID_RECIPIENT=true
+# .env: EMAIL__RAISE_ON_INVALID_RECIPIENT=true
+# Note: When false, logs warning and skips invalid addresses
+raise_on_invalid_recipient = true
+
+# ==============================================================================
+# Attachment Security Settings
+# ==============================================================================
+[email.attachments]
+
+# Purpose: Whitelist of allowed file extensions for attachments
+# Type: array of strings (e.g., [".pdf", ".txt", ".docx"]) or empty for blacklist mode
+# Default: [] (empty = use blacklist mode with blocked_extensions)
+# Environment Variable: FAKE_WINREG___EMAIL__ATTACHMENTS__ALLOWED_EXTENSIONS=.pdf,.txt,.docx
+# .env: EMAIL__ATTACHMENTS__ALLOWED_EXTENSIONS=.pdf,.txt,.docx
+# Note: When set, ONLY these extensions are allowed (whitelist mode)
+#
+# Whitelist Mode Examples (recommended for maximum security):
+#   Documents:      [".pdf", ".txt", ".rtf", ".md"]
+#   Office:         [".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".odt", ".ods", ".odp"]
+#   Images:         [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".svg", ".tiff"]
+#   Archives:       [".zip", ".tar", ".gz", ".7z", ".rar"]
+#   Data:           [".csv", ".json", ".xml", ".yaml", ".toml"]
+#
+allowed_extensions = []
+
+# Purpose: Blacklist of blocked file extensions (ignored when allowed_extensions is set)
+# Type: array of strings
+# Default: [] (uses OS-specific dangerous extensions from btx_lib_mail)
+# Environment Variable: FAKE_WINREG___EMAIL__ATTACHMENTS__BLOCKED_EXTENSIONS=.exe,.bat,.cmd
+# .env: EMAIL__ATTACHMENTS__BLOCKED_EXTENSIONS=.exe,.bat,.cmd
+# Note: Only used when allowed_extensions is empty (blacklist mode)
+#
+# btx_lib_mail Default Blocked Extensions by OS:
+#
+#   Windows (executable/script dangers):
+#     Executables:  .exe, .com, .scr, .pif, .msi, .msp
+#     Scripts:      .bat, .cmd, .ps1, .psm1, .psd1, .vbs, .vbe, .js, .jse, .ws, .wsf, .wsh
+#     Libraries:    .dll, .ocx, .sys, .drv, .cpl
+#     Shortcuts:    .lnk, .url, .scf
+#     Office Macro: .docm, .xlsm, .pptm, .dotm, .xltm, .potm
+#     Registry:     .reg
+#     Installers:   .cab, .inf
+#     HTML Apps:    .hta, .chm
+#
+#   macOS (application/installer dangers):
+#     Applications: .app, .pkg, .dmg, .kext
+#     Scripts:      .command, .tool, .workflow, .action
+#
+#   Linux/POSIX (script dangers):
+#     Scripts:      .sh, .bash, .zsh, .fish, .csh, .ksh
+#     Binaries:     .bin, .run, .AppImage, .deb, .rpm
+#     Python:       .py, .pyc, .pyo, .pyw
+#     Other:        .pl, .rb, .so, .ko
+#
+blocked_extensions = []
+
+# Purpose: Whitelist of directories from which attachments may be read
+# Type: array of strings (absolute paths) or empty for blacklist mode
+# Default: [] (empty = use blacklist mode with blocked_directories)
+# Environment Variable: FAKE_WINREG___EMAIL__ATTACHMENTS__ALLOWED_DIRECTORIES=/home/user/attachments,/tmp/exports
+# .env: EMAIL__ATTACHMENTS__ALLOWED_DIRECTORIES=/home/user/attachments,/tmp/exports
+# Note: When set, attachments MUST reside under one of these directories
+#
+# Whitelist Mode Examples (recommended for maximum security):
+#   Linux/macOS:    ["/home/user/exports", "/tmp/reports", "/var/data/attachments"]
+#   Windows:        ["C:/Users/user/Documents/exports", "D:/shared/attachments"]
+#
+allowed_directories = []
+
+# Purpose: Blacklist of directories from which attachments cannot be read
+# Type: array of strings (absolute paths)
+# Default: [] (uses OS-specific sensitive directories from btx_lib_mail)
+# Environment Variable: FAKE_WINREG___EMAIL__ATTACHMENTS__BLOCKED_DIRECTORIES=/etc,/root
+# .env: EMAIL__ATTACHMENTS__BLOCKED_DIRECTORIES=/etc,/root
+# Note: Only used when allowed_directories is empty (blacklist mode)
+#
+# btx_lib_mail Default Blocked Directories by OS:
+#
+#   Linux/POSIX:
+#     System Config:   /etc, /usr, /opt, /boot, /lib, /lib64, /sbin, /bin
+#     User Secrets:    ~/.ssh, ~/.gnupg, ~/.config, ~/.local/share/keyrings
+#     Variable Data:   /var/log, /var/run, /var/lib
+#     Root Home:       /root
+#     Proc/Sys:        /proc, /sys, /dev
+#
+#   macOS (additional):
+#     System:          /System, /Library, /private
+#     User Library:    ~/Library/Keychains, ~/Library/Application Support
+#
+#   Windows:
+#     System:          C:/Windows, C:/Windows/System32, C:/Program Files, C:/Program Files (x86)
+#     User Secrets:    %USERPROFILE%/.ssh, %APPDATA%, %LOCALAPPDATA%
+#     Boot:            C:/Boot, C:/Recovery
+#     Drivers:         C:/Windows/System32/drivers
+#
+blocked_directories = []
+
+# Purpose: Maximum attachment file size in bytes
+# Type: integer or 0 to disable size checking
+# Default: 26214400 (25 MiB)
+# Environment Variable: FAKE_WINREG___EMAIL__ATTACHMENTS__MAX_SIZE_BYTES=26214400
+# .env: EMAIL__ATTACHMENTS__MAX_SIZE_BYTES=26214400
+# Note: Set to 0 to disable size checking entirely
+max_size_bytes = 26214400
+
+# Purpose: Whether to allow symbolic links as attachments
+# Type: boolean
+# Default: false (symlinks are rejected)
+# Environment Variable: FAKE_WINREG___EMAIL__ATTACHMENTS__ALLOW_SYMLINKS=false
+# .env: EMAIL__ATTACHMENTS__ALLOW_SYMLINKS=false
+# Note: When true, symlinks are resolved and the target is validated
+allow_symlinks = false
+
+# Purpose: Behavior when attachment security rules are violated
+# Type: boolean
+# Default: true (raise AttachmentSecurityError)
+# Environment Variable: FAKE_WINREG___EMAIL__ATTACHMENTS__RAISE_ON_SECURITY_VIOLATION=true
+# .env: EMAIL__ATTACHMENTS__RAISE_ON_SECURITY_VIOLATION=true
+# Note: When false, violations log a warning and skip the attachment
+raise_on_security_violation = true
