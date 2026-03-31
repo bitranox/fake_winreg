@@ -432,3 +432,140 @@ def test_query_reflection_key_returns_true() -> None:
     """QueryReflectionKey should return True (reflection enabled)."""
     reg = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
     assert winreg.QueryReflectionKey(reg) is True
+
+
+# ---------------------------------------------------------------------------
+# Validator coverage — check_index
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.os_agnostic
+def test_enum_key_non_int_index_raises_type_error() -> None:
+    """EnumKey with a non-integer index should raise TypeError."""
+    reg = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
+    key = winreg.OpenKey(reg, r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList")
+    with pytest.raises(TypeError, match="an integer is required"):
+        winreg.EnumKey(key, "not_an_int")  # type: ignore[arg-type]
+
+
+@pytest.mark.os_agnostic
+def test_enum_key_overflow_index_raises_overflow_error() -> None:
+    """EnumKey with index >= 2**64 should raise OverflowError."""
+    reg = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
+    key = winreg.OpenKey(reg, r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList")
+    with pytest.raises(OverflowError, match="too large to convert"):
+        winreg.EnumKey(key, 2**64)
+
+
+# ---------------------------------------------------------------------------
+# Validator coverage — check_reserved
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.os_agnostic
+def test_create_key_ex_reserved_nonzero_raises_os_error() -> None:
+    """CreateKeyEx with reserved != 0 should raise OSError with winerror 87."""
+    reg = winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_USER)
+    with pytest.raises(OSError, match="parameter is incorrect") as exc_info:
+        winreg.CreateKeyEx(reg, "test", 1)  # type: ignore[arg-type]
+    assert exc_info.value.winerror == 87  # type: ignore[attr-defined]
+
+
+# ---------------------------------------------------------------------------
+# Validator coverage — check_reserved2
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.os_agnostic
+def test_open_key_reserved_gt3_raises_permission_error() -> None:
+    """OpenKey with reserved > 3 should raise PermissionError with winerror 5."""
+    reg = winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_USER)
+    with pytest.raises(PermissionError, match="Access is denied") as exc_info:
+        winreg.OpenKey(reg, "SOFTWARE", reserved=5)
+    assert exc_info.value.winerror == 5  # type: ignore[attr-defined]
+
+
+# ---------------------------------------------------------------------------
+# Validator coverage — check_argument_must_be_type_expected
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.os_agnostic
+def test_set_value_ex_none_type_raises_type_error() -> None:
+    """SetValueEx with type=None should raise TypeError mentioning 'None'."""
+    reg = winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_USER)
+    key = winreg.CreateKey(reg, r"SOFTWARE\type_test")
+    with pytest.raises(TypeError, match="not None"):
+        winreg.SetValueEx(key, "n", 0, None, "v")  # type: ignore[arg-type]
+    winreg.DeleteKey(reg, r"SOFTWARE\type_test")
+
+
+@pytest.mark.os_agnostic
+def test_delete_key_non_str_subkey_raises_type_error() -> None:
+    """DeleteKey with non-str sub_key should raise TypeError."""
+    reg = winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_USER)
+    with pytest.raises(TypeError, match="must be str"):
+        winreg.DeleteKey(reg, 123)  # type: ignore[arg-type]
+
+
+# ---------------------------------------------------------------------------
+# Validator coverage — check_argument_must_be_str_or_none
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.os_agnostic
+def test_open_key_non_str_subkey_raises_type_error() -> None:
+    """OpenKey with non-str, non-None sub_key should raise TypeError."""
+    reg = winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_USER)
+    with pytest.raises(TypeError, match="must be str or None"):
+        winreg.OpenKey(reg, 123)  # type: ignore[arg-type]
+
+
+# ---------------------------------------------------------------------------
+# Handle — __bool__, __eq__, __hash__
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.os_agnostic
+def test_handle_bool_is_true() -> None:
+    """A registry handle should be truthy."""
+    handle = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
+    assert bool(handle) is True
+
+
+@pytest.mark.os_agnostic
+def test_handle_eq_same_handle() -> None:
+    """Two references to the same handle should be equal."""
+    handle = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
+    same_ref = handle
+    assert handle == same_ref
+
+
+@pytest.mark.os_agnostic
+def test_handle_eq_different_handles() -> None:
+    """Two different handles should not be equal."""
+    handle1 = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
+    handle2 = winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_USER)
+    assert handle1 != handle2
+
+
+@pytest.mark.os_agnostic
+def test_handle_eq_with_int() -> None:
+    """A handle should be equal to its integer representation."""
+    handle = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
+    assert handle == int(handle)
+
+
+@pytest.mark.os_agnostic
+def test_handle_hash_consistent() -> None:
+    """Handle hash should match the hash of its integer representation."""
+    handle = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
+    assert hash(handle) == hash(int(handle))
+
+
+@pytest.mark.os_agnostic
+def test_handle_as_dict_key() -> None:
+    """A handle should be usable as a dictionary key."""
+    handle = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
+    d = {handle: "value"}
+    assert d[handle] == "value"
