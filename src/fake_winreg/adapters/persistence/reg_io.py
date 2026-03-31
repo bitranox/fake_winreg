@@ -253,6 +253,7 @@ def export_reg(
     hives: list[str] | None = None,
     *,
     encoding: str = "utf-16-le",
+    version: int = 5,
 ) -> None:
     """Export the active backend's state to a .reg file.
 
@@ -262,10 +263,21 @@ def export_reg(
         encoding: File encoding. Default ``"utf-16-le"`` produces files
             compatible with Windows ``regedit.exe`` (with BOM). Use
             ``"utf-8"`` for human-readable / cross-platform files.
+        version: Registry file format version. ``5`` (default) writes
+            ``Windows Registry Editor Version 5.00`` header. ``4`` writes
+            ``REGEDIT4`` header with ANSI encoding.
     """
     path = Path(path)
     backend = _get_backend()
-    lines: list[str] = [_REG_FILE_HEADER, ""]
+
+    if version == 4:
+        header = _REGEDIT4_HEADER
+        if encoding == "utf-16-le":
+            encoding = "ascii"
+    else:
+        header = _REG_FILE_HEADER
+
+    lines: list[str] = [header, ""]
 
     target_hives = _resolve_target_hives(hives)
 
