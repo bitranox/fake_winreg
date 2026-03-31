@@ -259,9 +259,12 @@ import fake_winreg as winreg
 winreg.export_json("/path/to/snapshot.json")
 winreg.import_json("/path/to/fixture.json")
 
-# Windows .reg format (UTF-16 LE with BOM by default, like regedit.exe)
+# Windows .reg format (Version 5.00, UTF-16 LE with BOM by default)
 winreg.export_reg("/path/to/export.reg")
 winreg.import_reg("/path/to/import.reg")
+
+# REGEDIT4 format (legacy, ANSI encoding)
+winreg.export_reg("/path/to/export.reg", version=4)
 
 # Override encoding for human-readable .reg files
 winreg.export_reg("/path/to/export.reg", encoding="utf-8")
@@ -276,8 +279,9 @@ winreg.convert_registry("source.reg", "target.json")
 | Format | Default Encoding | Notes |
 |--------|-----------------|-------|
 | `.json` | UTF-8 | Per RFC 8259. Binary values are base64-encoded. |
-| `.reg` export | UTF-16 LE with BOM | Matches Windows `regedit.exe` export. Override with `encoding="utf-8"`. |
-| `.reg` import | Auto-detected | UTF-16 LE if BOM (`FF FE`) present, otherwise UTF-8. Override with `encoding="..."`. |
+| `.reg` export (v5) | UTF-16 LE with BOM | Default. Matches Windows `regedit.exe`. Override with `encoding="utf-8"`. |
+| `.reg` export (v4) | ASCII | `export_reg(path, version=4)`. Legacy REGEDIT4 format, no Unicode. |
+| `.reg` import | Auto-detected | UTF-16 LE if BOM (`FF FE`) present, otherwise UTF-8. Both v4 and v5 supported. |
 | `.db` (SQLite) | N/A | Binary format. String values stored as SQLite TEXT (UTF-8 internally). |
 
 The Windows registry stores all strings as UTF-16 LE internally. Values encoded as

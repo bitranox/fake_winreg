@@ -356,3 +356,33 @@ def test_user_hive_roundtrip(tmp_path: Path, fmt: str) -> None:
     username, utype = winreg.QueryValueEx(vol_env, "USERNAME")
     assert username == "TestUser", f"user-{fmt}: USERNAME={username!r}"
     assert utype == REG_SZ
+
+
+# ---------------------------------------------------------------------------
+# Test 6: REGEDIT4 (version=4) round-trip with all value types
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.os_agnostic
+def test_regedit4_all_types_roundtrip(tmp_path: Path) -> None:
+    """All value types survive a REGEDIT4 (version=4) export → import."""
+    backend = _build_comprehensive_registry()
+    path = tmp_path / "v4_alltypes.reg"
+
+    # Export as version 4
+    winreg.use_backend(backend)  # type: ignore[arg-type]
+    from fake_winreg.adapters.persistence.reg_io import export_reg as _export_reg
+
+    _export_reg(path, version=4)
+
+    # Verify header
+    raw = path.read_bytes()
+    assert raw.startswith(b"REGEDIT4"), "Should have REGEDIT4 header"
+    assert not raw.startswith(b"\xff\xfe"), "Should NOT have UTF-16 BOM"
+
+    # Import into fresh backend
+    loaded = _load_from_format(path, "reg")
+
+    # Verify all values survived
+    _verify_values(loaded, HKEY_LOCAL_MACHINE, WINDOWS11_EXPECTED, "regedit4")
+    _verify_all_types(loaded, "regedit4")

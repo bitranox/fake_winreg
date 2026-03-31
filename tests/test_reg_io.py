@@ -569,3 +569,82 @@ def test_export_hive_filter(tmp_path):
 
     assert "HKEY_CURRENT_USER" in content
     assert "HKEY_LOCAL_MACHINE" not in content
+
+
+# ---------------------------------------------------------------------------
+# REGEDIT4 format (version=4)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.os_agnostic
+def test_export_regedit4_header(tmp_path):
+    """Version 4 export starts with REGEDIT4 header."""
+    _fresh_backend()
+    out = tmp_path / "out.reg"
+    export_reg(out, version=4)
+    content = out.read_text(encoding="ascii")
+    assert content.startswith("REGEDIT4\n")
+
+
+@pytest.mark.os_agnostic
+def test_export_regedit4_ascii_encoding(tmp_path):
+    """Version 4 export uses ASCII encoding, not UTF-16."""
+    backend = _fresh_backend()
+    hklm = backend.get_hive(HKEY_LOCAL_MACHINE)
+    backend.create_key(hklm, r"SOFTWARE\Test")
+    backend.set_value(hklm, "TestVal", "hello", REG_SZ)
+
+    out = tmp_path / "out.reg"
+    export_reg(out, version=4)
+
+    # Should be valid ASCII — no BOM
+    raw = out.read_bytes()
+    assert not raw.startswith(b"\xff\xfe"), "Version 4 should not have UTF-16 BOM"
+    content = raw.decode("ascii")
+    assert "REGEDIT4" in content
+    assert "hello" in content
+
+
+@pytest.mark.os_agnostic
+def test_regedit4_roundtrip(tmp_path):
+    """Values survive export (v4) → import round-trip."""
+    backend = _fresh_backend()
+    hklm = backend.get_hive(HKEY_LOCAL_MACHINE)
+    key = backend.create_key(hklm, r"SOFTWARE\V4Test")
+    backend.set_value(key, "Name", "regedit4", REG_SZ)
+    backend.set_value(key, "Count", 99, REG_DWORD)
+
+    out = tmp_path / "v4.reg"
+    export_reg(out, version=4)
+
+    # Import into fresh backend
+    fresh = _fresh_backend()
+    import_reg(out)
+
+    hklm2 = fresh.get_hive(HKEY_LOCAL_MACHINE)
+    key2 = fresh.get_key(hklm2, r"SOFTWARE\V4Test")
+    val_name = fresh.get_value(key2, "Name")
+    val_count = fresh.get_value(key2, "Count")
+    assert val_name.value == "regedit4"
+    assert val_name.value_type == REG_SZ
+    assert val_count.value == 99
+    assert val_count.value_type == REG_DWORD
+
+
+@pytest.mark.os_agnostic
+def test_regedit4_import_existing_header(tmp_path):
+    """Import correctly handles a file with REGEDIT4 header."""
+    reg_content = 'REGEDIT4\r\n\r\n[HKEY_LOCAL_MACHINE\\SOFTWARE\\ImportV4]\r\n"Key"="value"\r\n\r\n'
+    out = tmp_path / "import_v4.reg"
+    out.write_text(reg_content, encoding="ascii")
+
+    _fresh_backend()
+    import_reg(out)
+
+    from fake_winreg.domain.api import _get_backend  # pyright: ignore[reportPrivateUsage]
+
+    backend = _get_backend()
+    hklm = backend.get_hive(HKEY_LOCAL_MACHINE)
+    key = backend.get_key(hklm, r"SOFTWARE\ImportV4")
+    val = backend.get_value(key, "Key")
+    assert val.value == "value"
