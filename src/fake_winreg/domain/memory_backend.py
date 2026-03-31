@@ -99,15 +99,12 @@ class InMemoryBackend:
             raise error
 
     def enum_keys(self, key: FakeRegistryKey) -> list[str]:
-        """List subkey names, sorted alphabetically."""
-        return sorted(key.subkeys.keys())
+        """List subkey names in insertion order."""
+        return list(key.subkeys.keys())
 
     def enum_values(self, key: FakeRegistryKey) -> list[tuple[str, RegData, int]]:
-        """List values as (name, data, type) tuples, sorted by name."""
-        return sorted(
-            ((v.value_name, v.value, v.value_type) for v in key.values.values()),
-            key=lambda t: t[0],
-        )
+        """List values as (name, data, type) tuples in insertion order."""
+        return [(v.value_name, v.value, v.value_type) for v in key.values.values()]
 
     def query_info(self, key: FakeRegistryKey) -> tuple[int, int, int]:
         """Return (num_subkeys, num_values, last_modified_ns)."""

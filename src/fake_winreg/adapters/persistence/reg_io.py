@@ -240,7 +240,7 @@ def _decode_hex_value(reg_type: int, raw_bytes: bytes) -> None | bytes | int | s
 
 def _unescape_reg_string(s: str) -> str:
     """Unescape a .reg file string value (reverse of _escape_reg_string)."""
-    return s.replace('\\"', '"').replace("\\\\", "\\")
+    return s.replace("\\n", "\n").replace("\\r", "\r").replace('\\"', '"').replace("\\\\", "\\")
 
 
 # ---------------------------------------------------------------------------
@@ -300,7 +300,7 @@ def _export_key_recursive(
     _export_values(key, lines, backend)
     lines.append("")
 
-    for subkey_name in backend.enum_keys(key):
+    for subkey_name in sorted(backend.enum_keys(key)):
         child = backend.get_key(key, subkey_name)
         _export_key_recursive(child, f"{full_path}\\{subkey_name}", lines, backend)
 
@@ -308,7 +308,7 @@ def _export_key_recursive(
 def _export_values(key: FakeRegistryKey, lines: list[str], backend: RegistryBackend) -> None:
     """Export all values of a single key."""
 
-    values = backend.enum_values(key)
+    values = sorted(backend.enum_values(key), key=lambda t: t[0])
     for value_name, value_data, value_type in values:
         _export_single_value(value_name, value_data, value_type, lines)
 
@@ -344,7 +344,7 @@ def _format_value_name(value_name: str) -> str:
 
 def _escape_reg_string(s: str) -> str:
     """Escape a string for .reg file output."""
-    return s.replace("\\", "\\\\").replace('"', '\\"')
+    return s.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n").replace("\r", "\\r")
 
 
 def _encode_typed_hex(
@@ -413,7 +413,7 @@ def _format_hex_line(name_prefix: str, hex_prefix: str, raw_bytes: bytes) -> str
         separator = "," if i < len(hex_parts) - 1 else ""
         addition = part + separator
         if current_len + len(addition) > _LINE_WRAP_LIMIT:
-            result += "\\\n  "
+            result += "\\\r\n  "
             current_len = 2
         result += addition
         current_len += len(addition)

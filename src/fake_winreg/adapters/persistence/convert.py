@@ -6,7 +6,6 @@ Uses the backend interface to stream key-by-key for memory efficiency.
 
 from __future__ import annotations
 
-import tempfile
 from pathlib import Path
 
 from fake_winreg.application.ports import RegistryBackend
@@ -82,28 +81,24 @@ def _do_convert(source: Path, source_fmt: str, target: Path, target_fmt: str) ->
         return count
 
     if source_fmt == "reg" and target_fmt == "json":
-        # .reg → JSON: import .reg into temp SQLite, then export JSON
-        with tempfile.TemporaryDirectory() as td:
-            tmp_db = Path(td) / "temp.db"
-            tmp_backend = SqliteBackend(tmp_db)
-            use_backend(tmp_backend)  # type: ignore[arg-type]
-            import_reg(source)
-            export_json(target)
-            count = _count_keys(tmp_backend)
-            tmp_backend.close()
-            return count
+        # .reg → JSON: import into memory, export JSON
+        from fake_winreg.domain.memory_backend import InMemoryBackend
+
+        mem_backend = InMemoryBackend()
+        use_backend(mem_backend)  # type: ignore[arg-type]
+        import_reg(source)
+        export_json(target)
+        return _count_keys(mem_backend)
 
     if source_fmt == "reg" and target_fmt == "reg":
-        # .reg → .reg: import into temp SQLite, then export
-        with tempfile.TemporaryDirectory() as td:
-            tmp_db = Path(td) / "temp.db"
-            tmp_backend = SqliteBackend(tmp_db)
-            use_backend(tmp_backend)  # type: ignore[arg-type]
-            import_reg(source)
-            export_reg(target)
-            count = _count_keys(tmp_backend)
-            tmp_backend.close()
-            return count
+        # .reg → .reg: import into memory, re-export (normalize)
+        from fake_winreg.domain.memory_backend import InMemoryBackend
+
+        mem_backend = InMemoryBackend()
+        use_backend(mem_backend)  # type: ignore[arg-type]
+        import_reg(source)
+        export_reg(target)
+        return _count_keys(mem_backend)
 
     if source_fmt == "json" and target_fmt == "reg":
         # JSON → .reg: load JSON (must fit in memory), export as .reg

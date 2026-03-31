@@ -126,14 +126,14 @@ def _export_key_recursive(backend: RegistryBackend, key: FakeRegistryKey) -> dic
     _num_subkeys, _num_values, last_modified_ns = backend.query_info(key)
 
     values: dict[str, object] = {}
-    for vname, vdata, vtype in backend.enum_values(key):
+    for vname, vdata, vtype in sorted(backend.enum_values(key), key=lambda t: t[0]):
         values[vname] = {
             "data": _encode_value(vdata),
             "type": vtype,
         }
 
     keys: dict[str, object] = {}
-    for sname in backend.enum_keys(key):
+    for sname in sorted(backend.enum_keys(key)):
         child_key = backend.get_key(key, sname)
         keys[sname] = _export_key_recursive(backend, child_key)
 

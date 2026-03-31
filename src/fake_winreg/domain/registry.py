@@ -59,7 +59,7 @@ class FakeRegistryValue:
     def __init__(self) -> None:
         self.full_key: str = ""
         self.value_name: str = ""
-        self.value: RegData = ""
+        self.value: RegData = None
         self.value_type: int = REG_SZ
         self.access: int = KEY_READ
         self.last_modified_ns: int | None = None

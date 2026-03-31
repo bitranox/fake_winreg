@@ -35,6 +35,19 @@ class HKEYType:
     def __int__(self) -> int:
         return self._int_handle
 
+    def __bool__(self) -> bool:
+        return True
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, HKEYType):
+            return self._int_handle == other._int_handle
+        if isinstance(other, int):
+            return self._int_handle == other
+        return NotImplemented
+
+    def __hash__(self) -> int:
+        return hash(self._int_handle)
+
     @staticmethod
     def Close() -> None:  # noqa: N802
         """Close the underlying handle (no-op in fake implementation)."""
