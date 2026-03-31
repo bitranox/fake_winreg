@@ -358,16 +358,20 @@ with winreg.OpenKey(reg, r"SOFTWARE\Microsoft") as key:
 
 ### Test Registries
 
-Pre-built registry fixtures for common test scenarios.
+Pre-built registry fixtures for common test scenarios. See
+[docs/registry_values.md](docs/registry_values.md) for a detailed reference
+of all registry values, version detection logic, and branch codenames.
 
 ```python
 import fake_winreg as winreg
 
-# Pre-built Windows 10-like registry with typical keys under
-# HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion
+# Windows 10 (build 18363)
 reg = winreg.fake_reg_tools.get_minimal_windows_testregistry()
 
-# Pre-built Wine-like registry
+# Windows 11 23H2 Pro (build 22631)
+reg = winreg.fake_reg_tools.get_minimal_windows11_testregistry()
+
+# Wine environment (build 7601)
 reg = winreg.fake_reg_tools.get_minimal_wine_testregistry()
 ```
 
