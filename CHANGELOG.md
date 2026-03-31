@@ -6,6 +6,12 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 
 ## [Unreleased]
 
+## [1.8.1] - 2026-03-31
+
+### Changed
+- README: added "Why fake_winreg?" section, real-world .reg import workflow,
+  updated feature list with REGEDIT4, Windows 11, reg CLI, current coverage
+
 ## [1.8.0] - 2026-03-31
 
 ### Added

@@ -1,6 +1,6 @@
 [project]
 name = "fake_winreg"
-version = "1.8.0"
+version = "1.8.1"
 description = "A fake Windows registry for testing registry-related code on non-Windows platforms"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -10,7 +10,7 @@ dependencies = [
     "lib_log_rich>=6.3.3",
     "lib_layered_config>=5.5.1",
     "pydantic>=2.12.5",
-    "orjson>=3.11.7",
+    "orjson>=3.11.8",
 ]
 license = { text = "MIT" }
 authors = [{ name = "bitranox", email = "bitranox@gmail.com" }]
