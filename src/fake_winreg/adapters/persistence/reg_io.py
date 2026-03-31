@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import re
 import struct
+from collections.abc import Callable
 from pathlib import Path
 
 from fake_winreg.application.ports import RegistryBackend
@@ -197,24 +198,6 @@ def _parse_hex_bytes(hex_str: str) -> bytes:
     return bytes(int(h, 16) for h in parts if h)
 
 
-def _decode_hex_value(reg_type: int, raw_bytes: bytes) -> None | bytes | int | str | list[str]:
-    """Decode raw bytes into the appropriate Python value for the given type."""
-    if reg_type == REG_EXPAND_SZ:
-        return _decode_utf16le_string(raw_bytes)
-    if reg_type == REG_MULTI_SZ:
-        return _decode_utf16le_multi_string(raw_bytes)
-    if reg_type == REG_QWORD:
-        if len(raw_bytes) == 8:
-            return struct.unpack("<Q", raw_bytes)[0]
-        return raw_bytes if raw_bytes else None
-    if reg_type == REG_NONE:
-        return raw_bytes if raw_bytes else None
-    if reg_type == REG_BINARY:
-        return raw_bytes
-    # Unknown hex types: store as raw bytes
-    return raw_bytes
-
-
 def _decode_utf16le_string(data: bytes) -> str:
     """Decode UTF-16 LE bytes to string, stripping trailing null."""
     text = data.decode("utf-16-le", errors="replace")
@@ -224,11 +207,27 @@ def _decode_utf16le_string(data: bytes) -> str:
 def _decode_utf16le_multi_string(data: bytes) -> list[str]:
     """Decode UTF-16 LE multi-string (null-separated, double-null terminated)."""
     text = data.decode("utf-16-le", errors="replace")
-    # Remove trailing nulls then split on remaining nulls
     text = text.rstrip("\x00")
     if not text:
         return []
     return text.split("\x00")
+
+
+_HEX_DECODERS: dict[int, Callable[[bytes], None | bytes | int | str | list[str]]] = {
+    REG_EXPAND_SZ: _decode_utf16le_string,
+    REG_MULTI_SZ: _decode_utf16le_multi_string,
+    REG_QWORD: lambda b: struct.unpack("<Q", b)[0] if len(b) == 8 else (b or None),
+    REG_NONE: lambda b: b or None,
+    REG_BINARY: lambda b: b,
+}
+
+
+def _decode_hex_value(reg_type: int, raw_bytes: bytes) -> None | bytes | int | str | list[str]:
+    """Decode raw bytes into the appropriate Python value for the given type."""
+    decoder = _HEX_DECODERS.get(reg_type)
+    if decoder is not None:
+        return decoder(raw_bytes)
+    return raw_bytes
 
 
 def _unescape_reg_string(s: str) -> str:

@@ -2,7 +2,7 @@
 
 ## Status
 
-Complete (v1.1.2+)
+Complete (v1.5.3+)
 
 ---
 
@@ -37,13 +37,13 @@ Complete (v1.1.2+)
   - `__init__.py` — Public facade
   - `constants.py` — Shared constants
   - `exit_codes.py` — POSIX exit codes (ExitCode IntEnum)
-  - `traceback.py` — Traceback state management
   - `context.py` — Click context helpers
   - `root.py` — Root command group
   - `main.py` — Entry point
   - `commands/info.py` — info command
   - `commands/config.py` — config, config-deploy, config-generate-examples commands
-  - `commands/email.py` — send-email, send-notification commands
+  - `commands/email/` — send-email, send-notification commands
+  - `commands/convert.py` — Registry conversion commands
   - `commands/logging.py` — logdemo command
 
 ### Adapters Layer (In-Memory / Testing)

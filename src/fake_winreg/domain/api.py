@@ -10,12 +10,35 @@ pre-populated :class:`FakeRegistry` before using the API functions.
 
 from __future__ import annotations
 
-import inspect
 import os
 import re
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
+from ._validators import (
+    check_access as _check_access,
+)
+from ._validators import (
+    check_argument_must_be_str_or_none as _check_argument_must_be_str_or_none,
+)
+from ._validators import (
+    check_argument_must_be_type_expected as _check_argument_must_be_type_expected,
+)
+from ._validators import (
+    check_index as _check_index,
+)
+from ._validators import (
+    check_key as _check_key,
+)
+from ._validators import (
+    check_reserved as _check_reserved,
+)
+from ._validators import (
+    check_reserved2 as _check_reserved2,
+)
+from ._validators import (
+    raise_os_error_1010 as _raise_os_error_1010,
+)
 from .constants import (
     KEY_READ,
     KEY_WOW64_32KEY,
@@ -555,71 +578,6 @@ def _resolve_key(key: Handle) -> PyHKEY:
         return PyHKEY(handle=key.handle, access=key._access)  # type: ignore[reportPrivateUsage]
     else:
         raise RuntimeError("unknown Key Type")
-
-
-def _check_argument_must_be_type_expected(arg_number: int, argument: Any, type_expected: type) -> None:
-    function_name = inspect.stack()[1].function
-    if not isinstance(argument, type_expected):
-        argument_type = type(argument).__name__
-        if argument_type == "NoneType":
-            argument_type = "None"
-        raise TypeError(
-            f"{function_name}() argument {arg_number} must be {type_expected.__name__}, not {argument_type}"
-        )
-
-
-def _check_argument_must_be_str_or_none(arg_number: int, argument: Any) -> None:
-    function_name = inspect.stack()[1].function
-    if not isinstance(argument, str) and argument is not None:
-        subkey_type = type(argument).__name__
-        raise TypeError(f"{function_name}() argument {arg_number} must be str or None, not {subkey_type}")
-
-
-def _check_key(key: Any) -> None:
-    if key is None:
-        raise TypeError("None is not a valid HKEY in this context")
-    if not isinstance(key, (int, PyHKEY)):
-        raise TypeError("The object is not a PyHKEY object")
-    if isinstance(key, int) and key >= 2**64:
-        raise OverflowError("int too big to convert")
-
-
-def _check_index(index: Any) -> None:
-    index_type = type(index).__name__
-    if not isinstance(index, int):
-        raise TypeError(f"an integer is required (got type {index_type})")
-    elif index >= 2**64:
-        raise OverflowError("Python int too large to convert to C long")
-
-
-def _check_access(access: Any) -> None:
-    _check_index(access)
-
-
-def _check_reserved(reserved: Any) -> None:
-    _check_access(reserved)
-    if isinstance(reserved, int) and reserved != 0:
-        error = OSError("[WinError 87] The parameter is incorrect")
-        error.winerror = 87  # type: ignore[attr-defined]
-        raise error
-
-
-def _check_reserved2(reserved: Any) -> None:
-    if isinstance(reserved, int) and 3 < reserved < 2**64:
-        _raise_permission_error()
-    _check_access(reserved)
-
-
-def _raise_permission_error() -> None:
-    permission_error = PermissionError("[WinError 5] Access is denied")
-    permission_error.winerror = 5  # type: ignore[attr-defined]
-    raise permission_error
-
-
-def _raise_os_error_1010() -> None:
-    error = OSError("[WinError 1010] The configuration registry key is invalid")
-    error.winerror = 1010  # type: ignore[attr-defined]
-    raise error
 
 
 __all__ = [

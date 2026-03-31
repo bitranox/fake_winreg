@@ -132,7 +132,7 @@ convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
 # Notebooks: unused imports are often intentional for side effects
-"notebooks/*.ipynb" = ["F401"]
+"notebooks/*.ipynb" = ["F401", "T201", "PERF203"]
 # Tests: assert is standard, test fixtures have passwords, magic values are clearer inline, temp paths are fine
 "tests/*.py" = ["T20", "S101", "S105", "S106", "S108", "FBT001", "FBT003", "PLR0913", "PLR2004"]
 # CLI: Click framework injects boolean params; commands have many options
@@ -152,6 +152,8 @@ convention = "google"
 "src/fake_winreg/domain/handles.py" = ["PLW0603"]
 # Domain memory backend: exception chaining not needed for winreg compat
 "src/fake_winreg/domain/memory_backend.py" = ["B904", "PLR0913"]
+# Domain validators: magic values from Windows API spec
+"src/fake_winreg/domain/_validators.py" = ["PLR2004"]
 
 [tool.pyright]
 typeCheckingMode = "strict"
