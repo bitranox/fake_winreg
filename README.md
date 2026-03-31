@@ -13,15 +13,70 @@
 [![Known Vulnerabilities](https://snyk.io/test/github/bitranox/fake_winreg/badge.svg)](https://snyk.io/test/github/bitranox/fake_winreg)
 [![security: bandit](https://img.shields.io/badge/security-bandit-yellow.svg)](https://github.com/PyCQA/bandit)
 
+## Table of Contents
+
+- [Overview](#overview)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [API Reference](#api-reference)
+  - [Registry Functions](#registry-functions)
+  - [Backend Management](#backend-management)
+  - [Import / Export](#import--export)
+  - [Constants](#constants)
+  - [Data Types](#data-types)
+  - [Test Registries](#test-registries)
+- [CLI Usage](#cli-usage)
+- [Development](#development)
+- [License](#license)
+
 ## Overview
 
-`fake_winreg` provides a drop-in replacement for Python's `winreg` module, enabling testing of Windows registry-dependent code on Linux and macOS without requiring a Windows environment. It supports in-memory, SQLite, and JSON backends for flexible registry storage, and can import and export Windows `.reg` files for interoperability with real registry data.
+`fake_winreg` provides a drop-in replacement for Python's built-in
+[`winreg`](https://docs.python.org/3/library/winreg.html) module, enabling
+testing of Windows registry-dependent code on Linux and macOS without a
+Windows environment.
+
+**Key capabilities:**
+
+- All 20 `winreg` API functions (`OpenKey`, `SetValueEx`, `EnumKey`, etc.) with matching signatures and error behavior
+- Three storage backends: **in-memory** (default), **SQLite** (for large registries), **JSON** (for fixtures)
+- Import and export of Windows `.reg` files (Registry Editor Version 5.00 format)
+- Streaming format conversion between `.db`, `.json`, and `.reg` via CLI or Python API
+- Pre-built test registries mimicking Windows 10 and Wine environments
+- Positional-only parameter enforcement matching real `winreg` behavior
+- Clean Architecture with `import-linter` enforcement, pyright strict mode, 92% test coverage
 
 ## Installation
+
+### Recommended: uv (fast, isolated)
+
+```bash
+# install uv if needed
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# one-shot run without installing
+uvx fake_winreg@latest info
+
+# persistent install as CLI tool
+uv tool install fake_winreg
+
+# install as project dependency
+uv pip install fake_winreg
+```
+
+### Via pip
 
 ```bash
 pip install fake_winreg
 ```
+
+### From source
+
+```bash
+pip install "git+https://github.com/bitranox/fake_winreg"
+```
+
+See [INSTALL.md](INSTALL.md) for all options (pipx, Poetry, PDM, system packages).
 
 ## Quick Start
 
