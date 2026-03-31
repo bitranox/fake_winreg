@@ -47,7 +47,7 @@ Configuration is loaded and merged in the following order (lowest to highest pre
 |--------------|------------------------------|------------------------------|
 | `{slug}`     | `fake-winreg`   | —                            |
 | `{vendor}`   | —                            | `bitranox`                   |
-| `{app}`      | —                            | `Bitranox Template Py Cli`   |
+| `{app}`      | —                            | `fake_winreg`   |
 | `{hostname}` | System hostname              | System hostname              |
 
 ### Concrete Examples
@@ -58,10 +58,10 @@ Configuration is loaded and merged in the following order (lowest to highest pre
 - Host config: `/etc/xdg/fake-winreg/hosts/myserver.toml`
 
 **macOS:**
-- User config: `~/Library/Application Support/bitranox/Bitranox Template Py Cli/config.toml`
+- User config: `~/Library/Application Support/bitranox/fake_winreg/config.toml`
 
 **Windows:**
-- User config: `%APPDATA%\bitranox\Bitranox Template Py Cli\config.toml`
+- User config: `%APPDATA%\bitranox\fake_winreg\config.toml`
 
 ---
 
@@ -465,10 +465,10 @@ Instead, create your own override files in the appropriate layer directory using
 ~/.config/fake-winreg/999-myconfig.toml
 
 # User-level customization (macOS)
-~/Library/Application Support/bitranox/Bitranox Template Py Cli/999-myconfig.toml
+~/Library/Application Support/bitranox/fake_winreg/999-myconfig.toml
 
 # User-level customization (Windows)
-%APPDATA%\bitranox\Bitranox Template Py Cli\999-myconfig.toml
+%APPDATA%\bitranox\fake_winreg\999-myconfig.toml
 
 # System-wide customization (Linux)
 /etc/xdg/fake-winreg/999-myconfig.toml

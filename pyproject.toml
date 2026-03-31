@@ -1,7 +1,7 @@
 [project]
 name = "fake_winreg"
 version = "1.5.3"
-description = "fake winreg, in order to test registry related functions on linux"
+description = "A fake Windows registry for testing registry-related code on non-Windows platforms"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -15,7 +15,7 @@ dependencies = [
 ]
 license = { text = "MIT" }
 authors = [{ name = "bitranox", email = "bitranox@gmail.com" }]
-keywords = ["cli", "template", "config", "logging", "layered-config", "rich-click"]
+keywords = ["registry", "winreg", "windows", "fake", "testing", "mock", "linux"]
 classifiers = [
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
@@ -28,6 +28,7 @@ classifiers = [
   "Environment :: Console",
   "Operating System :: OS Independent",
   "Typing :: Typed",
+  "Topic :: Software Development :: Testing",
 ]
 
 # System packages required for CI runners (read by GitHub Actions workflow template)

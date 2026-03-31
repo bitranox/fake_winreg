@@ -8,13 +8,13 @@
 #        - /etc/xdg/fake-winreg/config.[toml|yaml|json]
 #        - /etc/xdg/fake-winreg/config.d/*.[toml|yaml|json]
 #   - Host-level config (macOS):
-#        - /Library/Application Support/bitranox/Bitranox Template Py Cli/config.[toml|yaml|json]
-#        - /Library/Application Support/bitranox/Bitranox Template Py Cli/config.d/*.[toml|yaml|json]
+#        - /Library/Application Support/bitranox/fake_winreg/config.[toml|yaml|json]
+#        - /Library/Application Support/bitranox/fake_winreg/config.d/*.[toml|yaml|json]
 #   - User-level config (Linux):
 #        - ~/.config/fake-winreg/config.[toml|yaml|json]
 #        - ~/.config/fake-winreg/config.d/*.[toml|yaml|json]
 #   - User-level config (macOS):
-#        - ~/Library/Application Support/bitranox/Bitranox Template Py Cli/config.[toml|yaml|json]
+#        - ~/Library/Application Support/bitranox/fake_winreg/config.[toml|yaml|json]
 #   - .env files: .env in current directory or parent directories
 #   - Environment variables: Prefix with FAKE_WINREG___
 #

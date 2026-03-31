@@ -13,362 +13,311 @@
 [![Known Vulnerabilities](https://snyk.io/test/github/bitranox/fake_winreg/badge.svg)](https://snyk.io/test/github/bitranox/fake_winreg)
 [![security: bandit](https://img.shields.io/badge/security-bandit-yellow.svg)](https://github.com/PyCQA/bandit)
 
+## Overview
 
-`fake_winreg` is a template CLI application demonstrating configuration management and structured logging. It showcases rich-click for ergonomics and lib_cli_exit_tools for exits, providing a solid foundation for building CLI applications.
-- CLI entry point styled with rich-click (rich output + click ergonomics).
-- Layered configuration system with lib_layered_config (defaults → app → host → user → .env → env).
-- Rich structured logging with lib_log_rich (console, journald, eventlog, Graylog/GELF).
-- Exit-code and messaging helpers powered by lib_cli_exit_tools.
-- Metadata helpers ready for packaging, testing, and release automation.
+`fake_winreg` provides a drop-in replacement for Python's `winreg` module, enabling testing of Windows registry-dependent code on Linux and macOS without requiring a Windows environment. It supports in-memory, SQLite, and JSON backends for flexible registry storage, and can import and export Windows `.reg` files for interoperability with real registry data.
 
-
-### Python 3.10+ Baseline
-
-- The project targets **Python 3.10 and newer**.
-- Runtime dependencies require current stable releases (`rich-click>=1.9.6`
-  and `lib_cli_exit_tools>=2.2.4`). Dev dependencies (pytest, ruff, pyright,
-  bandit, etc.) specify minimum version constraints to ensure compatibility.
-- CI workflows exercise GitHub's rolling runner images (`ubuntu-latest`,
-  `macos-latest`, `windows-latest`) and cover CPython 3.10 through 3.14
-  alongside the latest available 3.x release provided by Actions.
-
----
-
-## Install - recommended via uv
-
-[uv](https://docs.astral.sh/uv/) is an ultrafast Python package manager written in Rust (10-20x faster than pip/poetry).
-
-### Install uv (if not already installed) 
-```bash
-# macOS/Linux
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Copy the actual binaries
-cp /root/.local/bin/uv /usr/local/bin/uv
-cp /root/.local/bin/uvx /usr/local/bin/uvx
-
-# Ensure world-executable
-chmod 755 /usr/local/bin/uv /usr/local/bin/uvx
-
-# Windows (PowerShell)
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-```
-
-### One-shot run (no install needed)
+## Installation
 
 ```bash
-uvx fake_winreg@latest --help
+pip install fake_winreg
 ```
-
-### Persistent install as CLI tool
-
-```bash
-# Install latest python
-install_latest_python_gcc.sh
-# pin uv to the latest python
-uv python pin /opt/python-latest/bin/python3
-# One-time install, persists from the git repo
-uv tool install --python /opt/python-latest/bin/python3 --from "git+https://github.com/bitranox/fake_winreg.git" fake-winreg
-# or One-time install, persists from PyPi
-uv tool install --python /opt/python-latest/bin/python3 fake-winreg
-# Update (requires network)
-uv tool upgrade fake-winreg
-# Run
-fake-winreg --help
-```
-
-### Persistent install as CLI tool
-```bash
-# install the CLI tool (isolated environment, added to PATH)
-uv tool install fake_winreg
-
-# upgrade to latest
-uv tool upgrade fake_winreg
-```
-
-### Install as project dependency
-
-```bash
-uv venv && source .venv/bin/activate   # Windows: .venv\Scripts\Activate.ps1
-uv pip install fake_winreg
-```
-
-For alternative install paths (pip, pipx, source builds, etc.), see
-[INSTALL.md](INSTALL.md). All supported methods register both the
-`fake_winreg` and `fake-winreg` commands on your PATH.
-
----
-
-## Configuration
-
-See [CONFIG.md](CONFIG.md) for detailed documentation on the layered configuration system, including precedence rules, profile support, and customization best practices.
-
----
 
 ## Quick Start
 
-```bash
-# Install
-uv tool install fake_winreg
+```python
+import fake_winreg as winreg
 
-# Verify
-fake-winreg --version
+# Load a pre-built Windows 10-like test registry
+fake_registry = winreg.fake_reg_tools.get_minimal_windows_testregistry()
+winreg.load_fake_registry(fake_registry)
 
-# Try it out
-fake-winreg hello
-fake-winreg info
-fake-winreg config
+# Use exactly like the real winreg module
+reg = winreg.ConnectRegistry(None, winreg.HKEY_LOCAL_MACHINE)
+key = winreg.OpenKey(reg, r"SOFTWARE\Microsoft\Windows NT\CurrentVersion")
+value, value_type = winreg.QueryValueEx(key, "CurrentBuild")
 ```
 
----
+## API Reference
 
-## Usage
+All functions mirror the signatures and behavior of Python's built-in `winreg` module.
 
-The CLI leverages [rich-click](https://github.com/ewels/rich-click) so help output, validation errors, and prompts render with Rich styling while keeping the familiar click ergonomics.
+### Registry Functions
 
-### Available Commands
-
-```bash
-# Display package information
-fake-winreg info
-
-# Greeting and error-handling demos
-fake-winreg hello
-fake-winreg fail
-fake-winreg --traceback fail
-
-# Configuration management
-fake-winreg config                         # Show current configuration
-fake-winreg config --format json           # Show as JSON
-fake-winreg config --section lib_log_rich  # Show specific section
-fake-winreg config --profile production    # Use a named profile
-
-# Deploy configuration templates to target directories
-# Without profile:
-fake-winreg config-deploy --target app    # → /etc/xdg/{slug}/config.toml
-fake-winreg config-deploy --target host   # → /etc/xdg/{slug}/hosts/{hostname}.toml
-fake-winreg config-deploy --target user   # → ~/.config/{slug}/config.toml
-
-# With profile:
-fake-winreg config-deploy --target app --profile production   # → /etc/xdg/{slug}/profile/production/config.toml
-fake-winreg config-deploy --target host --profile production  # → /etc/xdg/{slug}/profile/production/hosts/{hostname}.toml
-fake-winreg config-deploy --target user --profile production  # → ~/.config/{slug}/profile/production/config.toml
-
-# With custom permissions (POSIX only):
-fake-winreg config-deploy --target user --file-mode 640       # Files with rw-r----- (640)
-fake-winreg config-deploy --target user --dir-mode 750        # Directories with rwxr-x--- (750)
-fake-winreg config-deploy --target app --no-permissions       # Skip permission setting (use umask)
-
-# Profile names: alphanumeric, hyphens, underscores; max 64 chars; must start with letter/digit
-# See CONFIG.md for full validation rules
-
-# Deploy configuration examples
-fake-winreg config-generate-examples --destination ./examples
-
-# Load configuration from an explicit .env file (skips upward directory search)
-fake-winreg --env-file /path/to/.env config
-fake-winreg --env-file ./environments/production.env send-notification ...
-
-# Override configuration at runtime (repeatable --set)
-fake-winreg --set lib_log_rich.console_level=DEBUG config
-fake-winreg --set email.smtp_hosts='["smtp.example.com:587"]' config --format json
-
-# Logging demo
-fake-winreg logdemo
-fake-winreg --set lib_log_rich.console_level=DEBUG logdemo
-
-# Send email
-fake-winreg send-email \
-    --to recipient@example.com \
-    --subject "Test Email" \
-    --body "Hello from bitranox!"
-
-# Send email with HTML body and attachments
-fake-winreg send-email \
-    --to recipient@example.com \
-    --subject "Monthly Report" \
-    --body "See attached." \
-    --body-html "<h1>Report</h1><p>Details in the PDF.</p>" \
-    --attachment report.pdf
-
-# Send plain-text notification
-fake-winreg send-notification \
-    --to ops@example.com \
-    --subject "Deploy OK" \
-    --message "Application deployed successfully"
-
-# All commands work with any entry point
-python -m fake_winreg info
-uvx fake_winreg info
-```
-
----
-
-### Email Sending
-
-The application includes email sending capabilities via [btx-lib-mail](https://pypi.org/project/btx-lib-mail/), supporting both simple notifications and rich HTML emails with attachments.
-
-#### Email Configuration
-
-Configure email settings via environment variables, `.env` file, or configuration files:
-
-**Environment Variables:**
-
-Environment variables use the format: `<PREFIX>___<SECTION>__<KEY>=value`
-- Triple underscore (`___`) separates PREFIX from SECTION
-- Double underscore (`__`) separates SECTION from KEY
-
-```bash
-export FAKE_WINREG___EMAIL__SMTP_HOSTS="smtp.gmail.com:587,smtp.backup.com:587"
-export FAKE_WINREG___EMAIL__FROM_ADDRESS="alerts@myapp.com"
-export FAKE_WINREG___EMAIL__SMTP_USERNAME="your-email@gmail.com"
-export FAKE_WINREG___EMAIL__SMTP_PASSWORD="your-app-password"
-export FAKE_WINREG___EMAIL__USE_STARTTLS="true"
-export FAKE_WINREG___EMAIL__TIMEOUT="60.0"
-```
-
-**Configuration File**:
-```toml
-[email]
-smtp_hosts = ["smtp.gmail.com:587", "smtp.backup.com:587"]  # Fallback to backup if primary fails
-from_address = "alerts@myapp.com"
-smtp_username = "myuser@gmail.com"
-smtp_password = "secret_password"  # Consider using environment variables for sensitive data
-use_starttls = true
-timeout = 60.0
-```
-
-**`.env` File:**
-```bash
-# Email configuration for local testing
-FAKE_WINREG___EMAIL__SMTP_HOSTS=smtp.gmail.com:587
-FAKE_WINREG___EMAIL__FROM_ADDRESS=noreply@example.com
-```
-
-#### Gmail Configuration Example
-
-For Gmail, create an [App Password](https://support.google.com/accounts/answer/185833) instead of using your account password:
-
-```bash
-FAKE_WINREG___EMAIL__SMTP_HOSTS=smtp.gmail.com:587
-FAKE_WINREG___EMAIL__FROM_ADDRESS=your-email@gmail.com
-FAKE_WINREG___EMAIL__SMTP_USERNAME=your-email@gmail.com
-FAKE_WINREG___EMAIL__SMTP_PASSWORD=your-16-char-app-password
-```
-
-#### Send Simple Email
-
-```bash
-# Send basic email to one recipient
-fake-winreg send-email \
-    --to recipient@example.com \
-    --subject "Test Email" \
-    --body "Hello from bitranox!"
-
-# Send to multiple recipients
-fake-winreg send-email \
-    --to user1@example.com \
-    --to user2@example.com \
-    --subject "Team Update" \
-    --body "Please review the latest changes"
-```
-
-#### Send HTML Email with Attachments
-
-```bash
-fake-winreg send-email \
-    --to recipient@example.com \
-    --subject "Monthly Report" \
-    --body "Please find the monthly report attached." \
-    --body-html "<h1>Monthly Report</h1><p>See attached PDF for details.</p>" \
-    --attachment report.pdf \
-    --attachment data.csv
-```
-
-#### Send Notifications
-
-For simple plain-text notifications, use the convenience command:
-
-```bash
-# Single recipient
-fake-winreg send-notification \
-    --to ops@example.com \
-    --subject "Deployment Success" \
-    --message "Application deployed successfully to production at $(date)"
-
-# Multiple recipients
-fake-winreg send-notification \
-    --to admin1@example.com \
-    --to admin2@example.com \
-    --subject "System Alert" \
-    --message "Database backup completed successfully"
-```
-
-#### Programmatic Email Usage
+#### Connection
 
 ```python
-from fake_winreg.adapters.email.sender import EmailConfig
-from fake_winreg.composition import send_email, send_notification
-
-# Configure email
-config = EmailConfig(
-    smtp_hosts=["smtp.gmail.com:587"],
-    from_address="alerts@myapp.com",
-    smtp_username="myuser@gmail.com",
-    smtp_password="app-password",
-    timeout=60.0,
-)
-
-# Send simple email
-send_email(
-    config=config,
-    recipients="recipient@example.com",
-    subject="Test Email",
-    body="Hello from Python!",
-)
-
-# Send email with HTML and attachments
-from pathlib import Path
-send_email(
-    config=config,
-    recipients=["user1@example.com", "user2@example.com"],
-    subject="Report",
-    body="See attached report",
-    body_html="<h1>Report</h1><p>Details in attachment</p>",
-    attachments=[Path("report.pdf")],
-)
-
-# Send notification
-send_notification(
-    config=config,
-    recipients="ops@example.com",
-    subject="Deployment Complete",
-    message="Production deployment finished successfully",
-)
+ConnectRegistry(computer_name: str | None, key: Handle, /) -> PyHKEY
 ```
 
-#### Email Troubleshooting
+Establish a connection to a predefined registry handle. Pass `None` for `computer_name` to connect to the local (fake) registry.
 
-**Connection Failures:**
-- Verify SMTP hostname and port are correct
-- Check firewall allows outbound connections on SMTP port
-- Test connectivity: `telnet smtp.gmail.com 587`
+#### Key Operations
 
-**Authentication Errors:**
-- For Gmail: Use App Password, not account password
-- Ensure username/password are correct
-- Check for 2FA requirements
+```python
+CreateKey(key: Handle, sub_key: str | None, /) -> PyHKEY
+```
 
-**Emails Not Arriving:**
-- Check recipient's spam folder
-- Verify `from_address` is valid and not blacklisted
-- Review SMTP server logs for delivery status
+Create or open a registry key, returning a handle.
 
-## Further Documentation
+```python
+CreateKeyEx(key: Handle, sub_key: str, reserved: int = 0, access: int = KEY_WRITE, /) -> PyHKEY
+```
 
-- [Install Guide](INSTALL.md)
-- [Development Handbook](DEVELOPMENT.md)
-- [Contributor Guide](CONTRIBUTING.md)
-- [Changelog](CHANGELOG.md)
-- [Module Reference](docs/systemdesign/module_reference.md)
-- [License](LICENSE)
+Create or open a registry key with explicit access control.
+
+```python
+OpenKey(key: Handle, sub_key: str | None, reserved: int = 0, access: int = KEY_READ) -> PyHKEY
+```
+
+Open an existing registry key. Does not create the key if it does not exist.
+
+```python
+OpenKeyEx(key: Handle, sub_key: str | None, reserved: int = 0, access: int = KEY_READ) -> PyHKEY
+```
+
+Open an existing registry key with explicit access. Equivalent to `OpenKey`.
+
+```python
+DeleteKey(key: Handle, sub_key: str, /) -> None
+```
+
+Delete a registry key. The key must have no subkeys.
+
+```python
+DeleteKeyEx(key: Handle, sub_key: str, access: int = KEY_WOW64_64KEY, reserved: int = 0, /) -> None
+```
+
+Delete a registry key (64-bit variant).
+
+```python
+CloseKey(hkey: int | HKEYType, /) -> None
+```
+
+Close a previously opened registry key.
+
+```python
+FlushKey(key: Handle, /) -> None
+```
+
+Write all attributes of a key to the registry. No-op in the fake implementation since data is already in memory.
+
+#### Value Operations
+
+```python
+SetValue(key: Handle, sub_key: str | None, type: int, value: str, /) -> None
+```
+
+Set the default (unnamed) value of a key. Only `REG_SZ` is accepted for `type`.
+
+```python
+SetValueEx(key: Handle, value_name: str | None, reserved: int, type: int, value: RegData, /) -> None
+```
+
+Store data in a named value of an open registry key. Supports all registry value types.
+
+```python
+QueryValue(key: Handle, sub_key: str | None, /) -> str
+```
+
+Retrieve the default (unnamed) value of a key as a string.
+
+```python
+QueryValueEx(key: Handle, value_name: str | None, /) -> tuple[RegData, int]
+```
+
+Retrieve value data and its type code for a named value. Returns `(data, type)`.
+
+```python
+DeleteValue(key: Handle, value: str | None, /) -> None
+```
+
+Remove a named value from a registry key.
+
+#### Enumeration
+
+```python
+EnumKey(key: Handle, index: int, /) -> str
+```
+
+Enumerate subkeys of an open key by zero-based index. Raises `OSError` when `index` exceeds the number of subkeys.
+
+```python
+EnumValue(key: Handle, index: int, /) -> tuple[str, RegData, int]
+```
+
+Enumerate values of an open key by zero-based index. Returns `(name, data, type)`. Raises `OSError` when `index` exceeds the number of values.
+
+```python
+QueryInfoKey(key: Handle, /) -> tuple[int, int, int]
+```
+
+Return information about a key: `(num_subkeys, num_values, last_modified_timestamp)`.
+
+#### Utility
+
+```python
+ExpandEnvironmentStrings(string: str, /) -> str
+```
+
+Expand `%VAR%`-style environment variable references in a string. Works on all platforms.
+
+```python
+DisableReflectionKey(key: Handle, /) -> None
+EnableReflectionKey(key: Handle, /) -> None
+QueryReflectionKey(key: Handle, /) -> bool
+```
+
+Registry reflection stubs. No-op in the fake implementation; `QueryReflectionKey` always returns `True`.
+
+### Backend Management
+
+`fake_winreg` supports multiple storage backends. The default is an in-memory backend.
+
+```python
+import fake_winreg as winreg
+
+# Default: in-memory (created automatically if no backend is set)
+winreg.use_backend(winreg.InMemoryBackend())
+
+# SQLite: for large registries or persistent storage
+winreg.use_backend(winreg.SqliteBackend("/path/to/registry.db"))
+
+# JSON: load from a JSON file, work in memory
+winreg.use_backend(winreg.JsonBackend("/path/to/registry.json"))
+
+# Backward-compatible: load a FakeRegistry object directly
+fake_registry = winreg.fake_reg_tools.get_minimal_windows_testregistry()
+winreg.load_fake_registry(fake_registry)
+```
+
+### Import/Export
+
+Exchange registry data between formats.
+
+```python
+import fake_winreg as winreg
+
+# JSON format
+winreg.export_json("/path/to/snapshot.json")
+winreg.import_json("/path/to/fixture.json")
+
+# Windows .reg format
+winreg.export_reg("/path/to/export.reg")
+winreg.import_reg("/path/to/import.reg")
+
+# Convert between formats
+winreg.convert_registry("source.db", "target.reg")
+```
+
+### Constants
+
+All constants from the `winreg` module are available.
+
+**Hive keys:**
+
+| Constant               | Description                                      |
+|------------------------|--------------------------------------------------|
+| `HKEY_CLASSES_ROOT`    | Registry entries for file associations and COM    |
+| `HKEY_CURRENT_USER`    | Settings for the current user                     |
+| `HKEY_LOCAL_MACHINE`   | System-wide settings                              |
+| `HKEY_USERS`           | Settings for all user profiles                    |
+| `HKEY_CURRENT_CONFIG`  | Current hardware profile                          |
+| `HKEY_PERFORMANCE_DATA` | Performance counters                             |
+| `HKEY_DYN_DATA`        | Dynamic data (Windows 95/98)                      |
+
+**Value types:**
+
+| Constant                          | Description                                          |
+|-----------------------------------|------------------------------------------------------|
+| `REG_NONE`                        | No defined value type                                |
+| `REG_SZ`                          | Null-terminated string                               |
+| `REG_EXPAND_SZ`                   | String with unexpanded environment variable refs     |
+| `REG_BINARY`                      | Binary data                                          |
+| `REG_DWORD`                       | 32-bit integer (little-endian)                       |
+| `REG_DWORD_BIG_ENDIAN`            | 32-bit integer (big-endian)                          |
+| `REG_LINK`                        | Symbolic link (Unicode)                              |
+| `REG_MULTI_SZ`                    | Array of null-terminated strings                     |
+| `REG_QWORD`                       | 64-bit integer (little-endian)                       |
+| `REG_RESOURCE_LIST`               | Device driver resource list                          |
+| `REG_FULL_RESOURCE_DESCRIPTOR`    | Hardware resource descriptor                         |
+| `REG_RESOURCE_REQUIREMENTS_LIST`  | Hardware resource requirements                       |
+
+**Access rights:**
+
+| Constant                | Description                            |
+|-------------------------|----------------------------------------|
+| `KEY_READ`              | Read access                            |
+| `KEY_WRITE`             | Write access                           |
+| `KEY_ALL_ACCESS`        | Full access                            |
+| `KEY_EXECUTE`           | Execute access (same as `KEY_READ`)    |
+| `KEY_QUERY_VALUE`       | Query subkey values                    |
+| `KEY_SET_VALUE`         | Set subkey values                      |
+| `KEY_CREATE_SUB_KEY`    | Create subkeys                         |
+| `KEY_ENUMERATE_SUB_KEYS` | Enumerate subkeys                     |
+| `KEY_NOTIFY`            | Change notification                    |
+| `KEY_CREATE_LINK`       | Create symbolic link                   |
+| `KEY_WOW64_64KEY` | Access 64-bit registry view |
+| `KEY_WOW64_32KEY` | Access 32-bit registry view |
+
+### Data Types
+
+```python
+# All possible types of data that registry values can hold
+RegData = None | bytes | int | str | list[str]
+
+# Handle types accepted by all API functions
+Handle = int | HKEYType | PyHKEY
+
+# Registry data structures
+FakeRegistry       # Top-level registry container (holds hive roots)
+FakeRegistryKey    # A single registry key with subkeys and values
+FakeRegistryValue  # A named value with data and type code
+```
+
+`PyHKEY` supports the context manager protocol:
+
+```python
+with winreg.OpenKey(reg, r"SOFTWARE\Microsoft") as key:
+    value, vtype = winreg.QueryValueEx(key, "SomeName")
+```
+
+### Test Registries
+
+Pre-built registry fixtures for common test scenarios.
+
+```python
+import fake_winreg as winreg
+
+# Pre-built Windows 10-like registry with typical keys under
+# HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion
+reg = winreg.fake_reg_tools.get_minimal_windows_testregistry()
+
+# Pre-built Wine-like registry
+reg = winreg.fake_reg_tools.get_minimal_wine_testregistry()
+```
+
+## CLI Usage
+
+```bash
+# Convert between registry formats
+fake-winreg convert if=registry.db of=export.reg
+fake-winreg convert if=export.reg of=registry.json
+
+# Show package information
+fake-winreg info
+```
+
+## Development
+
+Run the full test suite (lint, type-check, tests with coverage):
+
+```bash
+make test
+```
+
+See [DEVELOPMENT.md](DEVELOPMENT.md) for the complete development setup guide.
+
+## License
+
+[MIT](LICENSE)

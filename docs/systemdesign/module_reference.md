@@ -9,7 +9,17 @@ Complete (v1.1.2+)
 ## Related Files
 
 ### Domain Layer
-- `src/fake_winreg/domain/behaviors.py` — Pure domain functions (greeting)
+- `src/fake_winreg/domain/api.py` — Public winreg-compatible API functions (CreateKey, OpenKey, QueryValueEx, etc.)
+- `src/fake_winreg/domain/registry.py` — Registry tree and key management
+- `src/fake_winreg/domain/memory_backend.py` — In-memory registry backend
+- `src/fake_winreg/domain/handles.py` — Registry handle management
+- `src/fake_winreg/domain/types.py` — Registry type definitions
+- `src/fake_winreg/domain/constants.py` — Registry constants (HKEY values, access flags, value types)
+- `src/fake_winreg/domain/validation.py` — Registry input validation
+- `src/fake_winreg/domain/helpers.py` — Domain helper utilities
+- `src/fake_winreg/domain/serialization.py` — Registry data serialization
+- `src/fake_winreg/domain/test_registries.py` — Pre-built test registry fixtures
+- `src/fake_winreg/domain/errors.py` — Domain exception types
 - `src/fake_winreg/domain/enums.py` — Type-safe enums (OutputFormat, DeployTarget)
 
 ### Application Layer
@@ -31,7 +41,7 @@ Complete (v1.1.2+)
   - `context.py` — Click context helpers
   - `root.py` — Root command group
   - `main.py` — Entry point
-  - `commands/info.py` — info, hello, fail commands
+  - `commands/info.py` — info command
   - `commands/config.py` — config, config-deploy, config-generate-examples commands
   - `commands/email.py` — send-email, send-notification commands
   - `commands/logging.py` — logdemo command
@@ -57,17 +67,33 @@ Complete (v1.1.2+)
 - `src/fake_winreg/adapters/config/defaultconfig.d/90-logging.toml` — Logging defaults
 
 ### Tests
-- `tests/test_behaviors.py` — Domain function tests
+- `tests/test_registry.py` — Registry tree and key management tests
+- `tests/test_registry_api.py` — winreg-compatible API function tests
+- `tests/test_reg_io.py` — Registry I/O tests
+- `tests/test_backend_json.py` — JSON backend tests
+- `tests/test_backend_sqlite.py` — SQLite backend tests
+- `tests/test_convert.py` — Registry data conversion tests
 - `tests/test_cache_effectiveness.py` — LRU cache behavior tests
-- `tests/test_cli.py` — CLI command tests
+- `tests/test_cli_core.py` — Core CLI command tests
+- `tests/test_cli_config.py` — Config CLI command tests
+- `tests/test_cli_email.py` — Email CLI command tests
+- `tests/test_cli_env_file.py` — Env file CLI option tests
+- `tests/test_cli_exit_codes.py` — Exit code tests
+- `tests/test_cli_overrides.py` — CLI override tests
+- `tests/test_cli_validation.py` — CLI validation tests
 - `tests/test_config_overrides.py` — `--set` parsing tests
 - `tests/test_display.py` — Config display formatting tests
-- `tests/test_exit_codes.py` — ExitCode enum tests
+- `tests/test_deploy_permissions.py` — Deploy permission tests
+- `tests/test_enums.py` — Enum tests
+- `tests/test_errors.py` — Error type tests
+- `tests/test_logging.py` — Logging tests
 - `tests/test_mail.py` — Email configuration and sending tests
 - `tests/test_metadata.py` — Package metadata tests
+- `tests/test_metadata_sync.py` — Metadata sync tests
 - `tests/test_module_entry.py` — `python -m` entry tests
 - `tests/test_ports.py` — Protocol conformance tests
-- `tests/test_scripts.py` — Build script tests
+- `tests/test_property_email.py` — Email property tests
+- `tests/test_property_overrides.py` — Override property tests
 
 ---
 
@@ -135,18 +161,6 @@ POSIX-conventional exit codes defined in `adapters/cli/exit_codes.py`:
 Print resolved package metadata.
 
 **Exit codes:** 0
-
-### hello
-
-Emit canonical greeting (`"Hello World"`).
-
-**Exit codes:** 0
-
-### fail
-
-Trigger intentional `RuntimeError` for testing error handling.
-
-**Exit codes:** 1
 
 ### config
 

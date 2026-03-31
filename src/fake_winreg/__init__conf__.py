@@ -38,7 +38,7 @@ __all__ = [
 #: Distribution name declared in ``pyproject.toml``.
 name = "fake_winreg"
 #: Human-readable summary shown in CLI help output.
-title = "fake winreg, in order to test registry related functions on linux"
+title = "A fake Windows registry for testing registry-related code on non-Windows platforms"
 #: Current release version pulled from ``pyproject.toml`` by automation.
 version = "1.5.3"
 #: Repository homepage presented to users.
