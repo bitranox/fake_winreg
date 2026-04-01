@@ -51,7 +51,7 @@ if=exported.reg of=registry.db`, and run your tests against real-world data.
 
 `fake_winreg` provides a drop-in replacement for Python's built-in
 `winreg` module, enabling testing of Windows registry-dependent code on
-Linux and macOS without a Windows environment.
+Linux and macOS without a Windows environment, or to test software without hitting a real registry on Windows.
 
 **Key capabilities:**
 

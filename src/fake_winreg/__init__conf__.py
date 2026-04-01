@@ -40,7 +40,7 @@ name = "fake_winreg"
 #: Human-readable summary shown in CLI help output.
 title = "A fake Windows registry for testing registry-related code on non-Windows platforms"
 #: Current release version pulled from ``pyproject.toml`` by automation.
-version = "1.8.1"
+version = "1.8.2"
 #: Repository homepage presented to users.
 homepage = "https://github.com/bitranox/fake_winreg"
 #: Author attribution surfaced in CLI output.

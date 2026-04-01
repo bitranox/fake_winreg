@@ -6,6 +6,11 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 
 ## [Unreleased]
 
+## [1.8.2] - 2026-04-01
+
+### Changed
+- README: clarified that fake_winreg also supports testing without hitting a real registry on Windows
+
 ## [1.8.1] - 2026-03-31
 
 ### Changed
