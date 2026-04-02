@@ -13,6 +13,7 @@ from __future__ import annotations
 import os
 import re
 from collections.abc import Callable
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from ._validators import (
@@ -548,6 +549,81 @@ def FlushKey(key: Handle, /) -> None:
     _check_key(key)
 
 
+def SaveKey(key: Handle, file_name: str, /) -> None:
+    r"""Save a registry key and all subkeys/values to a JSON file.
+
+    On real Windows this writes a binary hive file.  The fake implementation
+    serialises the subtree as JSON so that :func:`LoadKey` can restore it.
+
+    >>> import tempfile, os
+    >>> fake_registry = get_minimal_windows_testregistry()
+    >>> load_fake_registry(fake_registry)
+    >>> reg = ConnectRegistry(None, 18446744071562067970)
+    >>> key_handle = OpenKey(reg, r'SOFTWARE\Microsoft\Windows NT\CurrentVersion')
+    >>> fp = os.path.join(tempfile.gettempdir(), '_fake_winreg_save_test.json')
+    >>> SaveKey(key_handle, fp)
+    >>> assert os.path.isfile(fp)
+    >>> os.remove(fp)
+    """
+    _check_key(key)
+    _check_argument_must_be_type_expected(1, file_name, str)
+
+    import json
+
+    from .serialization import key_to_dict
+
+    key_handle = _resolve_key(key)
+    data = key_to_dict(key_handle.handle)
+    with Path(file_name).open("w", encoding="utf-8") as fh:
+        json.dump(data, fh, indent=2, ensure_ascii=False)
+
+
+def LoadKey(key: Handle, sub_key: str, file_name: str, /) -> None:
+    r"""Load registry data from a JSON file into a subkey.
+
+    On real Windows this loads a binary hive file.  The fake implementation
+    reads the JSON format produced by :func:`SaveKey` and grafts the subtree
+    under *sub_key* of *key*.
+
+    >>> import tempfile, os, json
+    >>> fake_registry = get_minimal_windows_testregistry()
+    >>> load_fake_registry(fake_registry)
+    >>> reg = ConnectRegistry(None, 18446744071562067970)
+
+    >>> # Save a leaf key (CurrentVersion has values but we load as leaf)
+    >>> src = OpenKey(reg, r'SOFTWARE\Microsoft\Windows NT\CurrentVersion')
+    >>> fp = os.path.join(tempfile.gettempdir(), '_fake_winreg_load_test.json')
+    >>> SaveKey(src, fp)
+
+    >>> # Load it under a new location
+    >>> CreateKey(reg, r'SOFTWARE\_load_test')
+    <...PyHKEY object at ...>
+    >>> LoadKey(reg, r'SOFTWARE\_load_test', fp)
+
+    >>> # Verify values arrived
+    >>> loaded = OpenKey(reg, r'SOFTWARE\_load_test')
+    >>> assert loaded is not None
+
+    >>> # Cleanup
+    >>> os.remove(fp)
+    """
+    _check_key(key)
+    _check_argument_must_be_type_expected(1, sub_key, str)
+    _check_argument_must_be_type_expected(2, file_name, str)
+
+    import json
+
+    from .serialization import populate_key_from_dict
+
+    key_handle = _resolve_key(key)
+    target_key = _get_backend().create_key(key_handle.handle, sub_key)
+
+    with Path(file_name).open(encoding="utf-8") as fh:
+        data = json.load(fh)
+
+    populate_key_from_dict(target_key, data, target_key.full_key, parent=target_key.parent_fake_registry_key)
+
+
 def ExpandEnvironmentStrings(string: str, /) -> str:
     r"""Expand ``%VAR%``-style environment-variable references in a string.
 
@@ -595,12 +671,14 @@ __all__ = [
     "EnumValue",
     "ExpandEnvironmentStrings",
     "FlushKey",
+    "LoadKey",
     "OpenKey",
     "OpenKeyEx",
     "QueryInfoKey",
     "QueryReflectionKey",
     "QueryValue",
     "QueryValueEx",
+    "SaveKey",
     "SetValue",
     "SetValueEx",
     "configure_network_resolver",

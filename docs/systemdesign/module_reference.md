@@ -9,7 +9,7 @@ Complete (v1.5.3+)
 ## Related Files
 
 ### Domain Layer
-- `src/fake_winreg/domain/api.py` — Public winreg-compatible API functions (CreateKey, OpenKey, QueryValueEx, etc.)
+- `src/fake_winreg/domain/api.py` — Public winreg-compatible API functions (CreateKey, OpenKey, QueryValueEx, SaveKey, LoadKey, etc.)
 - `src/fake_winreg/domain/registry.py` — Registry tree and key management
 - `src/fake_winreg/domain/memory_backend.py` — In-memory registry backend
 - `src/fake_winreg/domain/handles.py` — Registry handle management

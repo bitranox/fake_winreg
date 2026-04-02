@@ -55,7 +55,7 @@ Linux and macOS without a Windows environment, or to test software without hitti
 
 **Key capabilities:**
 
-- All 20 `winreg` API functions (`OpenKey`, `SetValueEx`, `EnumKey`, etc.) with matching signatures and error behavior
+- All 22 `winreg` API functions (`OpenKey`, `SetValueEx`, `EnumKey`, `SaveKey`, `LoadKey`, etc.) with matching signatures and error behavior
 - Three storage backends: **in-memory** (default), **SQLite** (for large registries), **JSON** (for fixtures)
 - Import and export of Windows `.reg` files (Version 5.00 and REGEDIT4 formats)
 - CLI commands for querying and modifying persistent SQLite registries (`fake-winreg reg`)
@@ -205,6 +205,20 @@ FlushKey(key: Handle, /) -> None
 ```
 
 Write all attributes of a key to the registry. No-op in the fake implementation since data is already in memory.
+
+#### Save / Load
+
+```python
+SaveKey(key: Handle, file_name: str, /) -> None
+```
+
+Save a registry key and all its subkeys/values to a JSON file. On real Windows this writes a binary hive file; the fake implementation serialises the subtree as JSON so that `LoadKey` can restore it.
+
+```python
+LoadKey(key: Handle, sub_key: str, file_name: str, /) -> None
+```
+
+Load registry data from a JSON file (produced by `SaveKey`) into a subkey. On real Windows this loads a binary hive file; the fake implementation reads the JSON and grafts the subtree under `sub_key` of `key`.
 
 #### Value Operations
 

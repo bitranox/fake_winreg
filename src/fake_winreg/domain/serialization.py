@@ -62,7 +62,7 @@ def registry_to_dict(registry: FakeRegistry) -> RegistryDict:
     hives: dict[str, KeyDict] = {}
     for hive_int, hive_key in sorted(registry.hive.items(), key=lambda kv: str(kv[0])):
         hive_name = hive_name_hashed_by_int.get(hive_int, str(hive_int))  # type: ignore[arg-type]
-        hives[hive_name] = _key_to_dict(hive_key)
+        hives[hive_name] = key_to_dict(hive_key)
     return RegistryDict(hives=hives)
 
 
@@ -86,12 +86,12 @@ def dict_to_registry(data: RegistryDict | dict[str, object]) -> FakeRegistry:
         if hive_int is None or not isinstance(hive_dict, dict):
             continue
         root_key = registry.hive[hive_int]
-        _populate_key_from_dict(root_key, cast(dict[str, object], hive_dict), hive_name, parent=None)
+        populate_key_from_dict(root_key, cast(dict[str, object], hive_dict), hive_name, parent=None)
 
     return registry
 
 
-def _key_to_dict(key: FakeRegistryKey) -> KeyDict:
+def key_to_dict(key: FakeRegistryKey) -> KeyDict:
     """Recursively convert a FakeRegistryKey to a typed dict."""
     values: dict[str, ValueDict] = {}
     for vname, fval in key.values.items():
@@ -103,7 +103,7 @@ def _key_to_dict(key: FakeRegistryKey) -> KeyDict:
 
     keys: dict[str, KeyDict] = {}
     for sname, skey in key.subkeys.items():
-        keys[sname] = _key_to_dict(skey)
+        keys[sname] = key_to_dict(skey)
 
     return KeyDict(
         last_modified_ns=key.last_modified_ns,
@@ -112,7 +112,7 @@ def _key_to_dict(key: FakeRegistryKey) -> KeyDict:
     )
 
 
-def _populate_key_from_dict(
+def populate_key_from_dict(
     key: FakeRegistryKey,
     data: dict[str, object],
     full_key: str,
@@ -149,7 +149,7 @@ def _populate_key_from_dict(
             child = FakeRegistryKey()
             sname_str = str(sname)
             child_full = f"{full_key}\\{sname_str}" if full_key else sname_str
-            _populate_key_from_dict(child, cast(dict[str, object], sdict), child_full, parent=key)
+            populate_key_from_dict(child, cast(dict[str, object], sdict), child_full, parent=key)
             key.subkeys[sname_str] = child
 
 
@@ -183,5 +183,7 @@ __all__ = [
     "RegistryDict",
     "ValueDict",
     "dict_to_registry",
+    "key_to_dict",
+    "populate_key_from_dict",
     "registry_to_dict",
 ]

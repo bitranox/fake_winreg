@@ -6,6 +6,17 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-04-02
+
+### Added
+- `SaveKey(key, file_name)` — serialise a registry subtree to a JSON file
+- `LoadKey(key, sub_key, file_name)` — restore a subtree from a JSON file produced by `SaveKey`
+- Public helpers `key_to_dict` and `populate_key_from_dict` in `domain.serialization`
+
+### Changed
+- Updated documentation (README, CLAUDE.md, module reference) to reflect the new API functions
+- Updated CVE exclusion list with 11 new aiohttp 3.13.3 vulnerabilities (fix in 3.13.4)
+
 ## [1.8.2] - 2026-04-01
 
 ### Changed
