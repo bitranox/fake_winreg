@@ -59,7 +59,7 @@ dev = [
   "textual>=8.2.1",
   "import-linter>=2.11",
   "rtoml>=0.13.0",
-  "httpx>=0.28.1",
+  "httpx2>=2.2.0",
   # Transitive CVE pins
   "jaraco-context>=6.1.2",       # CVE-2025-23949
   "python-multipart>=0.0.22",    # CVE-2025-24486
