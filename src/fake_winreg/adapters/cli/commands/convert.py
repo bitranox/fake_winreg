@@ -11,12 +11,13 @@ import lib_log_rich.runtime
 import rich_click as click
 
 from ..constants import CLICK_CONTEXT_SETTINGS
+from ..typed_click import argument
 
 logger = logging.getLogger(__name__)
 
 
 @click.command("convert", context_settings=CLICK_CONTEXT_SETTINGS)
-@click.argument("args", nargs=-1, required=True)
+@argument("args", nargs=-1, required=True)
 def cli_convert(args: tuple[str, ...]) -> None:
     """Convert registry between formats (dd-style syntax).
 

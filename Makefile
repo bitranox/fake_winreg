@@ -1,4 +1,4 @@
-# BMK MAKEFILE 2.9.0
+# BMK MAKEFILE 2.9.4
 # do not alter this file - it might be overwritten on new versions of BMK
 # if You want to alter it, remove the first line # BMK MAKEFILE 1.0 - then it is a custom makefile and will not be overwritten
 # bmk Makefile — thin wrapper using `uv tool install` for persistent bmk
@@ -49,7 +49,7 @@ _BMK_TARGETS := test t test-human th testintegration testi ti testintegration-hu
 	commit c push psh p release rel r \
 	dependencies deps d dependencies-update \
 	config config-deploy config-generate-examples \
-	custom \
+	send-email send-notification custom \
 	info logdemo
 
 ifneq (,$(filter $(_BMK_TARGETS),$(firstword $(MAKECMDGOALS))))
@@ -187,6 +187,18 @@ config-deploy: _ensure_bmk  ## Deploy configuration to system/user directories
 .PHONY: config-generate-examples
 config-generate-examples: _ensure_bmk  ## Generate example configuration files
 	$(BMK) config-generate-examples $(ARGS)
+
+# ──────────────────────────────────────────────────────────────
+# Email
+# ──────────────────────────────────────────────────────────────
+
+.PHONY: send-email
+send-email: _ensure_bmk  ## Send an email via configured SMTP
+	$(BMK) send-email $(ARGS)
+
+.PHONY: send-notification
+send-notification: _ensure_bmk  ## Send a plain-text notification email
+	$(BMK) send-notification $(ARGS)
 
 # ──────────────────────────────────────────────────────────────
 # Custom Commands

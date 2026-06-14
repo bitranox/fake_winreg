@@ -19,6 +19,7 @@ from fake_winreg.adapters.config.overrides import apply_overrides
 
 from .constants import CLICK_CONTEXT_SETTINGS
 from .context import apply_traceback_preferences, store_cli_context
+from .typed_click import option, version_option
 
 if TYPE_CHECKING:
     from fake_winreg.composition import AppServices
@@ -49,24 +50,24 @@ def _apply_cli_overrides(config: Config, set_overrides: tuple[str, ...]) -> Conf
     context_settings=CLICK_CONTEXT_SETTINGS,
     invoke_without_command=True,
 )
-@click.version_option(
+@version_option(
     version=__init__conf__.version,
     prog_name=__init__conf__.shell_command,
     message=f"{__init__conf__.shell_command} version {__init__conf__.version}",
 )
-@click.option(
+@option(
     "--traceback/--no-traceback",
     is_flag=True,
     default=False,
     help="Show full Python traceback on errors",
 )
-@click.option(
+@option(
     "--profile",
     type=str,
     default=None,
     help="Load configuration from a named profile (e.g., 'production', 'test')",
 )
-@click.option(
+@option(
     "--set",
     "set_overrides",
     multiple=True,
@@ -74,7 +75,7 @@ def _apply_cli_overrides(config: Config, set_overrides: tuple[str, ...]) -> Conf
     metavar="SECTION.KEY=VALUE",
     help="Override a configuration setting (repeatable).",
 )
-@click.option(
+@option(
     "--env-file",
     "env_file",
     type=click.Path(exists=True, file_okay=True, dir_okay=False, readable=True),

@@ -25,25 +25,26 @@ from fake_winreg.domain.enums import DeployTarget, OutputFormat
 from ..constants import CLICK_CONTEXT_SETTINGS
 from ..context import CLIContext, get_cli_context
 from ..exit_codes import ExitCode
+from ..typed_click import option
 
 logger = logging.getLogger(__name__)
 
 
 @click.command("config", context_settings=CLICK_CONTEXT_SETTINGS)
-@click.option(
+@option(
     "--format",
     "output_format",
     type=click.Choice([f.value for f in OutputFormat], case_sensitive=False),
     default=OutputFormat.HUMAN.value,
     help="Output format (human-readable or JSON)",
 )
-@click.option(
+@option(
     "--section",
     type=str,
     default=None,
     help="Show only a specific configuration section (e.g., 'lib_log_rich')",
 )
-@click.option(
+@option(
     "--profile",
     type=str,
     default=None,
@@ -134,7 +135,7 @@ def _parse_octal_mode(ctx: click.Context, param: click.Parameter, value: str | N
 
 
 @click.command("config-deploy", context_settings=CLICK_CONTEXT_SETTINGS)
-@click.option(
+@option(
     "--target",
     "targets",
     type=click.Choice([t.value for t in DeployTarget], case_sensitive=False),
@@ -142,32 +143,32 @@ def _parse_octal_mode(ctx: click.Context, param: click.Parameter, value: str | N
     required=True,
     help="Target configuration layer(s) to deploy to (can specify multiple)",
 )
-@click.option(
+@option(
     "--force",
     is_flag=True,
     default=False,
     help="Overwrite existing configuration files",
 )
-@click.option(
+@option(
     "--profile",
     type=str,
     default=None,
     help="Override profile from root command (e.g., 'production', 'test')",
 )
-@click.option(
+@option(
     "--permissions/--no-permissions",
     "set_permissions",
     default=None,
     help="Set Unix permissions (755/644 for app/host, 700/600 for user). Default: enabled.",
 )
-@click.option(
+@option(
     "--dir-mode",
     type=str,
     default=None,
     callback=_parse_octal_mode,
     help="Override directory mode (octal, e.g., 750 or 0o750)",
 )
-@click.option(
+@option(
     "--file-mode",
     type=str,
     default=None,
@@ -290,8 +291,8 @@ def _report_deployment_result(deployed_paths: list[Path], profile: str | None, s
 
 
 @click.command("config-generate-examples", context_settings=CLICK_CONTEXT_SETTINGS)
-@click.option("--destination", type=click.Path(file_okay=False), required=True, help="Directory to write example files")
-@click.option("--force", is_flag=True, default=False, help="Overwrite existing files")
+@option("--destination", type=click.Path(file_okay=False), required=True, help="Directory to write example files")
+@option("--force", is_flag=True, default=False, help="Overwrite existing files")
 @click.pass_context
 def cli_config_generate_examples(ctx: click.Context, destination: str, force: bool) -> None:
     """Generate example configuration files in a target directory.

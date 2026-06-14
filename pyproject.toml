@@ -1,16 +1,16 @@
 [project]
 name = "fake_winreg"
-version = "1.9.0"
+version = "1.9.1"
 description = "A fake Windows registry for testing registry-related code on non-Windows platforms"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "rich-click>=1.9.7",
-    "lib_cli_exit_tools>=2.3.0",
-    "lib_log_rich>=6.3.3",
-    "lib_layered_config>=5.5.1",
-    "pydantic>=2.12.5",
-    "orjson>=3.11.8",
+    "rich-click>=1.9.8",
+    "lib_cli_exit_tools>=2.3.2",
+    "lib_log_rich>=6.3.5",
+    "lib_layered_config>=5.5.2",
+    "pydantic>=2.13.4",
+    "orjson>=3.11.9",
 ]
 license = { text = "MIT" }
 authors = [{ name = "bitranox", email = "bitranox@gmail.com" }]
@@ -46,27 +46,27 @@ Issues = "https://github.com/bitranox/fake_winreg/issues"
 
 [project.optional-dependencies]
 dev = [
-  "pytest>=9.0.2",
+  "pytest>=9.1.0",
   "pytest-cov>=7.1.0",
-  "hypothesis>=6.151.10",
-  "ruff>=0.15.8",
-  "pyright[nodejs]>=1.1.408",
+  "hypothesis>=6.155.2",
+  "ruff>=0.15.17",
+  "pyright[nodejs]>=1.1.410",
   "bandit>=1.9.4",
-  "build>=1.4.2",
+  "build>=1.5.0",
   "twine>=6.2.0",
   "codecov-cli>=11.2.8",
-  "pip-audit>=2.10.0",
-  "textual>=8.2.1",
+  "pip-audit>=2.10.1",
+  "textual>=8.2.7",
   "import-linter>=2.11",
   "rtoml>=0.13.0",
-  "httpx2>=2.2.0",
+  "httpx2>=2.4.0",
   # Transitive CVE pins
   "jaraco-context>=6.1.2",       # CVE-2025-23949
-  "python-multipart>=0.0.22",    # CVE-2025-24486
-  "wheel>=0.46.3",               # CVE-2025-24049
+  "python-multipart>=0.0.32",    # CVE-2025-24486
+  "wheel>=0.47.0",               # CVE-2025-24049
   "pynacl>=1.6.2",               # CVE-2025-69277
-  "urllib3>=2.6.3",              # CVE-2025-66471, CVE-2025-66418
-  "virtualenv>=21.2.0",         # CVE-2025-22702
+  "urllib3>=2.7.0",              # CVE-2025-66471, CVE-2025-66418
+  "virtualenv>=21.5.0",         # CVE-2025-22702
 ]
 
 [project.scripts]
@@ -74,7 +74,7 @@ fake_winreg = "fake_winreg.entry:main"
 fake-winreg = "fake_winreg.entry:main"
 
 [build-system]
-requires = ["hatchling>=1.29.0"]
+requires = ["hatchling>=1.30.1"]
 build-backend = "hatchling.build"
 
 [tool.hatch.metadata]

@@ -14,6 +14,7 @@ import rich_click as click
 
 from ..constants import CLICK_CONTEXT_SETTINGS
 from ..context import get_cli_context
+from ..typed_click import argument, option
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +108,7 @@ def _format_value_data(data: None | bytes | int | str | list[str], value_type: i
 
 
 @click.group("reg", context_settings=CLICK_CONTEXT_SETTINGS)
-@click.option("--db", "db_path", default=None, type=click.Path(), help="Path to SQLite registry database.")
+@option("--db", "db_path", default=None, type=click.Path(), help="Path to SQLite registry database.")
 @click.pass_context
 def cli_reg(ctx: click.Context, db_path: str | None) -> None:
     """Query and modify a persistent SQLite registry.
@@ -138,7 +139,7 @@ def _get_db_path(ctx: click.Context) -> Path:
 
 
 @cli_reg.command("list-keys", context_settings=CLICK_CONTEXT_SETTINGS)
-@click.argument("key_path")
+@argument("key_path")
 @click.pass_context
 def cli_reg_list_keys(ctx: click.Context, key_path: str) -> None:
     """List subkeys of a registry key.
@@ -157,7 +158,7 @@ def cli_reg_list_keys(ctx: click.Context, key_path: str) -> None:
 
 
 @cli_reg.command("create-key", context_settings=CLICK_CONTEXT_SETTINGS)
-@click.argument("key_path")
+@argument("key_path")
 @click.pass_context
 def cli_reg_create_key(ctx: click.Context, key_path: str) -> None:
     """Create a registry key (and intermediate parents).
@@ -189,7 +190,7 @@ def cli_reg_create_key(ctx: click.Context, key_path: str) -> None:
 
 
 @cli_reg.command("delete-key", context_settings=CLICK_CONTEXT_SETTINGS)
-@click.argument("key_path")
+@argument("key_path")
 @click.pass_context
 def cli_reg_delete_key(ctx: click.Context, key_path: str) -> None:
     """Delete a registry key (must have no subkeys).
@@ -225,7 +226,7 @@ def cli_reg_delete_key(ctx: click.Context, key_path: str) -> None:
 
 
 @cli_reg.command("info", context_settings=CLICK_CONTEXT_SETTINGS)
-@click.argument("key_path")
+@argument("key_path")
 @click.pass_context
 def cli_reg_info(ctx: click.Context, key_path: str) -> None:
     """Show key information (subkey count, value count, last modified).
@@ -251,7 +252,7 @@ def cli_reg_info(ctx: click.Context, key_path: str) -> None:
 
 
 @cli_reg.command("list-values", context_settings=CLICK_CONTEXT_SETTINGS)
-@click.argument("key_path")
+@argument("key_path")
 @click.pass_context
 def cli_reg_list_values(ctx: click.Context, key_path: str) -> None:
     """List all values in a registry key.
@@ -277,8 +278,8 @@ def cli_reg_list_values(ctx: click.Context, key_path: str) -> None:
 
 
 @cli_reg.command("get", context_settings=CLICK_CONTEXT_SETTINGS)
-@click.argument("key_path")
-@click.argument("value_name")
+@argument("key_path")
+@argument("value_name")
 @click.pass_context
 def cli_reg_get(ctx: click.Context, key_path: str, value_name: str) -> None:
     """Get a specific registry value.
@@ -299,10 +300,10 @@ def cli_reg_get(ctx: click.Context, key_path: str, value_name: str) -> None:
 
 
 @cli_reg.command("set", context_settings=CLICK_CONTEXT_SETTINGS)
-@click.argument("key_path")
-@click.argument("value_name")
-@click.argument("data")
-@click.option("--type", "reg_type", default="REG_SZ", help="Registry type (REG_SZ, REG_DWORD, REG_BINARY, etc.)")
+@argument("key_path")
+@argument("value_name")
+@argument("data")
+@option("--type", "reg_type", default="REG_SZ", help="Registry type (REG_SZ, REG_DWORD, REG_BINARY, etc.)")
 @click.pass_context
 def cli_reg_set(ctx: click.Context, key_path: str, value_name: str, data: str, reg_type: str) -> None:
     """Set a registry value.
@@ -342,8 +343,8 @@ def cli_reg_set(ctx: click.Context, key_path: str, value_name: str, data: str, r
 
 
 @cli_reg.command("delete-value", context_settings=CLICK_CONTEXT_SETTINGS)
-@click.argument("key_path")
-@click.argument("value_name")
+@argument("key_path")
+@argument("value_name")
 @click.pass_context
 def cli_reg_delete_value(ctx: click.Context, key_path: str, value_name: str) -> None:
     """Delete a registry value.

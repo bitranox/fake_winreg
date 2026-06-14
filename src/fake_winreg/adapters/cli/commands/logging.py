@@ -11,10 +11,11 @@ from __future__ import annotations
 import rich_click as click
 
 from ..constants import CLICK_CONTEXT_SETTINGS
+from ..typed_click import option
 
 
 @click.command("logdemo", context_settings=CLICK_CONTEXT_SETTINGS)
-@click.option("--theme", default="classic", help="Logging theme to preview")
+@option("--theme", default="classic", help="Logging theme to preview")
 @click.pass_context
 def cli_logdemo(ctx: click.Context, theme: str) -> None:
     """Run a logging demonstration to preview log output."""
