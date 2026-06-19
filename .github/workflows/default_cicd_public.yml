@@ -18,7 +18,7 @@ jobs:
       python-latest: ${{ steps.metadata.outputs.python-latest }}
       os-matrix: ${{ steps.metadata.outputs.os-matrix }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: "3.x"
@@ -66,7 +66,7 @@ jobs:
       UV_LINK_MODE: "copy"
       UV_BREAK_SYSTEM_PACKAGES: "1"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python }}
@@ -302,7 +302,7 @@ jobs:
     name: pipx/uv verification (ubuntu)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: "3.14"
@@ -341,7 +341,7 @@ jobs:
     name: Execute notebooks (ubuntu, Python 3.14)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v6
         with:
           python-version: "3.14"
