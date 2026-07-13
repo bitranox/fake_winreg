@@ -284,6 +284,7 @@ ignore-vulns = [
   "CVE-2026-34521",    # aiohttp 3.13.3 — permissive multipart content-type parsing, fix in 3.13.4
   "CVE-2026-34514",    # aiohttp 3.13.3 — bad chunk-ext handling in chunked encoding, fix in 3.13.4
   "CVE-2026-22815",    # aiohttp 3.13.3 — uncapped memory from header/trailer handling, fix in 3.13.4
+  "PYSEC-2026-2132",      # click 8.2.1: click.edit() command injection (fixed 8.3.3); dev-env-only, codecov-cli caps click<8.3.0, app never calls click.edit()
 ]
 
 [tool.bashate]
