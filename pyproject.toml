@@ -52,7 +52,9 @@ dev = [
   "ruff>=0.15.21",
   "pyright[nodejs]>=1.1.411",
   "bandit>=1.9.4",
-  "build>=1.5.1",
+  # 1.5.1 was yanked upstream (unintended breaking changes), so 1.5.0 is the newest usable
+  # release; a >=1.5.1 floor has ZERO candidates and makes this extra unresolvable.
+  "build>=1.5.0",
   "twine>=6.2.0",
   # codecov-cli is disabled, not dropped: it requires click<8.3.0, which drags click back to
   # 8.2.1 - the version with CVE-2026-7246 (command injection in click.edit(), fixed in 8.3.3).
@@ -65,7 +67,7 @@ dev = [
   "textual>=8.2.8",
   "import-linter>=2.13",
   "rtoml>=0.13.0",
-  "httpx2>=2.6.0",
+  "httpx2>=2.7.0",
   # Transitive CVE pins
   "click>=8.4.2",                # CVE-2026-7246
   "jaraco-context>=6.1.2",       # CVE-2025-23949
@@ -291,7 +293,6 @@ ignore-vulns = [
   "CVE-2026-34521",    # aiohttp 3.13.3 — permissive multipart content-type parsing, fix in 3.13.4
   "CVE-2026-34514",    # aiohttp 3.13.3 — bad chunk-ext handling in chunked encoding, fix in 3.13.4
   "CVE-2026-22815",    # aiohttp 3.13.3 — uncapped memory from header/trailer handling, fix in 3.13.4
-  "PYSEC-2026-2132",      # click 8.2.1: click.edit() command injection (fixed 8.3.3); dev-env-only, codecov-cli caps click<8.3.0, app never calls click.edit()
 ]
 
 [tool.bashate]
