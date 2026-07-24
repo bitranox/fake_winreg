@@ -410,8 +410,8 @@ RegData = None | bytes | int | str | list[str]
 Handle = int | HKEYType | PyHKEY
 
 # Registry data structures
-FakeRegistry       # Top-level registry container (holds hive roots)
-FakeRegistryKey    # A single registry key with subkeys and values
+FakeRegistry  # Top-level registry container (holds hive roots)
+FakeRegistryKey  # A single registry key with subkeys and values
 FakeRegistryValue  # A named value with data and type code
 ```
 

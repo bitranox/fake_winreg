@@ -6,6 +6,34 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 
 ## [Unreleased]
 
+## [1.9.2] 2026-07-24 13:25:20
+
+### Fixed
+- Latest-ruff regression (PLR0917, RUF036, RUF002, PLC0415, TC001-3, TC006, RUF022): fixed all
+  violations at the root instead of widening the lint ignore list.
+
+### Changed
+- Removed the blanket `[tool.ruff.lint].ignore` list (RUF002, RUF022, PLC0415, TC001-3, TC006);
+  each of those rule categories is now either fixed at the root or scoped to a specific
+  per-file-ignore with a stated reason.
+- `set_fake_reg_value` (`domain/registry.py`) and the CLI's `cli_config_deploy` /
+  `_execute_deploy` (`adapters/cli/commands/config.py`) now take their non-first parameters
+  keyword-only (PLR0917); all call sites updated to pass by keyword.
+- Hoisted trivial deferred imports (stdlib `base64`/`json`, and lightweight first-party modules
+  with no heavy or 3rd-party deps) to module top-level in `domain/api.py`,
+  `domain/test_registries.py`, `adapters/cli/commands/{reg,demo_registries,logging}.py`,
+  `adapters/persistence/{convert,json_io}.py`. Left genuinely heavy or circular-import-avoiding
+  deferred imports in place with an inline `# noqa: PLC0415` reason (orjson/sqlite3-backed
+  persistence adapters loaded only when their CLI subcommand runs; `adapters/cli/root.py`'s
+  `_register_commands()` circular-import break).
+- Added `[tool.ruff.lint.flake8-type-checking].runtime-evaluated-base-classes` for
+  `pydantic.BaseModel` so TC00x never moves a Pydantic model's field imports into a
+  type-checking-only block.
+- Added `PLC0415` to the `tests/*.py` per-file-ignore (deferred imports inside a test body are a
+  deliberate idiom for exercising import/cache behavior).
+- Replaced remaining en-dash/em-dash characters (RUF002 and adjacent AI-writing tells) with ASCII
+  hyphens in docstrings/comments touched by this change.
+
 ## [1.9.1] 2026-06-14
 
 ### Changed
@@ -15,8 +43,8 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 ## [1.9.0] - 2026-04-02
 
 ### Added
-- `SaveKey(key, file_name)` — serialise a registry subtree to a JSON file
-- `LoadKey(key, sub_key, file_name)` — restore a subtree from a JSON file produced by `SaveKey`
+- `SaveKey(key, file_name)` - serialise a registry subtree to a JSON file
+- `LoadKey(key, sub_key, file_name)` - restore a subtree from a JSON file produced by `SaveKey`
 - Public helpers `key_to_dict` and `populate_key_from_dict` in `domain.serialization`
 
 ### Changed
@@ -46,7 +74,7 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 - Auto-detection of .reg file encoding on import (UTF-16 LE BOM or UTF-8)
 - `registry.db_path` configuration via TOML config, .env, or environment variables
 - 25 end-to-end format tests with full 9-pair conversion matrix
-- `docs/registry_values.md` — Windows registry values reference with version detection guide
+- `docs/registry_values.md` - Windows registry values reference with version detection guide
 
 ### Fixed
 - `EnumKey`/`EnumValue` now return insertion order (matching real winreg), sorted only in exports
@@ -164,13 +192,13 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 ## [1.3.1] - 2026-02-13
 
 ### Fixed
-- `tests/test_metadata_sync.py`: replaced `importlib.metadata` lookups with direct `pyproject.toml` reads — tests no longer fail when the package is not installed in the test environment (uvx)
+- `tests/test_metadata_sync.py`: replaced `importlib.metadata` lookups with direct `pyproject.toml` reads - tests no longer fail when the package is not installed in the test environment (uvx)
 - Makefile `dev` target now correctly installs dev extras (`uv pip install -e ".[dev]"`)
 
 ### Changed
 - CLAUDE.md: updated project structure trees to reflect actual codebase (added `entry.py`, `domain/errors.py`, `adapters/memory/`, `adapters/config/permissions.py`, `adapters/email/validation.py`; removed deleted `traceback.py`)
 - CLAUDE.md: rewrote Make targets table to match new `bmk`-based Makefile (added aliases, new targets; removed obsolete `menu`, `test-slow`)
-- CLAUDE.md: corrected versioning documentation — runtime metadata is served from `__init__conf__.py` constants, not `importlib.metadata`
+- CLAUDE.md: corrected versioning documentation - runtime metadata is served from `__init__conf__.py` constants, not `importlib.metadata`
 - CLAUDE.md: replaced stale `scripts/` instrumentation section with `bmk` delegation note
 - CLAUDE.md: updated `make test-slow` references to `make testintegration`
 
@@ -202,17 +230,17 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 - Profile name requirements documentation in CONFIG.md and README.md
 
 ### Removed
-- Custom `_PROFILE_PATTERN` regex — replaced by lib_layered_config's built-in validation
+- Custom `_PROFILE_PATTERN` regex - replaced by lib_layered_config's built-in validation
 
 ## [1.2.0] - 2026-01-30
 
 ### Added
 - **Attachment security settings** for email configuration (`[email.attachments]` section in `50-mail.toml`)
-  - `allowed_extensions` / `blocked_extensions` — whitelist/blacklist file extensions
-  - `allowed_directories` / `blocked_directories` — whitelist/blacklist attachment source directories
-  - `max_size_bytes` — maximum attachment file size (default 25 MiB, 0 to disable)
-  - `allow_symlinks` — whether symbolic links are permitted (default false)
-  - `raise_on_security_violation` — raise or skip on violations (default true)
+  - `allowed_extensions` / `blocked_extensions` - whitelist/blacklist file extensions
+  - `allowed_directories` / `blocked_directories` - whitelist/blacklist attachment source directories
+  - `max_size_bytes` - maximum attachment file size (default 25 MiB, 0 to disable)
+  - `allow_symlinks` - whether symbolic links are permitted (default false)
+  - `raise_on_security_violation` - raise or skip on violations (default true)
 - New `EmailConfig` fields for attachment security with Pydantic validators
 - `load_email_config_from_dict()` now flattens nested `[email.attachments]` section
 
@@ -225,17 +253,17 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 - Coverage SQLite "database is locked" errors on Python 3.14 free-threaded builds and network mounts (SMB/NFS)
 - Removed bogus `COVERAGE_NO_SQL=1` environment variable from `scripts/test.py` (not a real coverage.py setting)
 - CI workflow now sets `COVERAGE_FILE` to `runner.temp` so coverage always writes to local disk
-- **Import-linter was a silent no-op** in `make test` / `make push` — `python -m importlinter.cli lint` silently exits 0 without checking; replaced with `lint-imports` (the working console entry point)
+- **Import-linter was a silent no-op** in `make test` / `make push` - `python -m importlinter.cli lint` silently exits 0 without checking; replaced with `lint-imports` (the working console entry point)
 - CI/local parameter mismatches: ruff now targets `.` (not hardcoded `src tests notebooks`), pytest uses `python -m pytest` with `--cov=src/$PACKAGE_MODULE`, `--cov-fail-under=90`, and `-vv` matching local runs
 - `scripts/test.py` bandit source path now reads `src-path` from `[tool.scripts.test]` instead of hardcoding `Path("src")`
 - `scripts/test.py` module-level `_default_env` now rebuilt with configured `src_path` before running checks
 - `run_slow_tests()` now reads pytest verbosity from `[tool.scripts.test].pytest-verbosity` instead of hardcoding `"-vv"`
 
 ### Changed
-- **pyproject.toml as single source of truth**: CI workflow extracts all tool configuration (src-path, pytest-verbosity, coverage-report-file, fail_under, bandit skips) from `pyproject.toml` via metadata step — workflow is portable across projects without editing
+- **pyproject.toml as single source of truth**: CI workflow extracts all tool configuration (src-path, pytest-verbosity, coverage-report-file, fail_under, bandit skips) from `pyproject.toml` via metadata step - workflow is portable across projects without editing
 - `scripts/test.py` removed module-level `PACKAGE_SRC` constant; bandit source path computed from `config.src_path` inside the functions that need it
 - `make push` now accepts an unquoted message as trailing words (e.g. `make push fix typo in readme`); commit message format is `<version> - <message>`, defaulting to `<version> - chores` when no message is given
-- Removed interactive commit-message prompt from `push.py` — message is either provided via CLI args / `COMMIT_MESSAGE` env var, or defaults to `"chores"`
+- Removed interactive commit-message prompt from `push.py` - message is either provided via CLI args / `COMMIT_MESSAGE` env var, or defaults to `"chores"`
 
 ### Added
 - `pytest_configure` hook in `tests/conftest.py` that redirects coverage data to `tempfile.gettempdir()` and purges stale SQLite journal files before each run
@@ -245,8 +273,8 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 ### Fixed
 - CLAUDE.md: replaced stale package name `bitranox_template_cli_app_config_log_mail` with `fake_winreg` throughout
 - Brittle SMTP mock assertions in `test_cli.py` now use structured `call_args` attributes instead of `str()` coercion
-- Stale docstring in `__init__conf__.py` claiming "adapters/platform layer" — corrected to "Package-level metadata module"
-- Weak OR assertion in `test_cli.py` for SMTP host display — replaced with two independent assertions
+- Stale docstring in `__init__conf__.py` claiming "adapters/platform layer" - corrected to "Package-level metadata module"
+- Weak OR assertion in `test_cli.py` for SMTP host display - replaced with two independent assertions
 - Removed stale `# type: ignore[reportUnknownVariableType]` from `sender.py` (`btx_lib_mail.ConfMail` now has proper type annotations)
 - Late function-body imports in `adapters/cli/commands/config.py` moved to module-level for consistency
 
@@ -299,7 +327,7 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 - Precompile all regex patterns in `scripts/` as module-level constants for consistent compilation
 - **LIBRARIES**: Replace custom redaction/validation with `lib_layered_config` redaction API and `btx_lib_mail` validators; bump both libraries
 - **LIBRARIES**: Replace stdlib `json` with `orjson`; replace `urllib` with `httpx` in scripts
-- **ARCHITECTURE**: Purified domain layer — `emit_greeting()` renamed to `build_greeting()` (returns `str`, no I/O); decoupled `display.py` from Click
+- **ARCHITECTURE**: Purified domain layer - `emit_greeting()` renamed to `build_greeting()` (returns `str`, no I/O); decoupled `display.py` from Click
 - **DATA ARCHITECTURE**: Consolidated `EmailConfig` into single Pydantic `BaseModel` (eliminated dataclass conversion chain)
 
 ## [1.0.0] - 2026-01-15
