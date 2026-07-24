@@ -125,15 +125,6 @@ select = [
   "PLR",         # pylint refactor
   "PLW",         # pylint warnings
 ]
-ignore = [
-  "RUF002",    # ambiguous unicode characters in docstrings (en-dash) - typography choice
-  "RUF022",    # unsorted __all__ - kept in logical grouping order
-  "PLC0415",   # deferred imports inside functions - circular import prevention
-  "TC001",     # stdlib imports at runtime - needed, not just for type hints
-  "TC002",     # third-party imports at runtime - needed, not just for type hints
-  "TC003",     # stdlib imports - same as TC001
-  "TC006",     # cast() type expressions - existing code uses unquoted
-]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
