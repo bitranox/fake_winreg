@@ -6,12 +6,14 @@ Ported from the original fake_winreg test suite.
 from __future__ import annotations
 
 import contextlib
-from collections.abc import Generator
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import pytest
 
 import fake_winreg as winreg
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 
 @pytest.fixture(autouse=True)
@@ -173,7 +175,7 @@ def test_write_value(key_handle_setvalue: winreg.HKEYType, reg_type: Any, data: 
             assert str(error) == type_error_reg_non_binary
 
     elif reg_type == winreg.REG_MULTI_SZ:
-        if data is None or (isinstance(data, list) and _is_list_of_str(cast(list[object], data))):
+        if data is None or (isinstance(data, list) and _is_list_of_str(cast("list[object]", data))):
             assert is_value_write_ok()
         else:
             error = value_write_error()

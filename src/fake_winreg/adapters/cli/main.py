@@ -9,10 +9,11 @@ Contents:
 
 from __future__ import annotations
 
+import sys
 import threading
-from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING
 
+import click
 import lib_cli_exit_tools
 import lib_log_rich.runtime
 
@@ -26,6 +27,8 @@ from .context import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Sequence
+
     from fake_winreg.composition import AppServices
 
 
@@ -39,11 +42,10 @@ def _run_cli(argv: Sequence[str] | None, *, services_factory: Callable[[], AppSe
     Returns:
         Exit code produced by the command.
     """
-    import sys
-
-    import click
-
-    from .root import cli
+    # Deferred: importing .root triggers _register_commands(), which eagerly imports
+    # every CLI command module (and their persistence/adapter deps). Keeping it out of
+    # this module's top level lets code merely importing main.py skip that whole tree.
+    from .root import cli  # noqa: PLC0415
 
     # Use Click's native invocation with obj parameter since lib_cli_exit_tools.run_cli
     # doesn't support passing obj. We replicate its behavior while adding obj support.

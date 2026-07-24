@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -12,6 +12,9 @@ import fake_winreg as winreg
 from fake_winreg.adapters.persistence.convert import convert_registry
 from fake_winreg.adapters.persistence.sqlite_backend import SqliteBackend
 from fake_winreg.domain.memory_backend import InMemoryBackend
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def _populate_sqlite(db_path: Path) -> None:

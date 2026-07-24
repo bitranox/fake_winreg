@@ -8,10 +8,9 @@ from __future__ import annotations
 
 import re
 import struct
-from collections.abc import Callable
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from fake_winreg.application.ports import RegistryBackend
 from fake_winreg.domain.api import _get_backend  # pyright: ignore[reportPrivateUsage]
 from fake_winreg.domain.constants import (
     REG_BINARY,
@@ -23,7 +22,12 @@ from fake_winreg.domain.constants import (
     REG_SZ,
     hive_name_hashed_by_int,
 )
-from fake_winreg.domain.registry import FakeRegistryKey
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from fake_winreg.application.ports import RegistryBackend
+    from fake_winreg.domain.registry import FakeRegistryKey
 
 _REG_FILE_HEADER = "Windows Registry Editor Version 5.00"
 _REGEDIT4_HEADER = "REGEDIT4"
@@ -221,7 +225,7 @@ def _decode_utf16le_multi_string(data: bytes) -> list[str]:
     return text.split("\x00")
 
 
-_HEX_DECODERS: dict[int, Callable[[bytes], None | bytes | int | str | list[str]]] = {
+_HEX_DECODERS: dict[int, Callable[[bytes], bytes | int | str | list[str] | None]] = {
     REG_EXPAND_SZ: _decode_utf16le_string,
     REG_MULTI_SZ: _decode_utf16le_multi_string,
     REG_QWORD: lambda b: struct.unpack("<Q", b)[0] if len(b) == 8 else (b or None),
@@ -230,7 +234,7 @@ _HEX_DECODERS: dict[int, Callable[[bytes], None | bytes | int | str | list[str]]
 }
 
 
-def _decode_hex_value(reg_type: int, raw_bytes: bytes) -> None | bytes | int | str | list[str]:
+def _decode_hex_value(reg_type: int, raw_bytes: bytes) -> bytes | int | str | list[str] | None:
     """Decode raw bytes into the appropriate Python value for the given type."""
     decoder = _HEX_DECODERS.get(reg_type)
     if decoder is not None:
@@ -328,7 +332,7 @@ def _export_values(key: FakeRegistryKey, lines: list[str], backend: RegistryBack
 
 def _export_single_value(
     value_name: str,
-    value_data: None | bytes | int | str | list[str],
+    value_data: bytes | int | str | list[str] | None,
     value_type: int,
     lines: list[str],
 ) -> None:
@@ -361,7 +365,7 @@ def _escape_reg_string(s: str) -> str:
 
 
 def _encode_typed_hex(
-    value_data: None | bytes | int | str | list[str],
+    value_data: bytes | int | str | list[str] | None,
     value_type: int,
 ) -> tuple[str, bytes]:
     """Return (hex_type_prefix, raw_bytes) for a hex-encoded value."""
@@ -373,7 +377,7 @@ def _encode_typed_hex(
 
 
 def _value_to_bytes(
-    value_data: None | bytes | int | str | list[str],
+    value_data: bytes | int | str | list[str] | None,
     value_type: int,
 ) -> bytes:
     """Convert a value to its raw byte representation."""
@@ -446,4 +450,4 @@ def _detect_reg_encoding(path: Path) -> str:
     return "utf-8-sig"
 
 
-__all__ = ["import_reg", "export_reg"]
+__all__ = ["export_reg", "import_reg"]

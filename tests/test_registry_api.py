@@ -5,12 +5,15 @@ Tests handle creation, key CRUD, value CRUD, enumeration, and error paths.
 
 from __future__ import annotations
 
-from collections.abc import Generator
+from typing import TYPE_CHECKING
 
 import pytest
 
 import fake_winreg as winreg
 from fake_winreg.domain.api import configure_network_resolver
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 
 @pytest.fixture(autouse=True)

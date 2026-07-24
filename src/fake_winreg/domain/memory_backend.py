@@ -6,6 +6,8 @@ Equivalent to the original fake_winreg behavior before backends were introduced.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from .registry import (
     FakeRegistry,
     FakeRegistryKey,
@@ -14,7 +16,9 @@ from .registry import (
     set_fake_reg_key,
     set_fake_reg_value,
 )
-from .types import RegData
+
+if TYPE_CHECKING:
+    from .types import RegData
 
 
 class InMemoryBackend:

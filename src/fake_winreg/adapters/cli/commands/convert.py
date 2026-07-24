@@ -49,7 +49,9 @@ def cli_convert(args: tuple[str, ...]) -> None:
     if not target:
         raise click.UsageError("Missing target file. Use of=TARGET.")
 
-    from fake_winreg.adapters.persistence.convert import convert_registry
+    # Deferred: persistence.convert pulls in sqlite_backend/json_io/reg_io (and their
+    # orjson/sqlite3 deps) - keep them out of `--help` and every other subcommand's path.
+    from fake_winreg.adapters.persistence.convert import convert_registry  # noqa: PLC0415
 
     with lib_log_rich.runtime.bind(job_id="cli-convert", extra={"command": "convert"}):
         logger.info("Converting %s → %s", source, target)

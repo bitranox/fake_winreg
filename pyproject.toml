@@ -129,11 +129,17 @@ select = [
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
+# Pydantic resolves field annotations at runtime, so TC00x must not move their imports
+# into a TYPE_CHECKING-only block.
+[tool.ruff.lint.flake8-type-checking]
+runtime-evaluated-base-classes = ["pydantic.BaseModel"]
+
 [tool.ruff.lint.per-file-ignores]
 # Notebooks: unused imports are often intentional for side effects
 "notebooks/*.ipynb" = ["F401", "T201", "PERF203"]
-# Tests: assert is standard, test fixtures have passwords, magic values are clearer inline, temp paths are fine
-"tests/*.py" = ["T20", "S101", "S105", "S106", "S108", "FBT001", "FBT003", "PLR0913", "PLR2004"]
+# Tests: assert is standard, test fixtures have passwords, magic values are clearer inline, temp paths are
+# fine, deferred imports inside a test body are a deliberate idiom (exercising import/cache behavior)
+"tests/*.py" = ["T20", "S101", "S105", "S106", "S108", "FBT001", "FBT003", "PLR0913", "PLR2004", "PLC0415"]
 # CLI: Click framework injects boolean params; commands have many options
 "src/fake_winreg/adapters/cli/**/*.py" = ["FBT001", "FBT002", "PLR0913", "B904"]
 # Protocols/adapters: many-param signatures by design

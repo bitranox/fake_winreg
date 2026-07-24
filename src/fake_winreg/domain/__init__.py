@@ -22,9 +22,9 @@ from .enums import DeployTarget, OutputFormat
 from .errors import ConfigurationError
 
 __all__ = [
+    # Errors
+    "ConfigurationError",
     # Enums
     "DeployTarget",
     "OutputFormat",
-    # Errors
-    "ConfigurationError",
 ]

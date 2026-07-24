@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from .constants import REG_DWORD, REG_EXPAND_SZ, REG_MULTI_SZ, REG_QWORD, REG_SZ
-from .types import RegData
+
+if TYPE_CHECKING:
+    from .types import RegData
 
 
 def is_list_of_str(list_of_str: list[Any]) -> bool:

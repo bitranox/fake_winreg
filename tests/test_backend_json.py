@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import orjson
 import pytest
@@ -14,6 +14,9 @@ from fake_winreg.domain.constants import HKEY_LOCAL_MACHINE, HKEY_USERS, REG_EXP
 from fake_winreg.domain.memory_backend import InMemoryBackend
 from fake_winreg.domain.serialization import registry_to_dict
 from fake_winreg.domain.test_registries import get_minimal_windows_testregistry
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 # ---------------------------------------------------------------------------
 # JsonBackend tests

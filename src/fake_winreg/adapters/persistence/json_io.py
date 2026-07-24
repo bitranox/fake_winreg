@@ -7,17 +7,20 @@ implementation is in use.
 
 from __future__ import annotations
 
+import base64
 from pathlib import Path
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import orjson
 
-from fake_winreg.application.ports import RegistryBackend
 from fake_winreg.domain.api import _get_backend  # pyright: ignore[reportPrivateUsage]
 from fake_winreg.domain.constants import hive_name_hashed_by_int
-from fake_winreg.domain.registry import FakeRegistryKey
 from fake_winreg.domain.serialization import _encode_value  # pyright: ignore[reportPrivateUsage]
-from fake_winreg.domain.types import RegData
+
+if TYPE_CHECKING:
+    from fake_winreg.application.ports import RegistryBackend
+    from fake_winreg.domain.registry import FakeRegistryKey
+    from fake_winreg.domain.types import RegData
 
 _HIVE_NAME_TO_INT: dict[str, int] = {v: k for k, v in hive_name_hashed_by_int.items()}
 
@@ -41,7 +44,7 @@ def import_json(path: str | Path) -> None:
     hives_raw = data.get("hives", {})
     if not isinstance(hives_raw, dict):
         return
-    hives_data = cast(dict[str, Any], hives_raw)
+    hives_data = cast("dict[str, Any]", hives_raw)
 
     backend = _get_backend()
 
@@ -50,18 +53,18 @@ def import_json(path: str | Path) -> None:
         if hive_int is None or not isinstance(hive_dict, dict):
             continue
         hive_key = backend.get_hive(hive_int)
-        _import_key_recursive(backend, hive_key, cast(dict[str, Any], hive_dict))
+        _import_key_recursive(backend, hive_key, cast("dict[str, Any]", hive_dict))
 
 
 def _import_key_recursive(backend: RegistryBackend, parent_key: FakeRegistryKey, data: dict[str, Any]) -> None:
     """Walk a key dict and create subkeys/values in the backend."""
     values_data = data.get("values", {})
     if isinstance(values_data, dict):
-        values_dict = cast(dict[str, Any], values_data)
+        values_dict = cast("dict[str, Any]", values_data)
         for vname, vdict in values_dict.items():
             if not isinstance(vdict, dict):
                 continue
-            typed_vdict = cast(dict[str, Any], vdict)
+            typed_vdict = cast("dict[str, Any]", vdict)
             value = _decode_import_value(typed_vdict.get("data"))
             raw_type: object = typed_vdict.get("type", 1)
             value_type: int = raw_type if isinstance(raw_type, int) else 1
@@ -69,25 +72,23 @@ def _import_key_recursive(backend: RegistryBackend, parent_key: FakeRegistryKey,
 
     keys_data = data.get("keys", {})
     if isinstance(keys_data, dict):
-        keys_dict = cast(dict[str, Any], keys_data)
+        keys_dict = cast("dict[str, Any]", keys_data)
         for sname, sdict in keys_dict.items():
             if not isinstance(sdict, dict):
                 continue
             child_key = backend.create_key(parent_key, str(sname))
-            _import_key_recursive(backend, child_key, cast(dict[str, Any], sdict))
+            _import_key_recursive(backend, child_key, cast("dict[str, Any]", sdict))
 
 
 def _decode_import_value(data: object) -> RegData:
     """Decode a JSON value back to a registry data type."""
-    import base64
-
     if isinstance(data, dict):
-        typed_dict = cast(dict[str, Any], data)
+        typed_dict = cast("dict[str, Any]", data)
         if "_base64" in typed_dict:
             return base64.b64decode(typed_dict["_base64"])
         return str(typed_dict)
     if isinstance(data, list):
-        return [str(item) for item in cast(list[object], data)]
+        return [str(item) for item in cast("list[object]", data)]
     if data is None or isinstance(data, (str, int, bytes)):
         return data
     return str(data)
@@ -144,4 +145,4 @@ def _export_key_recursive(backend: RegistryBackend, key: FakeRegistryKey) -> dic
     }
 
 
-__all__ = ["import_json", "export_json"]
+__all__ = ["export_json", "import_json"]

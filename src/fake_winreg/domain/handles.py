@@ -7,10 +7,14 @@ winreg handle objects, plus thread-safe handle ID generation.
 from __future__ import annotations
 
 import threading
-from types import TracebackType
+from typing import TYPE_CHECKING
 
 from .constants import KEY_READ
-from .registry import FakeRegistryKey
+
+if TYPE_CHECKING:
+    from types import TracebackType
+
+    from .registry import FakeRegistryKey
 
 # Handle counter starts around 600 like real winreg
 _last_int_handle: int = 600
@@ -20,6 +24,7 @@ _last_int_handle_lock = threading.Lock()
 class HKEYType:
     """Base registry handle wrapping a FakeRegistryKey.
 
+    >>> from fake_winreg.domain.registry import FakeRegistryKey
     >>> hkey = HKEYType(handle=FakeRegistryKey())
     >>> assert int(hkey) != 0
     """
@@ -61,6 +66,7 @@ class HKEYType:
 class PyHKEY(HKEYType):
     """Registry handle with context manager support.
 
+    >>> from fake_winreg.domain.registry import FakeRegistryKey
     >>> p = PyHKEY(FakeRegistryKey())
     >>> p.Close()
     >>> assert p.Detach() == 0

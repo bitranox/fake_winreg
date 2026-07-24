@@ -6,7 +6,7 @@ No I/O — just data transformation. Used by JSON and .reg import/export adapter
 from __future__ import annotations
 
 import base64
-from typing import Any, TypedDict, cast
+from typing import TYPE_CHECKING, Any, TypedDict, cast
 
 from .constants import (
     hive_name_hashed_by_int,
@@ -16,7 +16,9 @@ from .registry import (
     FakeRegistryKey,
     FakeRegistryValue,
 )
-from .types import RegData
+
+if TYPE_CHECKING:
+    from .types import RegData
 
 
 class Base64Marker(TypedDict):
@@ -79,14 +81,14 @@ def dict_to_registry(data: RegistryDict | dict[str, object]) -> FakeRegistry:
     hives_raw = data.get("hives", {})
     if not isinstance(hives_raw, dict):
         return registry
-    hives_data = cast(dict[str, Any], hives_raw)
+    hives_data = cast("dict[str, Any]", hives_raw)
 
     for hive_name, hive_dict in hives_data.items():
         hive_int = _HIVE_NAME_TO_INT.get(hive_name)
         if hive_int is None or not isinstance(hive_dict, dict):
             continue
         root_key = registry.hive[hive_int]
-        populate_key_from_dict(root_key, cast(dict[str, object], hive_dict), hive_name, parent=None)
+        populate_key_from_dict(root_key, cast("dict[str, object]", hive_dict), hive_name, parent=None)
 
     return registry
 
@@ -127,10 +129,10 @@ def populate_key_from_dict(
 
     values_data = data.get("values", {})
     if isinstance(values_data, dict):
-        for vname, vdict in cast(dict[str, Any], values_data).items():
+        for vname, vdict in cast("dict[str, Any]", values_data).items():
             if not isinstance(vdict, dict):
                 continue
-            vdict_typed = cast(dict[str, object], vdict)
+            vdict_typed = cast("dict[str, object]", vdict)
             fval = FakeRegistryValue()
             fval.full_key = full_key
             fval.value_name = str(vname)
@@ -143,13 +145,13 @@ def populate_key_from_dict(
 
     keys_data = data.get("keys", {})
     if isinstance(keys_data, dict):
-        for sname, sdict in cast(dict[str, Any], keys_data).items():
+        for sname, sdict in cast("dict[str, Any]", keys_data).items():
             if not isinstance(sdict, dict):
                 continue
             child = FakeRegistryKey()
             sname_str = str(sname)
             child_full = f"{full_key}\\{sname_str}" if full_key else sname_str
-            populate_key_from_dict(child, cast(dict[str, object], sdict), child_full, parent=key)
+            populate_key_from_dict(child, cast("dict[str, object]", sdict), child_full, parent=key)
             key.subkeys[sname_str] = child
 
 
@@ -166,12 +168,12 @@ def _encode_value(value: RegData) -> object:
 def _decode_value(data: object) -> RegData:
     """Decode a registry value from a deserialized dict."""
     if isinstance(data, dict):
-        typed_dict = cast(dict[str, Any], data)
+        typed_dict = cast("dict[str, Any]", data)
         if "_base64" in typed_dict:
             return base64.b64decode(typed_dict["_base64"])
         return str(typed_dict)
     if isinstance(data, list):
-        return [str(item) for item in cast(list[object], data)]
+        return [str(item) for item in cast("list[object]", data)]
     if data is None or isinstance(data, (str, int, bytes)):
         return data
     return str(data)

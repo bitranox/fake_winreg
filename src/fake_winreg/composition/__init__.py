@@ -14,7 +14,7 @@ from ..adapters.config.loader import get_config, get_default_config_path
 # Logging services
 from ..adapters.logging.setup import init_logging
 
-# Network adapter — wired into domain API
+# Network adapter - wired into domain API
 from ..adapters.network import is_computer_reachable
 from ..domain.api import configure_network_resolver
 
@@ -66,7 +66,9 @@ def build_testing() -> AppServices:
     Returns:
         AppServices container with in-memory adapters.
     """
-    from ..adapters.memory import (
+    # Deferred: memory adapters are a testing-only lane; production callers of this
+    # module (build_production) never pay their import cost.
+    from ..adapters.memory import (  # noqa: PLC0415
         deploy_configuration_in_memory,
         display_config_in_memory,
         get_config_in_memory,
@@ -84,15 +86,15 @@ def build_testing() -> AppServices:
 
 
 __all__ = [
-    # Configuration
-    "get_config",
-    "get_default_config_path",
-    "deploy_configuration",
-    "display_config",
-    # Logging
-    "init_logging",
     # Composition
     "AppServices",
     "build_production",
     "build_testing",
+    "deploy_configuration",
+    "display_config",
+    # Configuration
+    "get_config",
+    "get_default_config_path",
+    # Logging
+    "init_logging",
 ]

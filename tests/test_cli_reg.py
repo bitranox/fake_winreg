@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 from click.testing import CliRunner
@@ -16,6 +16,9 @@ from fake_winreg.domain.constants import (
     REG_DWORD,
     REG_SZ,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def _seed_db(db_path: Path) -> None:

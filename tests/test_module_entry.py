@@ -6,14 +6,17 @@ import os
 import runpy
 import subprocess
 import sys
-from collections.abc import Callable
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import lib_cli_exit_tools
 import pytest
 
 from fake_winreg import __init__conf__, entry
 from fake_winreg.adapters import cli as cli_mod
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 # Ensure subprocess can find the package even without editable install.
 _SRC_DIR = str(Path(__file__).resolve().parents[1] / "src")

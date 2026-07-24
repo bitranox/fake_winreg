@@ -8,13 +8,16 @@ the current state back to disk.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import orjson
 
 from fake_winreg.domain.memory_backend import InMemoryBackend
 from fake_winreg.domain.registry import FakeRegistry, FakeRegistryKey, FakeRegistryValue
 from fake_winreg.domain.serialization import dict_to_registry, registry_to_dict
-from fake_winreg.domain.types import RegData
+
+if TYPE_CHECKING:
+    from fake_winreg.domain.types import RegData
 
 
 class JsonBackend:

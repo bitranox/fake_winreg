@@ -12,6 +12,17 @@ from pathlib import Path
 
 import rich_click as click
 
+from fake_winreg.domain.constants import (
+    REG_BINARY,
+    REG_DWORD,
+    REG_EXPAND_SZ,
+    REG_MULTI_SZ,
+    REG_NONE,
+    REG_QWORD,
+    REG_SZ,
+    hive_name_hashed_by_int,
+)
+
 from ..constants import CLICK_CONTEXT_SETTINGS
 from ..context import get_cli_context
 from ..typed_click import argument, option
@@ -66,8 +77,9 @@ def _parse_key_path(key_path: str) -> tuple[str, str]:
 
 def _get_backend_and_key(db_path: Path, key_path: str):  # type: ignore[no-untyped-def]
     """Open a SqliteBackend and resolve the key path to a FakeRegistryKey."""
-    from fake_winreg.adapters.persistence.sqlite_backend import SqliteBackend
-    from fake_winreg.domain.constants import hive_name_hashed_by_int
+    # Deferred: sqlite_backend pulls in orjson/sqlite3 - keep it out of `--help` and
+    # every other subcommand's path; only db-backed reg subcommands need it.
+    from fake_winreg.adapters.persistence.sqlite_backend import SqliteBackend  # noqa: PLC0415
 
     hive_name, sub_path = _parse_key_path(key_path)
 
@@ -91,7 +103,7 @@ def _get_backend_and_key(db_path: Path, key_path: str):  # type: ignore[no-untyp
     return backend, reg_key
 
 
-def _format_value_data(data: None | bytes | int | str | list[str], value_type: int) -> str:
+def _format_value_data(data: bytes | int | str | list[str] | None, value_type: int) -> str:
     """Format a registry value for display."""
     if data is None:
         return "(none)"
@@ -167,8 +179,8 @@ def cli_reg_create_key(ctx: click.Context, key_path: str) -> None:
     Example:
       fake-winreg reg --db my.db create-key HKEY_LOCAL_MACHINE\\SOFTWARE\\MyApp
     """
-    from fake_winreg.adapters.persistence.sqlite_backend import SqliteBackend
-    from fake_winreg.domain.constants import hive_name_hashed_by_int
+    # Deferred: see _get_backend_and_key - avoids loading orjson/sqlite3 for other subcommands.
+    from fake_winreg.adapters.persistence.sqlite_backend import SqliteBackend  # noqa: PLC0415
 
     db_path = _get_db_path(ctx)
     hive_name, sub_path = _parse_key_path(key_path)
@@ -199,8 +211,8 @@ def cli_reg_delete_key(ctx: click.Context, key_path: str) -> None:
     Example:
       fake-winreg reg --db my.db delete-key HKEY_LOCAL_MACHINE\\SOFTWARE\\MyApp
     """
-    from fake_winreg.adapters.persistence.sqlite_backend import SqliteBackend
-    from fake_winreg.domain.constants import hive_name_hashed_by_int
+    # Deferred: see _get_backend_and_key - avoids loading orjson/sqlite3 for other subcommands.
+    from fake_winreg.adapters.persistence.sqlite_backend import SqliteBackend  # noqa: PLC0415
 
     db_path = _get_db_path(ctx)
     hive_name, sub_path = _parse_key_path(key_path)
@@ -315,8 +327,8 @@ def cli_reg_set(ctx: click.Context, key_path: str, value_name: str, data: str, r
       fake-winreg reg --db my.db set HKEY_LOCAL_MACHINE\\SOFTWARE\\MyApp Data deadbeef --type REG_BINARY
       fake-winreg reg --db my.db set HKEY_LOCAL_MACHINE\\SOFTWARE\\MyApp List "a,b,c" --type REG_MULTI_SZ
     """
-    from fake_winreg.adapters.persistence.sqlite_backend import SqliteBackend
-    from fake_winreg.domain.constants import hive_name_hashed_by_int
+    # Deferred: see _get_backend_and_key - avoids loading orjson/sqlite3 for other subcommands.
+    from fake_winreg.adapters.persistence.sqlite_backend import SqliteBackend  # noqa: PLC0415
 
     type_int = _TYPE_MAP.get(reg_type.upper())
     if type_int is None:
@@ -368,18 +380,8 @@ def cli_reg_delete_value(ctx: click.Context, key_path: str, value_name: str) -> 
 # ---------------------------------------------------------------------------
 
 
-def _parse_value_data(data: str, reg_type: int) -> None | bytes | int | str | list[str]:
+def _parse_value_data(data: str, reg_type: int) -> bytes | int | str | list[str] | None:
     """Parse string input into the appropriate Python type for the registry."""
-    from fake_winreg.domain.constants import (
-        REG_BINARY,
-        REG_DWORD,
-        REG_EXPAND_SZ,
-        REG_MULTI_SZ,
-        REG_NONE,
-        REG_QWORD,
-        REG_SZ,
-    )
-
     if reg_type in (REG_SZ, REG_EXPAND_SZ):
         return data
     if reg_type in (REG_DWORD, REG_QWORD):

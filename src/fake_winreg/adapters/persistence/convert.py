@@ -7,15 +7,20 @@ Uses the backend interface to stream key-by-key for memory efficiency.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from fake_winreg.application.ports import RegistryBackend
 from fake_winreg.domain.api import _get_backend, use_backend  # pyright: ignore[reportPrivateUsage]
 from fake_winreg.domain.constants import hive_name_hashed_by_int
-from fake_winreg.domain.registry import FakeRegistryKey
+from fake_winreg.domain.memory_backend import InMemoryBackend
 
+from .json_backend import JsonBackend
 from .json_io import export_json, import_json
 from .reg_io import export_reg, import_reg
 from .sqlite_backend import SqliteBackend
+
+if TYPE_CHECKING:
+    from fake_winreg.application.ports import RegistryBackend
+    from fake_winreg.domain.registry import FakeRegistryKey
 
 
 def convert_registry(source: str | Path, target: str | Path) -> int:
@@ -82,8 +87,6 @@ def _do_convert(source: Path, source_fmt: str, target: Path, target_fmt: str) ->
 
     if source_fmt == "reg" and target_fmt == "json":
         # .reg → JSON: import into memory, export JSON
-        from fake_winreg.domain.memory_backend import InMemoryBackend
-
         mem_backend = InMemoryBackend()
         use_backend(mem_backend)  # type: ignore[arg-type]
         import_reg(source)
@@ -92,8 +95,6 @@ def _do_convert(source: Path, source_fmt: str, target: Path, target_fmt: str) ->
 
     if source_fmt == "reg" and target_fmt == "reg":
         # .reg → .reg: import into memory, re-export (normalize)
-        from fake_winreg.domain.memory_backend import InMemoryBackend
-
         mem_backend = InMemoryBackend()
         use_backend(mem_backend)  # type: ignore[arg-type]
         import_reg(source)
@@ -102,8 +103,6 @@ def _do_convert(source: Path, source_fmt: str, target: Path, target_fmt: str) ->
 
     if source_fmt == "json" and target_fmt == "reg":
         # JSON → .reg: load JSON (must fit in memory), export as .reg
-        from .json_backend import JsonBackend
-
         json_backend = JsonBackend(source)
         use_backend(json_backend)  # type: ignore[arg-type]
         export_reg(target)
@@ -111,8 +110,6 @@ def _do_convert(source: Path, source_fmt: str, target: Path, target_fmt: str) ->
 
     if source_fmt == "json" and target_fmt == "json":
         # JSON → JSON: load and re-export (normalize format)
-        from .json_backend import JsonBackend
-
         json_backend = JsonBackend(source)
         use_backend(json_backend)  # type: ignore[arg-type]
         export_json(target)

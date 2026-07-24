@@ -1,4 +1,4 @@
-"""Fake winreg API — drop-in replacement for the Windows ``winreg`` module.
+"""Fake winreg API - drop-in replacement for the Windows ``winreg`` module.
 
 All public functions mirror the signatures and behavior of Python's built-in
 ``winreg`` module so that registry-dependent code can be tested on Linux.
@@ -10,9 +10,9 @@ pre-populated :class:`FakeRegistry` before using the API functions.
 
 from __future__ import annotations
 
+import json
 import os
 import re
-from collections.abc import Callable
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -47,15 +47,20 @@ from .constants import (
     REG_SZ,
 )
 from .handles import Handle, HKEYType, PyHKEY
-from .registry import FakeRegistry
+from .memory_backend import InMemoryBackend
+from .serialization import key_to_dict, populate_key_from_dict
 from .test_registries import (
     get_minimal_windows_testregistry,  # noqa: F401  # pyright: ignore[reportUnusedImport] - used in doctests
 )
-from .types import RegData
 from .validation import check_value_type_matches_type
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from fake_winreg.application.ports import RegistryBackend
+
+    from .registry import FakeRegistry
+    from .types import RegData
 
 # Match real winreg module's ``error`` export (alias for OSError)
 error = OSError
@@ -73,8 +78,6 @@ def _get_backend() -> RegistryBackend:
     """Return the active backend, creating a default InMemoryBackend if none set."""
     global _backend
     if _backend is None:
-        from fake_winreg.domain.memory_backend import InMemoryBackend
-
         _backend = InMemoryBackend()  # type: ignore[assignment]
     return _backend
 
@@ -90,9 +93,7 @@ def use_backend(backend: RegistryBackend) -> None:
 
 
 def load_fake_registry(fake_registry: FakeRegistry, /) -> None:
-    """Install a FakeRegistry instance (backward compat — wraps in InMemoryBackend)."""
-    from fake_winreg.domain.memory_backend import InMemoryBackend
-
+    """Install a FakeRegistry instance (backward compat - wraps in InMemoryBackend)."""
     use_backend(InMemoryBackend(fake_registry))  # type: ignore[arg-type]
 
 
@@ -568,10 +569,6 @@ def SaveKey(key: Handle, file_name: str, /) -> None:
     _check_key(key)
     _check_argument_must_be_type_expected(1, file_name, str)
 
-    import json
-
-    from .serialization import key_to_dict
-
     key_handle = _resolve_key(key)
     data = key_to_dict(key_handle.handle)
     with Path(file_name).open("w", encoding="utf-8") as fh:
@@ -610,10 +607,6 @@ def LoadKey(key: Handle, sub_key: str, file_name: str, /) -> None:
     _check_key(key)
     _check_argument_must_be_type_expected(1, sub_key, str)
     _check_argument_must_be_type_expected(2, file_name, str)
-
-    import json
-
-    from .serialization import populate_key_from_dict
 
     key_handle = _resolve_key(key)
     target_key = _get_backend().create_key(key_handle.handle, sub_key)

@@ -7,6 +7,7 @@ and values, plus functions to create and retrieve them.
 from __future__ import annotations
 
 import time
+from typing import TYPE_CHECKING
 
 from .constants import (
     HKEY_CLASSES_ROOT,
@@ -19,7 +20,9 @@ from .constants import (
     KEY_READ,
     REG_SZ,
 )
-from .types import RegData
+
+if TYPE_CHECKING:
+    from .types import RegData
 
 
 class FakeRegistry:
@@ -136,9 +139,10 @@ def get_fake_reg_key(fake_reg_key: FakeRegistryKey, sub_key: str) -> FakeRegistr
 
 def set_fake_reg_value(
     fake_reg_key: FakeRegistryKey,
+    *,
     sub_key: str,
     value_name: str,
-    value: None | bytes | str | list[str] | int,
+    value: bytes | str | list[str] | int | None,
     value_type: int = REG_SZ,
     last_modified_ns: int | None = None,
 ) -> FakeRegistryValue:
@@ -149,7 +153,9 @@ def set_fake_reg_value(
     ...     fake_reg_key=fake_reg_root,
     ...     sub_key=r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT',
     ... )
-    >>> fake_reg_value = set_fake_reg_value(fake_reg_key, '', 'CurrentBuild', '18363', REG_SZ)
+    >>> fake_reg_value = set_fake_reg_value(
+    ...     fake_reg_key, sub_key='', value_name='CurrentBuild', value='18363', value_type=REG_SZ
+    ... )
     >>> assert fake_reg_value.full_key == r'HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT'
     >>> assert fake_reg_value.value_name == 'CurrentBuild'
     >>> assert fake_reg_value.value == '18363'

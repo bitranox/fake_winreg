@@ -22,17 +22,17 @@ from __future__ import annotations
 import sys
 
 __all__ = [
-    "name",
-    "title",
-    "version",
-    "homepage",
-    "author",
-    "author_email",
-    "shell_command",
-    "LAYEREDCONF_VENDOR",
     "LAYEREDCONF_APP",
     "LAYEREDCONF_SLUG",
+    "LAYEREDCONF_VENDOR",
+    "author",
+    "author_email",
+    "homepage",
+    "name",
     "print_info",
+    "shell_command",
+    "title",
+    "version",
 ]
 
 #: Distribution name declared in ``pyproject.toml``.

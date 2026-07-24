@@ -10,8 +10,7 @@ from __future__ import annotations
 import base64
 import sqlite3
 from pathlib import Path
-from types import TracebackType
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import orjson
 
@@ -21,7 +20,11 @@ from fake_winreg.domain.registry import (
     FakeRegistryValue,
     get_windows_timestamp_now,
 )
-from fake_winreg.domain.types import RegData
+
+if TYPE_CHECKING:
+    from types import TracebackType
+
+    from fake_winreg.domain.types import RegData
 
 _CREATE_KEYS_TABLE = """\
 CREATE TABLE IF NOT EXISTS registry_keys (
@@ -81,8 +84,8 @@ def _decode_value(raw: str | None) -> RegData:
         return None
     parsed: Any = orjson.loads(raw)
     if isinstance(parsed, dict) and "_base64" in parsed:
-        return base64.b64decode(cast(str, parsed["_base64"]))
-    return cast(RegData, parsed)
+        return base64.b64decode(cast("str", parsed["_base64"]))
+    return cast("RegData", parsed)
 
 
 def _hive_name_from_path(full_path: str) -> str:

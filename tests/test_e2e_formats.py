@@ -10,8 +10,7 @@ that all registry values survive the round-trip intact.
 from __future__ import annotations
 
 import itertools
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -36,6 +35,9 @@ from fake_winreg.domain.test_registries import (
     get_minimal_windows_testregistry,
     get_minimal_wine_testregistry,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 # ---------------------------------------------------------------------------
 # Reference values — the "truth" we verify against after every round-trip

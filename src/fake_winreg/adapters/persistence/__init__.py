@@ -12,9 +12,9 @@ from .sqlite_backend import SqliteBackend
 
 __all__ = [
     "InMemoryBackend",
-    "convert_registry",
     "JsonBackend",
     "SqliteBackend",
+    "convert_registry",
     "export_json",
     "export_reg",
     "import_json",

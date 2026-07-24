@@ -21,8 +21,8 @@ class ExitCode(IntEnum):
 
     Values follow sysexits.h and errno conventions where applicable:
 
-    * 0–1: generic success / failure
-    * 2–13: errno-derived codes (ENOENT, EACCES)
+    * 0-1: generic success / failure
+    * 2-13: errno-derived codes (ENOENT, EACCES)
     * 22: EINVAL
     * 69: EX_UNAVAILABLE (sysexits.h)
     * 78: EX_CONFIG (sysexits.h)
