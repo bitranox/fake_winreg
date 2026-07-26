@@ -22,6 +22,16 @@ if TYPE_CHECKING:
 _SRC_DIR = str(Path(__file__).resolve().parents[1] / "src")
 
 
+# Hang guard for the subprocess CLI tests - deliberately NOT a performance budget.
+# These spawn a cold interpreter that imports the whole CLI stack (rich-click,
+# pydantic, lib_log_rich). CI runs the Python matrix as several concurrent jobs on
+# one self-hosted Windows VM, and under that contention a cold start has exceeded
+# 30s and failed the run while the CLI itself was fine. Keep this generous: it is
+# here so a genuinely wedged subprocess cannot hang the suite forever, and a
+# slow-but-working start must not turn the build red.
+_SUBPROCESS_TIMEOUT_SECONDS = 300
+
+
 def _subprocess_env() -> dict[str, str]:
     """Build env dict with src/ on PYTHONPATH for subprocess tests."""
     existing = os.environ.get("PYTHONPATH", "")
@@ -90,7 +100,7 @@ def test_module_entry_subprocess_help() -> None:
     result = subprocess.run(
         [sys.executable, "-m", "fake_winreg", "--help"],
         capture_output=True,
-        timeout=30,
+        timeout=_SUBPROCESS_TIMEOUT_SECONDS,
         check=False,
         encoding="utf-8",
         errors="replace",
@@ -107,7 +117,7 @@ def test_module_entry_subprocess_version() -> None:
     result = subprocess.run(
         [sys.executable, "-m", "fake_winreg", "--version"],
         capture_output=True,
-        timeout=30,
+        timeout=_SUBPROCESS_TIMEOUT_SECONDS,
         check=False,
         encoding="utf-8",
         errors="replace",
