@@ -6,6 +6,18 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 
 ## [Unreleased]
 
+## [1.9.3] 2026-08-01 00:16:20
+### Fixed
+- **Console output no longer crashes on a legacy codepage.** A Windows console at codepage 1252
+  hands Python an `errors="strict"` stream, so writing a non-ASCII character such as a check mark
+  raised `UnicodeEncodeError: 'charmap' codec can't encode character` and the command exited
+  non-zero *after* its work had already succeeded. Click does not protect against this, and Rich
+  raises the same way through its own writer. The new `safe_console` module degrades at the sink:
+  a UTF-8 terminal still receives the character, and only a stream that cannot encode it sees
+  `[OK]` / `[X]` / `[!]`. Every `click.echo` call site routes through it, and a test fails if a
+  module reaches for `click.echo` or builds an unwrapped `Console(file=sys.stdout)` again.
+
+
 ## [1.9.2] 2026-07-24 13:25:20
 
 ### Fixed
