@@ -12,6 +12,7 @@ import lib_log_rich
 import lib_log_rich.runtime
 import rich_click as click
 
+from .. import safe_console
 from ..constants import CLICK_CONTEXT_SETTINGS
 from ..typed_click import option
 
@@ -26,7 +27,7 @@ def cli_logdemo(ctx: click.Context, theme: str) -> None:
         lib_log_rich.runtime.shutdown()
 
     result = lib_log_rich.logdemo(theme=theme)
-    click.echo(f"\nLog demo completed (theme: {result.theme})")
+    safe_console.echo(f"\nLog demo completed (theme: {result.theme})")
 
 
 __all__ = ["cli_logdemo"]

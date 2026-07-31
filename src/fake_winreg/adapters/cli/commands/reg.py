@@ -23,6 +23,7 @@ from fake_winreg.domain.constants import (
     hive_name_hashed_by_int,
 )
 
+from .. import safe_console
 from ..constants import CLICK_CONTEXT_SETTINGS
 from ..context import get_cli_context
 from ..typed_click import argument, option
@@ -164,7 +165,7 @@ def cli_reg_list_keys(ctx: click.Context, key_path: str) -> None:
     backend, reg_key = _get_backend_and_key(db_path, key_path)
     try:
         for name in backend.enum_keys(reg_key):
-            click.echo(name)
+            safe_console.echo(name)
     finally:
         backend.close()
 
@@ -251,9 +252,9 @@ def cli_reg_info(ctx: click.Context, key_path: str) -> None:
     backend, reg_key = _get_backend_and_key(db_path, key_path)
     try:
         n_subkeys, n_values, last_mod = backend.query_info(reg_key)
-        click.echo(f"Subkeys: {n_subkeys}")
-        click.echo(f"Values:  {n_values}")
-        click.echo(f"Last modified: {last_mod}")
+        safe_console.echo(f"Subkeys: {n_subkeys}")
+        safe_console.echo(f"Values:  {n_values}")
+        safe_console.echo(f"Last modified: {last_mod}")
     finally:
         backend.close()
 
@@ -284,7 +285,7 @@ def cli_reg_list_values(ctx: click.Context, key_path: str) -> None:
             display_name = vname if vname else "(Default)"
             type_name = _TYPE_NAMES.get(vtype, f"REG_({vtype})")
             display_data = _format_value_data(vdata, vtype)
-            click.echo(f"{display_name:<{name_width}}  {type_name:<14}  {display_data}")
+            safe_console.echo(f"{display_name:<{name_width}}  {type_name:<14}  {display_data}")
     finally:
         backend.close()
 
@@ -304,7 +305,7 @@ def cli_reg_get(ctx: click.Context, key_path: str, value_name: str) -> None:
     backend, reg_key = _get_backend_and_key(db_path, key_path)
     try:
         fval = backend.get_value(reg_key, value_name)
-        click.echo(_format_value_data(fval.value, fval.value_type))
+        safe_console.echo(_format_value_data(fval.value, fval.value_type))
     except (KeyError, FileNotFoundError):
         raise click.UsageError(f"Value not found: {value_name}")
     finally:

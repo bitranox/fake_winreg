@@ -23,6 +23,7 @@ from fake_winreg.domain.test_registries import (
 if TYPE_CHECKING:
     from fake_winreg.adapters.persistence.sqlite_backend import SqliteBackend
 
+from .. import safe_console
 from ..constants import CLICK_CONTEXT_SETTINGS
 
 logger = logging.getLogger(__name__)
@@ -84,7 +85,7 @@ def cli_export_demo_registries() -> None:
                     _copy_registry_to_sqlite(backend, db_backend)
                     db_backend.close()
 
-                click.echo(f"Created {filename}")
+                safe_console.echo(f"Created {filename}")
 
         # Restore default backend
         use_backend(InMemoryBackend())  # type: ignore[arg-type]

@@ -22,6 +22,7 @@ from fake_winreg.adapters.config.overrides import apply_overrides
 from fake_winreg.adapters.config.permissions import get_permission_defaults
 from fake_winreg.domain.enums import DeployTarget, OutputFormat
 
+from .. import safe_console
 from ..constants import CLICK_CONTEXT_SETTINGS
 from ..context import CLIContext, get_cli_context
 from ..exit_codes import ExitCode
@@ -78,13 +79,13 @@ def cli_config(ctx: click.Context, output_format: str, section: str | None, prof
             "Displaying configuration",
             extra={"format": fmt.value, "section": section, "profile": effective_profile},
         )
-        click.echo()
+        safe_console.echo()
         try:
             cli_ctx.services.display_config(
                 effective_config, output_format=fmt, section=section, profile=effective_profile
             )
         except ValueError as exc:
-            click.echo(f"\nError: {exc}", err=True)
+            safe_console.echo(f"\nError: {exc}", err=True)
             raise SystemExit(ExitCode.INVALID_ARGUMENT) from exc
 
 
@@ -275,12 +276,12 @@ def _execute_deploy(
         _report_deployment_result(deployed_paths, profile, effective_set_permissions)
     except PermissionError as exc:
         logger.error("Permission denied when deploying configuration", extra={"error": str(exc)})
-        click.echo(f"\nError: Permission denied. {exc}", err=True)
-        click.echo("Hint: System-wide deployment (--target app/host) may require sudo.", err=True)
+        safe_console.echo(f"\nError: Permission denied. {exc}", err=True)
+        safe_console.echo("Hint: System-wide deployment (--target app/host) may require sudo.", err=True)
         raise SystemExit(ExitCode.PERMISSION_DENIED) from exc
     except Exception as exc:
         logger.error("Failed to deploy configuration", extra={"error": str(exc), "error_type": type(exc).__name__})
-        click.echo(f"\nError: Failed to deploy configuration: {exc}", err=True)
+        safe_console.echo(f"\nError: Failed to deploy configuration: {exc}", err=True)
         raise SystemExit(ExitCode.GENERAL_ERROR) from exc
 
 
@@ -295,15 +296,15 @@ def _report_deployment_result(deployed_paths: list[Path], profile: str | None, s
     if deployed_paths:
         profile_msg = f" (profile: {profile})" if profile else ""
         perm_msg = "" if set_permissions else " (permissions not set)"
-        click.echo(f"\nConfiguration deployed successfully{profile_msg}{perm_msg}:")
+        safe_console.echo(f"\nConfiguration deployed successfully{profile_msg}{perm_msg}:")
         for path in deployed_paths:
             # ASCII marker on purpose: a non-ASCII glyph here crashes config-deploy with a
             # UnicodeEncodeError on a legacy Windows console codepage (cp1252) even though the
             # files were already written, so exit 1 misreports a deploy that actually succeeded.
-            click.echo(f"  + {path}")
+            safe_console.echo(f"  + {path}")
     else:
-        click.echo("\nNo files were created (all target files already exist).")
-        click.echo("Use --force to overwrite existing configuration files.")
+        safe_console.echo("\nNo files were created (all target files already exist).")
+        safe_console.echo("Use --force to overwrite existing configuration files.")
 
 
 @click.command("config-generate-examples", context_settings=CLICK_CONTEXT_SETTINGS)
@@ -337,14 +338,14 @@ def cli_config_generate_examples(ctx: click.Context, destination: str, force: bo
                 force=force,
             )
             if paths:
-                click.echo(f"\nGenerated {len(paths)} example file(s):")
+                safe_console.echo(f"\nGenerated {len(paths)} example file(s):")
                 for p in paths:
-                    click.echo(f"  {p}")
+                    safe_console.echo(f"  {p}")
             else:
-                click.echo("\nNo files generated (all already exist). Use --force to overwrite.")
+                safe_console.echo("\nNo files generated (all already exist). Use --force to overwrite.")
         except Exception as exc:
             logger.error("Failed to generate examples", extra={"error": str(exc)})
-            click.echo(f"\nError: {exc}", err=True)
+            safe_console.echo(f"\nError: {exc}", err=True)
             raise SystemExit(ExitCode.GENERAL_ERROR) from exc
 
 

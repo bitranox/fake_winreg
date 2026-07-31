@@ -10,6 +10,7 @@ import logging
 import lib_log_rich.runtime
 import rich_click as click
 
+from .. import safe_console
 from ..constants import CLICK_CONTEXT_SETTINGS
 from ..typed_click import argument
 
@@ -59,7 +60,7 @@ def cli_convert(args: tuple[str, ...]) -> None:
             count = convert_registry(source, target)
         except ValueError as exc:
             raise click.UsageError(str(exc)) from exc
-        click.echo(f"Converted {count} keys: {source} → {target}")
+        safe_console.echo(f"Converted {count} keys: {source} → {target}")
 
 
 __all__ = ["cli_convert"]
