@@ -64,13 +64,19 @@ ASCII_FALLBACKS: Final[dict[str, str]] = {
 _UNIVERSAL_ENCODINGS: Final[frozenset[str]] = frozenset({"utf-8", "utf8", "utf-16", "utf16", "utf-32", "utf32"})
 
 
-def _stream_encoding(file: IO[Any] | None) -> str | None:
+def _stream_encoding(file: IO[Any] | None, *, err: bool = False) -> str | None:
     """Return the target stream's encoding, or None when it cannot be determined.
 
     An unknown encoding means the caller gets the original text: guessing would
     degrade output that may well have been fine.
+
+    With no explicit `file` the answer comes from ``sys.stdout``/``sys.stderr``,
+    which is what :func:`click.echo` resolves its own default target from. click
+    exposes no supported way to ask for that stream: ``get_text_stream`` was
+    deprecated in click 8.5.0 and is removed in 9.0, its documented replacement
+    being to let ``echo`` resolve the stream itself.
     """
-    stream = file if file is not None else click.get_text_stream("stdout")
+    stream = file if file is not None else (sys.stderr if err else sys.stdout)
     encoding = getattr(stream, "encoding", None)
     return encoding if isinstance(encoding, str) else None
 
@@ -135,8 +141,7 @@ def echo(message: object = "", *, file: IO[Any] | None = None, err: bool = False
     Writes to the given stream.
     """
     text = message if isinstance(message, str) else str(message)
-    target = file if file is not None else click.get_text_stream("stderr" if err else "stdout")
-    click.echo(encode_safe(text, _stream_encoding(target)), file=target, nl=nl)
+    click.echo(encode_safe(text, _stream_encoding(file, err=err)), file=file, err=err, nl=nl)
 
 
 class _SafeWriter:

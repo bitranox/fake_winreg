@@ -8,6 +8,7 @@ keeps the next output line someone adds covered by construction.
 from __future__ import annotations
 
 import io
+import sys
 from pathlib import Path
 
 import pytest
@@ -76,6 +77,30 @@ class TestEchoOnAUtf8Console:
         buffer = stream.buffer
         assert isinstance(buffer, io.BytesIO)
         assert "\u2713" in buffer.getvalue().decode("utf-8")
+
+
+class TestTheDefaultTargetFollowsTheStreamEchoWritesTo:
+    """With no `file`, the encoding must come from the stream `echo` lands on.
+
+    click resolves that target itself from ``sys.stdout``/``sys.stderr``. Judge
+    the wrong stream and a legacy-codepage console gets exactly the crash this
+    module exists to prevent, while every test passing an explicit `file` stays
+    green and says nothing about it.
+    """
+
+    def test_a_cp1252_stdout_degrades_the_glyph(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        stream = _cp1252_stream()
+        monkeypatch.setattr(sys, "stdout", stream)
+        safe_console.echo("✓ deployed")
+        assert "[OK]" in _read_back(stream)
+
+    def test_err_is_judged_against_stderr_not_stdout(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """A stdout that could take the glyph must not excuse a cp1252 stderr."""
+        stream = _cp1252_stream()
+        monkeypatch.setattr(sys, "stdout", io.TextIOWrapper(io.BytesIO(), encoding="utf-8", newline=""))
+        monkeypatch.setattr(sys, "stderr", stream)
+        safe_console.echo("✓ deployed", err=True)
+        assert "[OK]" in _read_back(stream)
 
 
 class TestSafeStreamProtectsRich:
