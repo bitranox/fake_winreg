@@ -115,6 +115,18 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
   never the value, and the other commands run. The root types its services factory instead of
   silencing the checker. CONFIG.md's examples used a `hello` command this CLI does not have; they
   use `info`.
+- **A refused `LOG_*` variable no longer disables every command (exit code change).** A value
+  lib_log_rich refuses in a `LOG_*` variable, set in the environment or in the `.env` logging
+  reads (`LOG_CONSOLE_LEVEL=bogus` in the `--env-file`), made every command, `info` and
+  `config-deploy` included, exit 1 with `InvalidLoggingConfigError: lib_log_rich: Unknown log
+  level: 'bogus'`: the fallback restarted logging with an empty configuration, but lib_log_rich
+  reads the `LOG_*` variables on every start and refused the same variable again. Logging now
+  falls back to its defaults with every `LOG_*` variable hidden for that start (and put back
+  afterwards), so only the commands that read the configuration (`config`, and `reg` without
+  `--db`) exit **78**, and the others run with exit 0. The 78 carries lib_log_rich's own message,
+  `Error: lib_log_rich: Unknown log level: 'bogus'`, which may name neither the variable nor
+  where it was set. A refused `[lib_log_rich]` value still leaves every valid `LOG_*` variable in
+  force for the fallback: only a refused variable hides them.
 
 ## [1.9.3] 2026-08-01 00:16:20
 ### Fixed
