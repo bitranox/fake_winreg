@@ -165,3 +165,19 @@ def test_when_no_set_overrides_config_is_unchanged(
 
     assert result.exit_code == 0
     assert "WARNING" in result.output
+
+
+@pytest.mark.os_agnostic
+def test_config_names_the_cli_as_the_layer_of_a_set_value(
+    cli_runner: CliRunner, production_factory: Callable[[], Any]
+) -> None:
+    result = cli_runner.invoke(
+        cli_mod.cli,
+        ["--set", "lib_log_rich.service=from-cli", "config", "--section", "lib_log_rich"],
+        obj=production_factory,
+    )
+
+    assert result.exit_code == 0, result.output
+    lines = result.stdout.splitlines()
+    service = next(index for index, line in enumerate(lines) if 'service = "from-cli"' in line)
+    assert "layer:cli" in lines[service - 1], lines[service - 1]

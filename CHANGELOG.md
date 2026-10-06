@@ -137,6 +137,10 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
   `config-generate-examples` and `export-demo-registries` printed their docstring's doctest
   lines (`>>> from click.testing import CliRunner`) in `--help`, and `config-deploy` a literal
   `\b`. The help now ends before the example, and a test checks every command's help.
+- **`config` names the command line as the source of a `--set` value.** Since lib_layered_config
+  7, a `--set` value was shown with the library's generic `layer:override`; it is now
+  `layer:cli`, as in the template, for every key the `--set` supplied (each leaf of a table
+  value too), while every other key keeps its own layer.
 
 ## [1.9.3] 2026-08-01 00:16:20
 ### Fixed

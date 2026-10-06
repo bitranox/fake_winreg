@@ -29,7 +29,7 @@ Complete (v1.5.3+)
 - `src/fake_winreg/adapters/config/loader.py` — Configuration loading with LRU caching
 - `src/fake_winreg/adapters/config/deploy.py` — Configuration deployment
 - `src/fake_winreg/adapters/config/display.py` — Configuration display (TOML/JSON output, redaction)
-- `src/fake_winreg/adapters/config/overrides.py` — CLI `--set` override parsing and deep-merge
+- `src/fake_winreg/adapters/config/overrides.py` — CLI `--set` override parsing and deep-merge; a `--set` value is recorded with layer `cli`
 - `src/fake_winreg/adapters/logging/setup.py` — lib_log_rich initialization; takes only the `LOG_*` lines of a `.env`, and raises `InvalidLoggingConfigError` for a refused `[lib_log_rich]` value or `LOG_*` variable, after starting logging with its defaults (and without the `LOG_*` variables only when one of them is refused)
 - `src/fake_winreg/adapters/cli/` — CLI adapter package:
   - `__init__.py` — Public facade

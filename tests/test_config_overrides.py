@@ -355,3 +355,44 @@ def test_apply_overrides_keeps_sibling_keys_that_share_a_prefix_of_letters() -> 
     result = apply_overrides(_make_config({}), ("a.b=1", "a.bc.d=2"))
 
     assert result["a"] == {"b": 1, "bc": {"d": 2}}
+
+
+# ======================== provenance of a --set value ========================
+
+
+@pytest.mark.os_agnostic
+def test_apply_overrides_names_the_cli_as_the_source_of_an_overridden_key() -> None:
+    """An overridden key reports the CLI as its origin, not the layer it replaced."""
+    config = Config({"s": {"k": 1}}, {"s.k": {"layer": "user", "path": "/home/u/app.toml", "key": "s.k"}})
+
+    result = apply_overrides(config, ("s.k=2",))
+
+    assert result["s"]["k"] == 2
+    assert result.origin("s.k") == {"layer": "cli", "path": None, "key": "s.k"}
+
+
+@pytest.mark.os_agnostic
+def test_apply_overrides_names_the_cli_for_every_leaf_of_a_table_value() -> None:
+    """A ``--set`` whose value is a JSON table supplies each of its leaves."""
+    config = Config({"s": {"t": {"a": 1}}}, {"s.t.a": {"layer": "user", "path": "/home/u/app.toml", "key": "s.t.a"}})
+
+    result = apply_overrides(config, ('s.t={"a": 2, "b": {"c": 3}}',))
+
+    assert result.origin("s.t.a") == {"layer": "cli", "path": None, "key": "s.t.a"}
+    assert result.origin("s.t.b.c") == {"layer": "cli", "path": None, "key": "s.t.b.c"}
+
+
+@pytest.mark.os_agnostic
+def test_apply_overrides_leaves_an_untouched_key_with_its_own_source() -> None:
+    """Only the keys ``--set`` supplied are relabelled; the rest keep their layer."""
+    config = Config(
+        {"s": {"k": 1, "other": "kept"}},
+        {
+            "s.k": {"layer": "user", "path": "/home/u/app.toml", "key": "s.k"},
+            "s.other": {"layer": "env", "path": None, "key": "s.other"},
+        },
+    )
+
+    result = apply_overrides(config, ("s.k=2",))
+
+    assert result.origin("s.other") == {"layer": "env", "path": None, "key": "s.other"}
