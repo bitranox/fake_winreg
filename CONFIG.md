@@ -45,9 +45,9 @@ Configuration is loaded and merged in the following order (lowest to highest pre
 
 | Placeholder  | Linux                        | macOS / Windows              |
 |--------------|------------------------------|------------------------------|
-| `{slug}`     | `fake-winreg`   | —                            |
-| `{vendor}`   | —                            | `bitranox`                   |
-| `{app}`      | —                            | `fake_winreg`   |
+| `{slug}`     | `fake-winreg`   | -                            |
+| `{vendor}`   | -                            | `bitranox`                   |
+| `{app}`      | -                            | `fake_winreg`   |
 | `{hostname}` | System hostname              | System hostname              |
 
 ### Concrete Examples
@@ -99,7 +99,7 @@ fake-winreg --traceback config-deploy --target user
 
 ### View Configuration
 
-Display the merged configuration from all sources (defaults → app → host → user → .env → env vars).
+Display the merged configuration from all sources (defaults -> app -> host -> user -> .env -> env vars).
 
 #### Options Reference
 
@@ -475,8 +475,8 @@ FAKE_WINREG___LIB_LOG_RICH__CONSOLE_FORMAT_PRESET=short fake-winreg info
 ```
 
 **Separator reference:**
-- `___` (triple underscore) — separates prefix from section
-- `__` (double underscore) — separates section from key
+- `___` (triple underscore) - separates prefix from section
+- `__` (double underscore) - separates section from key
 
 ---
 

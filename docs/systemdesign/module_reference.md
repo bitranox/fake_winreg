@@ -9,91 +9,91 @@ Complete (v1.5.3+)
 ## Related Files
 
 ### Domain Layer
-- `src/fake_winreg/domain/api.py` — Public winreg-compatible API functions (CreateKey, OpenKey, QueryValueEx, SaveKey, LoadKey, etc.)
-- `src/fake_winreg/domain/registry.py` — Registry tree and key management
-- `src/fake_winreg/domain/memory_backend.py` — In-memory registry backend
-- `src/fake_winreg/domain/handles.py` — Registry handle management
-- `src/fake_winreg/domain/types.py` — Registry type definitions
-- `src/fake_winreg/domain/constants.py` — Registry constants (HKEY values, access flags, value types)
-- `src/fake_winreg/domain/validation.py` — Registry input validation
-- `src/fake_winreg/domain/helpers.py` — Domain helper utilities
-- `src/fake_winreg/domain/serialization.py` — Registry data serialization
-- `src/fake_winreg/domain/test_registries.py` — Pre-built test registry fixtures
-- `src/fake_winreg/domain/errors.py` — Domain exception types
-- `src/fake_winreg/domain/enums.py` — Type-safe enums (OutputFormat, DeployTarget)
+- `src/fake_winreg/domain/api.py` - Public winreg-compatible API functions (CreateKey, OpenKey, QueryValueEx, SaveKey, LoadKey, etc.)
+- `src/fake_winreg/domain/registry.py` - Registry tree and key management
+- `src/fake_winreg/domain/memory_backend.py` - In-memory registry backend
+- `src/fake_winreg/domain/handles.py` - Registry handle management
+- `src/fake_winreg/domain/types.py` - Registry type definitions
+- `src/fake_winreg/domain/constants.py` - Registry constants (HKEY values, access flags, value types)
+- `src/fake_winreg/domain/validation.py` - Registry input validation
+- `src/fake_winreg/domain/helpers.py` - Domain helper utilities
+- `src/fake_winreg/domain/serialization.py` - Registry data serialization
+- `src/fake_winreg/domain/test_registries.py` - Pre-built test registry fixtures
+- `src/fake_winreg/domain/errors.py` - Domain exception types
+- `src/fake_winreg/domain/enums.py` - Type-safe enums (OutputFormat, DeployTarget)
 
 ### Application Layer
-- `src/fake_winreg/application/ports.py` — Callable Protocol definitions for adapter functions
+- `src/fake_winreg/application/ports.py` - Callable Protocol definitions for adapter functions
 
 ### Adapters Layer
-- `src/fake_winreg/adapters/config/loader.py` — Configuration loading with LRU caching
-- `src/fake_winreg/adapters/config/deploy.py` — Configuration deployment
-- `src/fake_winreg/adapters/config/display.py` — Configuration display (TOML/JSON output, redaction)
-- `src/fake_winreg/adapters/config/overrides.py` — CLI `--set` override parsing and deep-merge; a `--set` value is recorded with layer `cli`
-- `src/fake_winreg/adapters/logging/setup.py` — lib_log_rich initialization; takes only the `LOG_*` lines of a `.env`, and raises `InvalidLoggingConfigError` for a refused `[lib_log_rich]` value or `LOG_*` variable, after starting logging with its defaults (and without the `LOG_*` variables only when one of them is refused)
-- `src/fake_winreg/adapters/cli/` — CLI adapter package:
-  - `__init__.py` — Public facade
-  - `constants.py` — Shared constants
-  - `exit_codes.py` — POSIX exit codes (ExitCode IntEnum)
-  - `context.py` — Click context helpers
+- `src/fake_winreg/adapters/config/loader.py` - Configuration loading with LRU caching
+- `src/fake_winreg/adapters/config/deploy.py` - Configuration deployment
+- `src/fake_winreg/adapters/config/display.py` - Configuration display (TOML/JSON output, redaction)
+- `src/fake_winreg/adapters/config/overrides.py` - CLI `--set` override parsing and deep-merge; a `--set` value is recorded with layer `cli`
+- `src/fake_winreg/adapters/logging/setup.py` - lib_log_rich initialization; takes only the `LOG_*` lines of a `.env`, and raises `InvalidLoggingConfigError` for a refused `[lib_log_rich]` value or `LOG_*` variable, after starting logging with its defaults (and without the `LOG_*` variables only when one of them is refused)
+- `src/fake_winreg/adapters/cli/` - CLI adapter package:
+  - `__init__.py` - Public facade
+  - `constants.py` - Shared constants
+  - `exit_codes.py` - POSIX exit codes (ExitCode IntEnum)
+  - `context.py` - Click context helpers
   - `config_load.py` - Configuration load for the CLI; records a load failure, `require_config` refuses with exit 78
-  - `root.py` — Root command group
-  - `main.py` — Entry point
-  - `commands/info.py` — info command
-  - `commands/config.py` — config, config-deploy, config-generate-examples commands
-  - `commands/convert.py` — Registry conversion commands
-  - `commands/logging.py` — logdemo command
+  - `root.py` - Root command group
+  - `main.py` - Entry point
+  - `commands/info.py` - info command
+  - `commands/config.py` - config, config-deploy, config-generate-examples commands
+  - `commands/convert.py` - Registry conversion commands
+  - `commands/logging.py` - logdemo command
 
 ### Adapters Layer (In-Memory / Testing)
-- `src/fake_winreg/adapters/memory/__init__.py` — Public facade + Protocol conformance assertions
-- `src/fake_winreg/adapters/memory/config.py` — In-memory config adapters
+- `src/fake_winreg/adapters/memory/__init__.py` - Public facade + Protocol conformance assertions
+- `src/fake_winreg/adapters/memory/config.py` - In-memory config adapters
 - `src/fake_winreg/adapters/memory/logging.py` - In-memory logging (a quiet lib_log_rich runtime for tests)
 
 ### Composition Layer
-- `src/fake_winreg/composition/__init__.py` — Wires adapters to ports
+- `src/fake_winreg/composition/__init__.py` - Wires adapters to ports
 
 ### Entry Points
-- `src/fake_winreg/__main__.py` — Thin shim for `python -m`
-- `src/fake_winreg/__init__.py` — Public API exports
-- `src/fake_winreg/__init__conf__.py` — Package metadata constants
+- `src/fake_winreg/__main__.py` - Thin shim for `python -m`
+- `src/fake_winreg/__init__.py` - Public API exports
+- `src/fake_winreg/__init__conf__.py` - Package metadata constants
 
 ### Configuration Defaults
-- `src/fake_winreg/adapters/config/defaultconfig.toml` — Base defaults
-- `src/fake_winreg/adapters/config/defaultconfig.d/40-layered-config.toml` — lib_layered_config integration docs
-- `src/fake_winreg/adapters/config/defaultconfig.d/90-logging.toml` — Logging defaults
+- `src/fake_winreg/adapters/config/defaultconfig.toml` - Base defaults
+- `src/fake_winreg/adapters/config/defaultconfig.d/40-layered-config.toml` - lib_layered_config integration docs
+- `src/fake_winreg/adapters/config/defaultconfig.d/90-logging.toml` - Logging defaults
 
 ### Tests
-- `tests/test_registry.py` — Registry tree and key management tests
-- `tests/test_registry_api.py` — winreg-compatible API function tests
-- `tests/test_reg_io.py` — Registry I/O tests
-- `tests/test_backend_json.py` — JSON backend tests
-- `tests/test_backend_sqlite.py` — SQLite backend tests
-- `tests/test_convert.py` — Registry data conversion tests
-- `tests/test_cache_effectiveness.py` — LRU cache behavior tests
-- `tests/test_cli_core.py` — Core CLI command tests
-- `tests/test_cli_config.py` — Config CLI command tests
+- `tests/test_registry.py` - Registry tree and key management tests
+- `tests/test_registry_api.py` - winreg-compatible API function tests
+- `tests/test_reg_io.py` - Registry I/O tests
+- `tests/test_backend_json.py` - JSON backend tests
+- `tests/test_backend_sqlite.py` - SQLite backend tests
+- `tests/test_convert.py` - Registry data conversion tests
+- `tests/test_cache_effectiveness.py` - LRU cache behavior tests
+- `tests/test_cli_core.py` - Core CLI command tests
+- `tests/test_cli_config.py` - Config CLI command tests
 - `tests/test_cli_config_errors.py` - Which commands refuse and which still run when the configuration cannot be loaded
-- `tests/test_cli_env_file.py` — Env file CLI option tests
-- `tests/test_cli_exit_codes.py` — Exit code tests
+- `tests/test_cli_env_file.py` - Env file CLI option tests
+- `tests/test_cli_exit_codes.py` - Exit code tests
 - `tests/test_cli_main_exit.py` - Exit codes and stderr through the real `main()` entry point
-- `tests/test_cli_overrides.py` — CLI override tests
-- `tests/test_cli_validation.py` — CLI validation tests
-- `tests/test_config_overrides.py` — `--set` parsing tests
+- `tests/test_cli_overrides.py` - CLI override tests
+- `tests/test_cli_validation.py` - CLI validation tests
+- `tests/test_config_overrides.py` - `--set` parsing tests
 - `tests/test_declared_dependencies.py` - Every third-party module imported at run time is a declared dependency
-- `tests/test_display.py` — Config display formatting tests
-- `tests/test_deploy_permissions.py` — Deploy permission tests
+- `tests/test_display.py` - Config display formatting tests
+- `tests/test_deploy_permissions.py` - Deploy permission tests
 - `tests/test_deploy_mode_safety.py` - `--dir-mode`/`--file-mode` refused when malformed or unsafe
 - `tests/test_permission_defaults.py` - lib_layered_config decides the deployed modes from `[lib_layered_config.default_permissions]`, never from `.env`
-- `tests/test_enums.py` — Enum tests
-- `tests/test_errors.py` — Error type tests
-- `tests/test_logging.py` — Logging tests
+- `tests/test_enums.py` - Enum tests
+- `tests/test_errors.py` - Error type tests
+- `tests/test_logging.py` - Logging tests
 - `tests/test_logging_dotenv_isolation.py` - Logging takes only `LOG_*` lines from a `.env`; an invalid `[lib_log_rich]` section or `LOG_*` variable is a configuration failure that leaves logging running
 - `tests/test_memory_logging.py` - Testing-composition logging runtime and the per-test logging reset
-- `tests/test_metadata.py` — Package metadata tests
-- `tests/test_metadata_sync.py` — Metadata sync tests
-- `tests/test_module_entry.py` — `python -m` entry tests
-- `tests/test_ports.py` — Protocol conformance tests
-- `tests/test_property_overrides.py` — Override property tests
+- `tests/test_metadata.py` - Package metadata tests
+- `tests/test_metadata_sync.py` - Metadata sync tests
+- `tests/test_module_entry.py` - `python -m` entry tests
+- `tests/test_ports.py` - Protocol conformance tests
+- `tests/test_property_overrides.py` - Override property tests
 
 ---
 
@@ -103,7 +103,7 @@ Complete (v1.5.3+)
 
 | Directory/Module | Layer | Responsibility |
 |------------------|-------|----------------|
-| `domain/` | Domain | Pure logic — no I/O, logging, or frameworks |
+| `domain/` | Domain | Pure logic - no I/O, logging, or frameworks |
 | `application/ports.py` | Application | Protocol definitions for adapters |
 | `adapters/config/` | Adapters | Configuration loading, deployment, display |
 | `adapters/logging/` | Adapters | lib_log_rich initialization |
@@ -115,7 +115,7 @@ Complete (v1.5.3+)
 
 Layer boundaries enforced via `import-linter` contracts in `pyproject.toml`:
 - **Domain is pure**: Cannot import from adapters or composition
-- **Clean Architecture layers**: Validates dependency direction (composition → adapters → application → domain)
+- **Clean Architecture layers**: Validates dependency direction (composition -> adapters -> application -> domain)
 
 Run `lint-imports` to verify compliance.
 
@@ -177,7 +177,7 @@ Deploy default configuration to system or user directories.
 
 | Option | Description |
 |--------|-------------|
-| `--target [app\|host\|user]` | Target layer(s) — required, repeatable |
+| `--target [app\|host\|user]` | Target layer(s) - required, repeatable |
 | `--force` | Replace files whose content differs, keeping the old one as `<name>.bak` |
 | `--profile NAME` | Deploy to profile subdirectory |
 
@@ -189,7 +189,7 @@ Generate example configuration files.
 
 | Option | Description |
 |--------|-------------|
-| `--destination DIR` | Target directory — required |
+| `--destination DIR` | Target directory - required |
 | `--force` | Overwrite existing files |
 
 **Exit codes:** 0, 1
