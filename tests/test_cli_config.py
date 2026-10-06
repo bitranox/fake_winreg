@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import dataclasses
 from typing import TYPE_CHECKING, Any
 
 import pytest
 
 from fake_winreg.adapters import cli as cli_mod
 from fake_winreg.adapters.config import loader as config_mod
+from fake_winreg.adapters.config.deploy import deploy_configuration
+from fake_winreg.composition import AppServices, build_testing
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
@@ -251,6 +254,62 @@ def test_when_config_deploy_finds_no_files_to_create_it_informs_user(
     assert result.exit_code == 0
     assert "No files were created" in result.output
     assert "--force" in result.output
+
+
+@pytest.fixture
+def user_layer_deploy(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Callable[[], AppServices]:
+    """The testing composition with the production deploy, every user-layer location under ``tmp_path``."""
+    for name in ("HOME", "USERPROFILE", "XDG_CONFIG_HOME", "APPDATA", "LOCALAPPDATA"):
+        monkeypatch.setenv(name, str(tmp_path))
+    return lambda: dataclasses.replace(build_testing(), deploy_configuration=deploy_configuration)
+
+
+def _deployed_user_config(tmp_path: Path) -> Path:
+    """The user-layer ``config.toml`` a deploy into ``tmp_path`` wrote, wherever the platform puts it."""
+    found = list(tmp_path.rglob("config.toml"))
+    assert len(found) == 1, found
+    return found[0]
+
+
+@pytest.mark.os_agnostic
+def test_a_forced_deploy_with_nothing_to_write_does_not_suggest_force(
+    cli_runner: CliRunner, user_layer_deploy: Callable[[], AppServices]
+) -> None:
+    """With --force, an empty result means every file is already identical; "use --force" would be wrong."""
+    first = cli_runner.invoke(cli_mod.cli, ["config-deploy", "--target", "user", "--force"], obj=user_layer_deploy)
+    second = cli_runner.invoke(cli_mod.cli, ["config-deploy", "--target", "user", "--force"], obj=user_layer_deploy)
+
+    # Premise: the first deploy wrote the files.
+    assert first.exit_code == 0, first.output
+    assert "Configuration deployed successfully" in first.stdout
+    assert second.exit_code == 0, second.output
+    assert "Use --force" not in second.stdout
+    assert "already identical" in second.stdout
+
+
+@pytest.mark.os_agnostic
+def test_a_forced_deploy_over_a_changed_file_keeps_the_old_one_as_bak(
+    cli_runner: CliRunner, user_layer_deploy: Callable[[], AppServices], tmp_path: Path
+) -> None:
+    """The backup the --force help and CONFIG.md describe is really written."""
+    first = cli_runner.invoke(cli_mod.cli, ["config-deploy", "--target", "user"], obj=user_layer_deploy)
+    assert first.exit_code == 0, first.output
+    config_toml = _deployed_user_config(tmp_path)
+    config_toml.write_text(config_toml.read_text(encoding="utf-8") + "# local edit\n", encoding="utf-8")
+
+    forced = cli_runner.invoke(cli_mod.cli, ["config-deploy", "--target", "user", "--force"], obj=user_layer_deploy)
+
+    assert forced.exit_code == 0, forced.output
+    backup = config_toml.with_name("config.toml.bak")
+    assert backup.read_text(encoding="utf-8").endswith("# local edit\n")
+
+
+@pytest.mark.os_agnostic
+def test_the_force_help_names_the_backup(cli_runner: CliRunner) -> None:
+    result = cli_runner.invoke(cli_mod.cli, ["config-deploy", "--help"], obj=build_testing)
+
+    assert result.exit_code == 0, result.output
+    assert "<name>.bak" in " ".join(result.output.split())
 
 
 @pytest.mark.os_agnostic

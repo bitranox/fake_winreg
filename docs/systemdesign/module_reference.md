@@ -169,7 +169,7 @@ Display merged configuration from all sources.
 | `--format [human\|json]` | Output format (default: human) |
 | `--section NAME` | Show only specific section |
 
-**Exit codes:** 0, 22 (section not found)
+**Exit codes:** 0, 22 (section not found), 78 (the configuration could not be loaded, or a logging setting is refused)
 
 ### config-deploy
 
@@ -178,7 +178,7 @@ Deploy default configuration to system or user directories.
 | Option | Description |
 |--------|-------------|
 | `--target [app\|host\|user]` | Target layer(s) — required, repeatable |
-| `--force` | Overwrite existing files |
+| `--force` | Replace files whose content differs, keeping the old one as `<name>.bak` |
 | `--profile NAME` | Deploy to profile subdirectory |
 
 **Exit codes:** 0, 1, 2 (refused mode, invalid profile, `--no-permissions` with a mode), 13 (permission denied), 78 (refused permission settings)

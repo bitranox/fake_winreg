@@ -137,7 +137,7 @@ Deploy bundled default configuration to platform-specific directories.
 | Option | Required | Description |
 |--------|:--------:|-------------|
 | `--target` | Yes | Target layer: `app`, `host`, or `user`. Can be specified multiple times. |
-| `--force` | No | Overwrite existing configuration files. Without this, existing files are skipped. |
+| `--force` | No | Replace existing files whose content differs; the old file is kept as `<name>.bak`. Without this, existing files are skipped. |
 | `--profile NAME` | No | Deploy to a profile-specific subdirectory (e.g., `profile/production/`). |
 | `--permissions` | No | Set Unix permissions even when the configured `enabled` is false. |
 | `--no-permissions` | No | Disable permission setting; use system umask instead. Not combinable with a mode option. |
@@ -168,6 +168,13 @@ fake-winreg config-deploy --target user --profile production
 # Deploy production profile and overwrite if exists
 fake-winreg config-deploy --target user --profile production --force
 ```
+
+Every target receives `config.toml` plus `config.d/40-layered-config.toml`, `config.d/50-registry.toml`
+and `config.d/90-logging.toml` (the host target writes `hosts/{hostname}.toml` and
+`hosts/{hostname}.d/`). With `--force`, a file whose content differs from the bundled one is
+replaced and the old file is kept as `<name>.bak` (numbered, `<name>.bak.1` and so on, when a
+backup already exists); a file whose content is already identical is left as it is, mode
+included. When nothing differs, `config-deploy --force` writes nothing and says so.
 
 #### Deploying for Other Users
 

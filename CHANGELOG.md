@@ -127,6 +127,13 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
   `Error: lib_log_rich: Unknown log level: 'bogus'`, which may name neither the variable nor
   where it was set. A refused `[lib_log_rich]` value still leaves every valid `LOG_*` variable in
   force for the fallback: only a refused variable hides them.
+- **`config-deploy --force` with nothing to write no longer tells you to use `--force`.** Since
+  lib_layered_config 7, a forced deploy leaves a file whose content is already identical alone, so
+  a second `--force` run wrote nothing and then printed "Use --force to overwrite existing
+  configuration files." It now says every target file is already identical. The `--force` help,
+  the command help and CONFIG.md say that a replaced file is kept as `<name>.bak` and list the
+  files each target receives; the command help no longer prints a literal `\b` or its doctest
+  example.
 
 ## [1.9.3] 2026-08-01 00:16:20
 ### Fixed
