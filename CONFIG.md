@@ -454,8 +454,8 @@ Configuration can be overridden via environment variables using two methods:
 For logging configuration, use the native `LOG_*` variables (highest precedence):
 
 ```bash
-LOG_CONSOLE_LEVEL=DEBUG fake-winreg hello
-LOG_ENABLE_GRAYLOG=true LOG_GRAYLOG_ENDPOINT="logs.example.com:12201" fake-winreg hello
+LOG_CONSOLE_LEVEL=DEBUG fake-winreg info
+LOG_ENABLE_GRAYLOG=true LOG_GRAYLOG_ENDPOINT="logs.example.com:12201" fake-winreg info
 ```
 
 ### Method 2: Application-Prefixed Variables
@@ -463,8 +463,8 @@ LOG_ENABLE_GRAYLOG=true LOG_GRAYLOG_ENDPOINT="logs.example.com:12201" fake-winre
 For any configuration section, use the format: `<PREFIX>___<SECTION>__<KEY>=value`
 
 ```bash
-FAKE_WINREG___LIB_LOG_RICH__CONSOLE_LEVEL=DEBUG fake-winreg hello
-FAKE_WINREG___LIB_LOG_RICH__CONSOLE_FORMAT_PRESET=short fake-winreg hello
+FAKE_WINREG___LIB_LOG_RICH__CONSOLE_LEVEL=DEBUG fake-winreg info
+FAKE_WINREG___LIB_LOG_RICH__CONSOLE_FORMAT_PRESET=short fake-winreg info
 ```
 
 **Separator reference:**
@@ -485,6 +485,16 @@ LOG_ENABLE_GRAYLOG=false
 ```
 
 By default, the application searches upward from the current directory to discover `.env` files.
+
+Logging reads the `LOG_*` lines of the same `.env` (the `--env-file` when one is given, otherwise the
+nearest `.env` up to the project root) and copies only those into the environment, never over a
+variable that is already set. No other `.env` line reaches the environment, so a `.env` cannot act
+as the environment layer for a later configuration load.
+
+A `[lib_log_rich]` value that lib_log_rich refuses (a wrong type, or one of its own range checks
+such as `queue_maxsize = 0`) is a configuration failure like a broken file: logging starts with
+its defaults, `config` and `reg` without `--db` exit 78 with one `Error:` line per refused key
+(never its value), and the other commands still run.
 
 To load a specific `.env` file instead, use `--env-file`:
 

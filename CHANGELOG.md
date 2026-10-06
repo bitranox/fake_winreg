@@ -98,6 +98,23 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
   `.env` (shell-quoted in the environment) or one key per entry
   (`LIB_LOG_RICH__SCRUB_PATTERNS__API_KEY=.+`), and say that an unquoted value is converted in a
   `.env` as in the environment.
+- **Logging takes only `LOG_*` lines from a `.env`.** `init_logging` called lib_log_rich's
+  `enable_dotenv()`, which copied every line of the nearest `.env` into the process environment,
+  so a later configuration load (`config --profile`, the deploy's permission read) took an
+  app-prefixed `.env` line for the environment layer: a prefixed `default_permissions` line
+  refused `config-deploy`, and a prefixed value showed up in `config --profile X`, even under
+  `--env-file`. Logging now copies only `LOG_*` lines, never over a variable that is already set,
+  from the `--env-file` when given, otherwise from the nearest `.env` up to the project root,
+  without changing directory; a `.env` that is not UTF-8 no longer stops logging. `python-dotenv`
+  is declared, and the `InitLogging` port takes `dotenv_path`.
+- **A refused `[lib_log_rich]` setting is a configuration failure (exit code changes).** A value
+  lib_log_rich refuses (a wrong type such as `rate_limit = "100:60"`, or its own range checks such
+  as `queue_maxsize = 0`) made every command exit 22 with pydantic's multi-line report. It is now
+  `InvalidLoggingConfigError`, recorded like a load failure: logging starts with its defaults,
+  `config` and `reg` without `--db` exit **78** with one `Error:` line per problem naming the key,
+  never the value, and the other commands run. The root types its services factory instead of
+  silencing the checker. CONFIG.md's examples used a `hello` command this CLI does not have; they
+  use `info`.
 
 ## [1.9.3] 2026-08-01 00:16:20
 ### Fixed

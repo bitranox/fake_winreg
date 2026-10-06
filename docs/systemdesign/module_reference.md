@@ -87,6 +87,7 @@ Complete (v1.5.3+)
 - `tests/test_enums.py` — Enum tests
 - `tests/test_errors.py` — Error type tests
 - `tests/test_logging.py` — Logging tests
+- `tests/test_logging_dotenv_isolation.py` - Logging takes only `LOG_*` lines from a `.env`; an invalid `[lib_log_rich]` is a configuration failure
 - `tests/test_memory_logging.py` - Testing-composition logging runtime and the per-test logging reset
 - `tests/test_metadata.py` — Package metadata tests
 - `tests/test_metadata_sync.py` — Metadata sync tests
