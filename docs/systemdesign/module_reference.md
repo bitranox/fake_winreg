@@ -46,7 +46,7 @@ Complete (v1.5.3+)
 ### Adapters Layer (In-Memory / Testing)
 - `src/fake_winreg/adapters/memory/__init__.py` — Public facade + Protocol conformance assertions
 - `src/fake_winreg/adapters/memory/config.py` — In-memory config adapters
-- `src/fake_winreg/adapters/memory/logging.py` — In-memory logging (no-op)
+- `src/fake_winreg/adapters/memory/logging.py` - In-memory logging (a quiet lib_log_rich runtime for tests)
 
 ### Composition Layer
 - `src/fake_winreg/composition/__init__.py` — Wires adapters to ports
@@ -81,6 +81,7 @@ Complete (v1.5.3+)
 - `tests/test_enums.py` — Enum tests
 - `tests/test_errors.py` — Error type tests
 - `tests/test_logging.py` — Logging tests
+- `tests/test_memory_logging.py` - Testing-composition logging runtime and the per-test logging reset
 - `tests/test_metadata.py` — Package metadata tests
 - `tests/test_metadata_sync.py` — Metadata sync tests
 - `tests/test_module_entry.py` — `python -m` entry tests
@@ -257,6 +258,8 @@ Use `composition.build_testing()` to wire all in-memory adapters.
 | `strip_ansi` | Strips ANSI escape codes from output |
 | `clear_config_cache` | Clears LRU cache before tests |
 | `managed_traceback_state` | Resets/restores traceback configuration |
+| `isolated_logging_state` | Autouse: shuts the lib_log_rich runtime down and restores the root logger after every test |
+| `deterministic_cli_output` | Autouse: uncoloured, 120-column rich-click output on every machine and in CI |
 
 ---
 

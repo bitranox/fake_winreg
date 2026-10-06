@@ -6,6 +6,22 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 
 ## [Unreleased]
 
+### Fixed
+- **`build_testing()` can run a command.** The in-memory logging initializer was a no-op while
+  `info`, `config`, `config-deploy`, `convert` and `export-demo-registries` bind job context onto
+  the lib_log_rich runtime, so any of them under the testing composition raised
+  `RuntimeError('lib_log_rich.init() must be called before using the logging API')`. It now
+  starts a quiet runtime (no journald, event log, Graylog or queue; console at ERROR; no `.env`
+  loading).
+- **Tests no longer pass or fail by order.** An autouse fixture shuts the lib_log_rich runtime
+  down and restores the root logger's handlers, level and propagate flag after every test;
+  `test_cli_convert_command` had passed only because an earlier test left a runtime running, and
+  now runs `convert` through the root group. The conftest fixtures that build services use the
+  quiet runtime too, and another autouse fixture pins rich-click's colour and width, so a
+  plain-text assertion reads the same on a developer machine, on a 79-column Windows runner and
+  under GitHub's `GITHUB_ACTIONS`. For tests: under `build_testing()` a command's `logger.error`
+  line now reaches CliRunner's stderr ahead of its `Error:` line.
+
 ## [1.9.3] 2026-08-01 00:16:20
 ### Fixed
 - **Console output no longer crashes on a legacy codepage.** A Windows console at codepage 1252

@@ -186,16 +186,20 @@ def test_convert_restores_previous_backend(tmp_path: Path) -> None:
 def test_cli_convert_command(tmp_path: Path) -> None:
     from click.testing import CliRunner
 
-    from fake_winreg.adapters.cli.commands.convert import cli_convert
+    from fake_winreg.adapters.cli import cli
+    from fake_winreg.composition import build_testing
 
     db = tmp_path / "cli_test.db"
     reg_file = tmp_path / "cli_test.reg"
 
     _populate_sqlite(db)
 
+    # Through the root group: convert binds job context onto the lib_log_rich runtime, which
+    # only the root starts, so invoking the command alone passed only when an earlier test
+    # had left a runtime running.
     runner = CliRunner()
-    result = runner.invoke(cli_convert, [f"if={db}", f"of={reg_file}"])
-    assert result.exit_code == 0
+    result = runner.invoke(cli, ["convert", f"if={db}", f"of={reg_file}"], obj=build_testing)
+    assert result.exit_code == 0, result.output
     assert "Converted" in result.output
     assert reg_file.exists()
 
