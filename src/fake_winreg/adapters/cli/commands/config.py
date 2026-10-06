@@ -13,6 +13,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+import click.exceptions as click_exceptions
 import lib_log_rich.runtime
 import rich_click as click
 from lib_layered_config import Config, generate_examples
@@ -26,7 +27,7 @@ from .. import safe_console
 from ..constants import CLICK_CONTEXT_SETTINGS
 from ..context import CLIContext, get_cli_context
 from ..exit_codes import ExitCode
-from ..typed_click import option
+from ..typed_click import get_current_context, option
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -86,7 +87,7 @@ def cli_config(ctx: click.Context, output_format: str, section: str | None, prof
             )
         except ValueError as exc:
             safe_console.echo(f"\nError: {exc}", err=True)
-            raise SystemExit(ExitCode.INVALID_ARGUMENT) from exc
+            ctx.exit(ExitCode.INVALID_ARGUMENT)
 
 
 def _get_effective_profile(cli_ctx: CLIContext, profile_override: str | None) -> str | None:
@@ -256,7 +257,8 @@ def _execute_deploy(
         file_mode: Override file permission mode.
 
     Raises:
-        SystemExit: On permission or other errors.
+        click.exceptions.Exit: On permission or other errors, raised through ``ctx.exit`` so
+            ``main()`` returns the code instead of printing a bare ``SystemExit``.
     """
     # Get permission defaults from config
     perm_defaults = get_permission_defaults(cli_ctx.config)
@@ -278,11 +280,15 @@ def _execute_deploy(
         logger.error("Permission denied when deploying configuration", extra={"error": str(exc)})
         safe_console.echo(f"\nError: Permission denied. {exc}", err=True)
         safe_console.echo("Hint: System-wide deployment (--target app/host) may require sudo.", err=True)
-        raise SystemExit(ExitCode.PERMISSION_DENIED) from exc
+        get_current_context().exit(ExitCode.PERMISSION_DENIED)
+    except click_exceptions.Exit:
+        # click's Exit subclasses RuntimeError. It is a deliberate exit with its own code,
+        # not a deploy failure, so it must not be relabelled GENERAL_ERROR by the branch below.
+        raise
     except Exception as exc:
         logger.error("Failed to deploy configuration", extra={"error": str(exc), "error_type": type(exc).__name__})
         safe_console.echo(f"\nError: Failed to deploy configuration: {exc}", err=True)
-        raise SystemExit(ExitCode.GENERAL_ERROR) from exc
+        get_current_context().exit(ExitCode.GENERAL_ERROR)
 
 
 def _report_deployment_result(deployed_paths: list[Path], profile: str | None, set_permissions: bool) -> None:
@@ -346,7 +352,7 @@ def cli_config_generate_examples(ctx: click.Context, destination: str, force: bo
         except Exception as exc:
             logger.error("Failed to generate examples", extra={"error": str(exc)})
             safe_console.echo(f"\nError: {exc}", err=True)
-            raise SystemExit(ExitCode.GENERAL_ERROR) from exc
+            ctx.exit(ExitCode.GENERAL_ERROR)
 
 
 __all__ = ["cli_config", "cli_config_deploy", "cli_config_generate_examples"]

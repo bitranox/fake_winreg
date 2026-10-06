@@ -73,6 +73,7 @@ Complete (v1.5.3+)
 - `tests/test_cli_config.py` — Config CLI command tests
 - `tests/test_cli_env_file.py` — Env file CLI option tests
 - `tests/test_cli_exit_codes.py` — Exit code tests
+- `tests/test_cli_main_exit.py` - Exit codes and stderr through the real `main()` entry point
 - `tests/test_cli_overrides.py` — CLI override tests
 - `tests/test_cli_validation.py` — CLI validation tests
 - `tests/test_config_overrides.py` — `--set` parsing tests

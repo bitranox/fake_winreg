@@ -52,15 +52,19 @@ def _run_cli(argv: Sequence[str] | None, *, services_factory: Callable[[], AppSe
     args = list(argv) if argv is not None else sys.argv[1:]
 
     try:
-        cli.main(
+        # cli is a rich_click group whose own main() reimplements click's Command.main().
+        # Under standalone_mode=False it catches the click.exceptions.Exit that ctx.exit()
+        # raises and RETURNS its exit code, and it returns a callback's plain return value the
+        # same way, so the exit code arrives here as a return value and never as an Exit.
+        # Commands therefore exit through ctx.exit() and never raise a bare SystemExit, which
+        # would fall into the catch-all branch below and print as "SystemExit: N".
+        exit_code = cli.main(
             args=args,
             prog_name=__init__conf__.shell_command,
             obj=services_factory,
             standalone_mode=False,
         )
-        return 0
-    except click.exceptions.Exit as exc:
-        return exc.exit_code
+        return exit_code if isinstance(exit_code, int) else 0
     except click.ClickException as exc:
         exc.show()
         return exc.exit_code

@@ -21,6 +21,15 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
   plain-text assertion reads the same on a developer machine, on a 79-column Windows runner and
   under GitHub's `GITHUB_ACTIONS`. For tests: under `build_testing()` a command's `logger.error`
   line now reaches CliRunner's stderr ahead of its `Error:` line.
+- **No more `SystemExit: N` on stderr.** `config`, `config-deploy` and `config-generate-examples`
+  raised a bare `SystemExit` on failure, which `main()`'s catch-all branch printed as
+  `SystemExit: 22` (or 13, or 1) after the real error message. They now exit through click's
+  context (`ctx.exit`), and `main()` returns the exit code rich_click's `main()` hands back
+  instead of discarding it and returning 0. `typed_click` gains a typed `get_current_context`
+  wrapper for the helpers that have no `ctx` parameter.
+- **A deliberate exit inside `config-deploy` keeps its own code.** click's `Exit` subclasses
+  `RuntimeError`, so the deploy's catch-all relabelled it "Failed to deploy configuration" with
+  exit 1; it is now re-raised unchanged.
 
 ## [1.9.3] 2026-08-01 00:16:20
 ### Fixed
