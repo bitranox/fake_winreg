@@ -24,6 +24,7 @@ from fake_winreg.domain.constants import (
 )
 
 from .. import safe_console
+from ..config_load import require_config
 from ..constants import CLICK_CONTEXT_SETTINGS
 from ..context import CLIContext
 from ..typed_click import argument, option
@@ -49,7 +50,11 @@ _NO_DB_MESSAGE = (
 
 
 def _resolve_db_path(ctx: click.Context, db_option: str | None) -> Path:
-    """Resolve the database path from --db option or config."""
+    """Resolve the database path from --db option or config.
+
+    Only without ``--db`` is the configuration read, so only then does a configuration that
+    could not be loaded refuse the command (exit 78, naming why).
+    """
     if db_option:
         return Path(db_option)
 
@@ -59,7 +64,7 @@ def _resolve_db_path(ctx: click.Context, db_option: str | None) -> Path:
     cli_ctx = ctx.find_object(CLIContext)
     if cli_ctx is None:
         raise click.UsageError(_NO_DB_MESSAGE)
-    configured = cli_ctx.config.get("registry.db_path", default=None)
+    configured = require_config(ctx, cli_ctx).get("registry.db_path", default=None)
     if not configured:
         raise click.UsageError(_NO_DB_MESSAGE)
     return Path(str(configured))

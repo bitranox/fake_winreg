@@ -19,11 +19,12 @@ import rich_click as click
 from lib_layered_config import Config, generate_examples
 
 from fake_winreg import __init__conf__
-from fake_winreg.adapters.config.overrides import apply_overrides
+from fake_winreg.adapters.config.loader import validate_profile
 from fake_winreg.adapters.config.permissions import get_permission_defaults
 from fake_winreg.domain.enums import DeployTarget, OutputFormat
 
 from .. import safe_console
+from ..config_load import echo_load_traceback, load_config, report_load_failure, require_config
 from ..constants import CLICK_CONTEXT_SETTINGS
 from ..context import CLIContext, get_cli_context
 from ..exit_codes import ExitCode
@@ -71,7 +72,7 @@ def cli_config(ctx: click.Context, output_format: str, section: str | None, prof
         >>> # Real invocation tested in test_cli_config.py
     """
     cli_ctx = get_cli_context(ctx)
-    effective_config, effective_profile = _resolve_config(cli_ctx, profile)
+    effective_config, effective_profile = _resolve_config(ctx, cli_ctx, profile)
     fmt = OutputFormat(output_format.lower())
 
     extra = {"command": "config", "format": fmt.value, "profile": effective_profile}
@@ -95,14 +96,15 @@ def _get_effective_profile(cli_ctx: CLIContext, profile_override: str | None) ->
     return profile_override if profile_override else cli_ctx.profile
 
 
-def _resolve_config(cli_ctx: CLIContext, profile: str | None) -> tuple[Config, str | None]:
+def _resolve_config(ctx: click.Context, cli_ctx: CLIContext, profile: str | None) -> tuple[Config, str | None]:
     """Resolve configuration from context or reload with profile override.
 
     When a subcommand-level profile override is specified, reloads config
-    with that profile and reapplies any root-level ``--set`` overrides
-    stored in the CLI context.
+    with that profile, the root's ``--env-file`` and any root-level ``--set``
+    overrides stored in the CLI context.
 
     Args:
+        ctx: The running command's click context, exited with 78 when loading failed.
         cli_ctx: CLI context containing stored config and services.
         profile: Optional profile override.
 
@@ -110,10 +112,15 @@ def _resolve_config(cli_ctx: CLIContext, profile: str | None) -> tuple[Config, s
         Tuple of (config, effective_profile).
     """
     effective_profile = _get_effective_profile(cli_ctx, profile)
-    if profile:
-        config = cli_ctx.services.get_config(profile=profile)
-        return apply_overrides(config, cli_ctx.set_overrides), effective_profile
-    return cli_ctx.config, effective_profile
+    if not profile:
+        return require_config(ctx, cli_ctx), effective_profile
+    config, error = load_config(
+        cli_ctx.services, profile=profile, env_file=cli_ctx.env_file, set_overrides=cli_ctx.set_overrides
+    )
+    if error is not None:
+        report_load_failure(error, show_traceback=cli_ctx.traceback)
+        ctx.exit(ExitCode.CONFIG_ERROR)
+    return config, effective_profile
 
 
 def _parse_octal_mode(ctx: click.Context, param: click.Parameter, value: str | None) -> int | None:
@@ -139,6 +146,26 @@ def _parse_octal_mode(ctx: click.Context, param: click.Parameter, value: str | N
         raise click.BadParameter(f"Invalid octal mode: {value}") from exc
 
 
+def _check_profile_name(_ctx: click.Context, _param: click.Parameter, value: str | None) -> str | None:
+    """The ``config-deploy --profile`` callback: an invalid name is a usage error (exit 2).
+
+    The root's ``--profile`` and ``config --profile`` are checked when the configuration is
+    loaded; this one only names the deploy directory, so without the check the name failed
+    inside the deploy as "Failed to deploy configuration" (exit 1).
+
+    Raises:
+        click.BadParameter: The name is empty, too long or holds a path separator or a
+            character outside the allowed set.
+    """
+    if value is None:
+        return None
+    try:
+        validate_profile(value)
+    except ValueError as exc:
+        raise click.BadParameter(str(exc)) from exc
+    return value
+
+
 @click.command("config-deploy", context_settings=CLICK_CONTEXT_SETTINGS)
 @option(
     "--target",
@@ -158,6 +185,7 @@ def _parse_octal_mode(ctx: click.Context, param: click.Parameter, value: str | N
     "--profile",
     type=str,
     default=None,
+    callback=_check_profile_name,
     help="Override profile from root command (e.g., 'production', 'test')",
 )
 @option(
@@ -214,6 +242,13 @@ def cli_config_deploy(
         >>> # Real invocation tested in test_cli_config.py
     """
     cli_ctx = get_cli_context(ctx)
+    if cli_ctx.config_error is not None:
+        # Deploying is how a broken configuration gets replaced, so it runs anyway, with the
+        # permission defaults of an empty configuration; the user is told which file was skipped.
+        echo_load_traceback(cli_ctx.config_error, show_traceback=cli_ctx.traceback)
+        safe_console.echo(
+            f"Warning: configuration not loaded, using default permissions: {cli_ctx.config_error}", err=True
+        )
     effective_profile = _get_effective_profile(cli_ctx, profile)
     deploy_targets = tuple(DeployTarget(t.lower()) for t in targets)
     target_values = tuple(t.value for t in deploy_targets)

@@ -328,6 +328,22 @@ fake-winreg --profile production --set lib_log_rich.console_level=DEBUG config
 | JSON Array | `--set section.hosts='["a.com", "b.com"]'` |
 | JSON Object | `--set section.metadata='{"key": "value"}'` |
 
+#### Checked Before the Configuration Is Loaded
+
+A malformed `--set`, two `--set` values that contradict each other (`--set a.b=1 --set a.b.c=2`
+gives `a.b` a value and also puts a key under it, in either order) and an invalid `--profile` name
+are usage errors (exit 2) for every command, whether or not the configuration files load. The same
+key given twice takes the last value.
+
+### When the Configuration Cannot Be Loaded
+
+A configuration file that does not parse, is not valid UTF-8 or cannot be read does not stop
+every command. The commands that read the configuration (`config`, and `reg` without `--db`)
+refuse with exit 78 and one `Error:` line naming the file; `--traceback` adds the loader's
+traceback. `info`, `convert`, `export-demo-registries`, `config-generate-examples`, `logdemo`,
+`reg --db PATH`, `--help` and `config-deploy` (the command that replaces the broken file) still
+run.
+
 ---
 
 ## Profiles

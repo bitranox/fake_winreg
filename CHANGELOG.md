@@ -57,6 +57,23 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
   `fake-winreg --set registry.db_path=my.db reg list-keys ...` and a configured `db_path` always
   ended in "No registry database specified" (exit 2). The configuration is now found up the
   context chain and read with `Config.get`; `--db` still wins.
+- **A broken configuration file no longer disables every command (exit codes change).** The
+  root group loaded the configuration before any subcommand option was parsed and let a load
+  error escape, so a malformed `config.toml`, a `.env` that is not UTF-8 or an unreadable file
+  made every command, `--help` and `config-deploy` (the command that replaces the file) exit 1
+  with empty stdout. The root now records the failure (`adapters/cli/config_load.py`): `config`,
+  and `reg` without `--db`, refuse with **exit 78** and one line naming the file, after the
+  loader's traceback with `--traceback`; `config-deploy` warns and deploys with the default
+  permissions; `info`, `convert`, `export-demo-registries`, `config-generate-examples`,
+  `logdemo` and help still run. Any other exception from the loader is a bug and propagates as
+  one. `config --profile X` reloads with the root's `--env-file` instead of searching for
+  another `.env`, and a broken profile file there exits 78 instead of 1.
+- **What the command line gets wrong is a usage error (exit 2), checked before loading.** A
+  malformed `--set` or an invalid `--profile` name used to be hidden by a broken file or to exit
+  22; `--set a.b=1 --set a.b.c=2` escaped as a `TypeError` (exit 22) and the other order silently
+  dropped the earlier override; `config-deploy --profile ../x` failed inside the deploy with exit
+  1. All of them now exit 2 with click's usage message, for every command. The same key given
+  twice still takes the last value.
 
 ## [1.9.3] 2026-08-01 00:16:20
 ### Fixed

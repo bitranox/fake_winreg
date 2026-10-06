@@ -325,3 +325,33 @@ def test_apply_overrides_rejects_malformed_input() -> None:
 
     with pytest.raises(ValueError, match="must contain '='"):
         apply_overrides(config, ("invalid",))
+
+
+# ======================== conflicting overrides ========================
+
+
+@pytest.mark.os_agnostic
+@pytest.mark.parametrize(
+    "overrides",
+    [("a.b=1", "a.b.c=2"), ("a.b.c=2", "a.b=1"), ('a.b={"c": 1}', "a.b.d=2"), ("a.b.c=1", "a.x=0", "a.b=2")],
+    ids=["value-then-key-under-it", "key-under-it-then-value", "json-table-then-key-under-it", "not-adjacent"],
+)
+def test_apply_overrides_refuses_a_key_given_both_a_value_and_keys_under_it(overrides: tuple[str, ...]) -> None:
+    """Either order used to go wrong: a TypeError, or the earlier override silently dropped."""
+    with pytest.raises(ValueError, match=r"conflicting --set overrides: a\.b is given a value and a\.b\."):
+        apply_overrides(_make_config({}), overrides)
+
+
+@pytest.mark.os_agnostic
+def test_apply_overrides_lets_the_last_of_two_values_for_one_key_win() -> None:
+    result = apply_overrides(_make_config({}), ("a.b=1", "a.b=2"))
+
+    assert result["a"]["b"] == 2
+
+
+@pytest.mark.os_agnostic
+def test_apply_overrides_keeps_sibling_keys_that_share_a_prefix_of_letters() -> None:
+    """``a.b`` and ``a.bc`` are siblings, not a value and a key under it."""
+    result = apply_overrides(_make_config({}), ("a.b=1", "a.bc.d=2"))
+
+    assert result["a"] == {"b": 1, "bc": {"d": 2}}
