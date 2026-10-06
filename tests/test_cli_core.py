@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 import lib_cli_exit_tools
 import pytest
+import rich_click as click
 
 from fake_winreg import __init__conf__
 from fake_winreg.adapters import cli as cli_mod
@@ -105,6 +106,39 @@ def test_when_cli_runs_without_arguments_help_is_printed(
 
     assert result.exit_code == 0
     assert "Usage:" in result.output
+
+
+def _command_paths(group: click.Group, prefix: tuple[str, ...] = ()) -> list[tuple[str, ...]]:
+    """Every command reachable from ``group``, as the argv words that name it."""
+    paths: list[tuple[str, ...]] = []
+    for name, command in sorted(group.commands.items()):
+        paths.append((*prefix, name))
+        if isinstance(command, click.Group):
+            paths.extend(_command_paths(command, (*prefix, name)))
+    return paths
+
+
+_COMMAND_PATHS = _command_paths(cli_mod.cli)
+
+
+@pytest.mark.os_agnostic
+def test_the_command_tree_is_walked() -> None:
+    """Premise of the help test below: it sees the nested commands, not only the top level."""
+    assert ("info",) in _COMMAND_PATHS
+    assert ("reg", "list-keys") in _COMMAND_PATHS
+
+
+@pytest.mark.os_agnostic
+@pytest.mark.parametrize("path", _COMMAND_PATHS, ids=[" ".join(path) for path in _COMMAND_PATHS])
+def test_no_command_help_shows_doctest_lines_or_a_literal_backslash_b(
+    cli_runner: CliRunner, production_factory: Callable[[], Any], path: tuple[str, ...]
+) -> None:
+    """A docstring's Example section and click's \\b marker are for readers of the source, not --help."""
+    result = cli_runner.invoke(cli_mod.cli, [*path, "--help"], obj=production_factory)
+
+    assert result.exit_code == 0, result.output
+    assert ">>>" not in result.output
+    assert "\\b" not in result.output
 
 
 @pytest.mark.os_agnostic

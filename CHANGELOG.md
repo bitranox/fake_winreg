@@ -132,8 +132,11 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
   a second `--force` run wrote nothing and then printed "Use --force to overwrite existing
   configuration files." It now says every target file is already identical. The `--force` help,
   the command help and CONFIG.md say that a replaced file is kept as `<name>.bak` and list the
-  files each target receives; the command help no longer prints a literal `\b` or its doctest
-  example.
+  files each target receives.
+- **Command help no longer shows source-code examples.** `info`, `config`, `config-deploy`,
+  `config-generate-examples` and `export-demo-registries` printed their docstring's doctest
+  lines (`>>> from click.testing import CliRunner`) in `--help`, and `config-deploy` a literal
+  `\b`. The help now ends before the example, and a test checks every command's help.
 
 ## [1.9.3] 2026-08-01 00:16:20
 ### Fixed

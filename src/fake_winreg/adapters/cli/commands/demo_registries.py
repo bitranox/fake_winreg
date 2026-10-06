@@ -46,6 +46,7 @@ def cli_export_demo_registries() -> None:
       windows11.json, windows11.reg, windows11.db
       wine.json, wine.reg, wine.db
 
+    \f
     Example:
         >>> from click.testing import CliRunner
         >>> import tempfile, os

@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 def cli_info() -> None:
     """Print resolved metadata so users can inspect installation details.
 
+    \f
     Example:
         >>> from click.testing import CliRunner
         >>> runner = CliRunner()
