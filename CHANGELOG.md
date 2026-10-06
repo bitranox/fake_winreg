@@ -7,6 +7,11 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 ## [Unreleased]
 
 ### Changed
+- **Requires lib_layered_config 7.0.1.** An unquoted `.env` value now converts like the
+  environment layer, so `ENABLED=false` arrives as the boolean `false` rather than the string
+  `"false"`, a `.env` or TOML file that is not UTF-8 is reported as a configuration error naming
+  the file, and `deploy_config` reads the permission settings itself; the fixes below rely on
+  all three.
 - **`click` is a declared dependency.** The package imports it directly (`adapters/cli/main.py`,
   `commands/config.py`) but only had it through rich-click. A new test fails when a runtime import
   is missing from `[project].dependencies`.
