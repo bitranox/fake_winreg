@@ -9,8 +9,10 @@ from typing import TYPE_CHECKING
 import pytest
 from click.testing import CliRunner
 
+from fake_winreg.adapters.cli import cli
 from fake_winreg.adapters.cli.commands.reg import cli_reg
 from fake_winreg.adapters.persistence.sqlite_backend import SqliteBackend
+from fake_winreg.composition import build_testing
 from fake_winreg.domain.constants import (
     HKEY_LOCAL_MACHINE,
     REG_DWORD,
@@ -215,3 +217,37 @@ def test_set_invalid_type(runner: CliRunner, db: Path) -> None:
     )
     assert result.exit_code != 0
     assert "Unknown type" in result.output
+
+
+# ---------------------------------------------------------------------------
+# registry.db_path from the configuration, through the root group
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.os_agnostic
+def test_the_configured_db_path_is_used_under_the_root_group(runner: CliRunner, db: Path) -> None:
+    """The reg group keeps its own dict in ctx.obj; the root's configuration must still be found."""
+    args = ["--set", f"registry.db_path={db}", "reg", "list-keys", r"HKEY_LOCAL_MACHINE\SOFTWARE\TestApp"]
+    result = runner.invoke(cli, args, obj=build_testing)
+
+    assert result.exit_code == 0, result.output
+    assert "Sub1" in result.output
+
+
+@pytest.mark.os_agnostic
+def test_db_overrides_the_configured_db_path_under_the_root_group(runner: CliRunner, db: Path, tmp_path: Path) -> None:
+    elsewhere = tmp_path / "elsewhere.db"
+    args = [
+        "--set",
+        f"registry.db_path={elsewhere}",
+        "reg",
+        "--db",
+        str(db),
+        "list-keys",
+        "HKEY_LOCAL_MACHINE\\SOFTWARE",
+    ]
+    result = runner.invoke(cli, args, obj=build_testing)
+
+    assert result.exit_code == 0, result.output
+    assert "TestApp" in result.output
+    assert not elsewhere.exists()

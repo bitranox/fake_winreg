@@ -25,7 +25,7 @@ from fake_winreg.domain.constants import (
 
 from .. import safe_console
 from ..constants import CLICK_CONTEXT_SETTINGS
-from ..context import get_cli_context
+from ..context import CLIContext
 from ..typed_click import argument, option
 
 logger = logging.getLogger(__name__)
@@ -42,26 +42,27 @@ _TYPE_MAP: dict[str, int] = {
 
 _TYPE_NAMES: dict[int, str] = {v: k for k, v in _TYPE_MAP.items()}
 
+_NO_DB_MESSAGE = (
+    "No registry database specified. Use --db PATH or configure registry.db_path "
+    "in config (--set registry.db_path=PATH or REGISTRY__DB_PATH in .env)."
+)
+
 
 def _resolve_db_path(ctx: click.Context, db_option: str | None) -> Path:
     """Resolve the database path from --db option or config."""
     if db_option:
         return Path(db_option)
 
-    try:
-        cli_ctx = get_cli_context(ctx)
-        config = cli_ctx.config
-        registry_section = config.data.get("registry", {})  # type: ignore[union-attr]  # pyright: ignore[reportUnknownMemberType]
-        db_path_str = str(registry_section.get("db_path", "")) if isinstance(registry_section, dict) else ""  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType]
-        if db_path_str:
-            return Path(db_path_str)  # pyright: ignore[reportUnknownArgumentType]
-    except (AttributeError, KeyError, RuntimeError):
-        pass
-
-    raise click.UsageError(
-        "No registry database specified. Use --db PATH or configure registry.db_path "
-        "in config (--set registry.db_path=PATH or REGISTRY__DB_PATH in .env)."
-    )
+    # The reg group keeps its own dict in ctx.obj, which hides the root's CLIContext from
+    # get_cli_context; find_object looks up the context chain for it instead. None means the
+    # group runs without the root group, so there is no configuration to read.
+    cli_ctx = ctx.find_object(CLIContext)
+    if cli_ctx is None:
+        raise click.UsageError(_NO_DB_MESSAGE)
+    configured = cli_ctx.config.get("registry.db_path", default=None)
+    if not configured:
+        raise click.UsageError(_NO_DB_MESSAGE)
+    return Path(str(configured))
 
 
 def _parse_key_path(key_path: str) -> tuple[str, str]:

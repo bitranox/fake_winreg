@@ -51,6 +51,12 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
   or a C/POSIX locale stdout uses `surrogateescape`, so a non-UTF-8 path prints byte-exact and
   still names the directory on disk, and stderr (`backslashreplace`) spells such a character
   out. Only a `strict` stream gets `?`.
+- **`reg` reads `registry.db_path` from the configuration again.** Run under the root group, the
+  `reg` group put its own dict into the click context, which hid the root's configuration, and
+  the lookup read `Config.data`, which does not exist; both failures were swallowed, so
+  `fake-winreg --set registry.db_path=my.db reg list-keys ...` and a configured `db_path` always
+  ended in "No registry database specified" (exit 2). The configuration is now found up the
+  context chain and read with `Config.get`; `--db` still wins.
 
 ## [1.9.3] 2026-08-01 00:16:20
 ### Fixed
