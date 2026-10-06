@@ -91,6 +91,13 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
   `--no-permissions` together with a mode option is a usage error too. "Deployed configuration"
   is logged after the deploy, and the report says "(permissions not set)" only for an explicit
   `--no-permissions`. `adapters/config/permissions.py` is removed.
+- **The documented `.env` and environment syntax for tables works.** `.env.example` and
+  `defaultconfig.d/90-logging.toml` showed comma-separated `LEVEL=style` and `field=regex` pairs
+  for `console_styles` and `scrub_patterns`. Such a value arrives as ONE string, which lib_log_rich refuses, so the
+  documented example stopped every command. They now show a JSON object written unquoted in a
+  `.env` (shell-quoted in the environment) or one key per entry
+  (`LIB_LOG_RICH__SCRUB_PATTERNS__API_KEY=.+`), and say that an unquoted value is converted in a
+  `.env` as in the environment.
 
 ## [1.9.3] 2026-08-01 00:16:20
 ### Fixed
