@@ -77,6 +77,7 @@ Complete (v1.5.3+)
 - `tests/test_cli_overrides.py` — CLI override tests
 - `tests/test_cli_validation.py` — CLI validation tests
 - `tests/test_config_overrides.py` — `--set` parsing tests
+- `tests/test_declared_dependencies.py` - Every third-party module imported at run time is a declared dependency
 - `tests/test_display.py` — Config display formatting tests
 - `tests/test_deploy_permissions.py` — Deploy permission tests
 - `tests/test_enums.py` — Enum tests

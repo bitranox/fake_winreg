@@ -6,6 +6,8 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "rich-click>=1.9.8",
+    # Imported directly (adapters/cli/main.py, commands/config.py), not only through rich-click.
+    "click>=8.5.0",
     "lib_cli_exit_tools>=2.3.4",
     "lib_log_rich>=6.3.7",
     "lib_layered_config>=5.6.2",

@@ -6,6 +6,11 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 
 ## [Unreleased]
 
+### Changed
+- **`click` is a declared dependency.** The package imports it directly (`adapters/cli/main.py`,
+  `commands/config.py`) but only had it through rich-click. A new test fails when a runtime import
+  is missing from `[project].dependencies`.
+
 ### Fixed
 - **`build_testing()` can run a command.** The in-memory logging initializer was a no-op while
   `info`, `config`, `config-deploy`, `convert` and `export-demo-registries` bind job context onto
