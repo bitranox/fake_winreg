@@ -63,9 +63,9 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
   made every command, `--help` and `config-deploy` (the command that replaces the file) exit 1
   with empty stdout. The root now records the failure (`adapters/cli/config_load.py`): `config`,
   and `reg` without `--db`, refuse with **exit 78** and one line naming the file, after the
-  loader's traceback with `--traceback`; `config-deploy` warns and deploys with the default
-  permissions; `info`, `convert`, `export-demo-registries`, `config-generate-examples`,
-  `logdemo` and help still run. Any other exception from the loader is a bug and propagates as
+  loader's traceback with `--traceback`; `config-deploy` (which does not read it, see below),
+  `info`, `convert`, `export-demo-registries`, `config-generate-examples`, `logdemo` and help
+  still run. Any other exception from the loader is a bug and propagates as
   one. `config --profile X` reloads with the root's `--env-file` instead of searching for
   another `.env`, and a broken profile file there exits 78 instead of 1.
 - **What the command line gets wrong is a usage error (exit 2), checked before loading.** A
@@ -74,6 +74,23 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
   dropped the earlier override; `config-deploy --profile ../x` failed inside the deploy with exit
   1. All of them now exit 2 with click's usage message, for every command. The same key given
   twice still takes the last value.
+- **`config-deploy` lets lib_layered_config decide the permissions (exit codes change).** The
+  command computed every mode itself from the application's own configuration read, which took
+  a `.env` found upward from the working directory and every deployed destination into account:
+  a `.env` line or a broken destination decided or blocked the deploy that was meant to replace
+  it, and the configured per-layer modes in `[lib_layered_config.default_permissions]` were read
+  but never applied. Now `config-deploy` hands its command line to lib_layered_config's
+  `deploy_config`, which reads the section itself from the bundled defaults, the files the deploy
+  does not write and the environment, never from `.env`, with any `--set` of the section laid
+  over it. A setting the library refuses (a bare integer mode, an unsafe mode, a non-boolean
+  `enabled`, an unknown key) stops the deploy with **exit 78**, one `Error:` line per problem and,
+  where an option gets past it, a hint naming `--dir-mode`/`--file-mode`; nothing is written.
+  `--dir-mode`/`--file-mode` are parsed by lib_layered_config's `DeployMode`, so `-1`, `0o7777`,
+  setuid/setgid/sticky, group or world write, an execute bit on a file or a mode that takes the
+  owner's access away are refused as usage errors (**exit 2**) instead of reaching `chmod`, and
+  `--no-permissions` together with a mode option is a usage error too. "Deployed configuration"
+  is logged after the deploy, and the report says "(permissions not set)" only for an explicit
+  `--no-permissions`. `adapters/config/permissions.py` is removed.
 
 ## [1.9.3] 2026-08-01 00:16:20
 ### Fixed

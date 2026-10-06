@@ -12,185 +12,14 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 from fake_winreg.adapters import cli as cli_mod
-from fake_winreg.adapters.config.permissions import (
-    get_modes_for_target,
-    get_permission_defaults,
-    parse_mode,
-)
 from fake_winreg.composition import AppServices, build_production
 from fake_winreg.domain.enums import DeployTarget
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Mapping
     from pathlib import Path
 
     from click.testing import CliRunner, Result
-    from lib_layered_config import Config
-
-# ======================== Permission Settings Loader Tests ========================
-
-
-@pytest.mark.os_agnostic
-def test_get_permission_defaults_returns_library_defaults_when_not_configured(
-    config_factory: Callable[[dict[str, Any]], Config],
-) -> None:
-    """Returns lib_layered_config defaults when no config section exists."""
-    config = config_factory({})
-
-    defaults = get_permission_defaults(config)
-
-    assert defaults.app_directory == 0o755
-    assert defaults.app_file == 0o644
-    assert defaults.host_directory == 0o755
-    assert defaults.host_file == 0o644
-    assert defaults.user_directory == 0o700
-    assert defaults.user_file == 0o600
-    assert defaults.enabled is True
-
-
-@pytest.mark.os_agnostic
-def test_get_permission_defaults_reads_from_config(
-    config_factory: Callable[[dict[str, Any]], Config],
-) -> None:
-    """Reads permission defaults from [lib_layered_config.default_permissions]."""
-    config = config_factory(
-        {
-            "lib_layered_config": {
-                "default_permissions": {
-                    "user_directory": 0o750,
-                    "user_file": 0o640,
-                    "enabled": False,
-                }
-            }
-        }
-    )
-
-    defaults = get_permission_defaults(config)
-
-    assert defaults.user_directory == 0o750
-    assert defaults.user_file == 0o640
-    assert defaults.enabled is False
-    # Non-overridden values use library defaults
-    assert defaults.app_directory == 0o755
-
-
-@pytest.mark.os_agnostic
-def test_get_modes_for_target_returns_config_defaults(
-    config_factory: Callable[[dict[str, Any]], Config],
-) -> None:
-    """Returns configured defaults for the specified target layer."""
-    config = config_factory(
-        {
-            "lib_layered_config": {
-                "default_permissions": {
-                    "user_directory": 0o750,
-                    "user_file": 0o640,
-                }
-            }
-        }
-    )
-
-    dir_mode, file_mode = get_modes_for_target(DeployTarget.USER, config)
-
-    assert dir_mode == 0o750
-    assert file_mode == 0o640
-
-
-@pytest.mark.os_agnostic
-def test_get_modes_for_target_cli_override_takes_precedence(
-    config_factory: Callable[[dict[str, Any]], Config],
-) -> None:
-    """CLI overrides take precedence over config defaults."""
-    config = config_factory(
-        {
-            "lib_layered_config": {
-                "default_permissions": {
-                    "user_directory": 0o750,
-                    "user_file": 0o640,
-                }
-            }
-        }
-    )
-
-    dir_mode, file_mode = get_modes_for_target(
-        DeployTarget.USER,
-        config,
-        dir_mode_override=0o700,
-        file_mode_override=0o600,
-    )
-
-    assert dir_mode == 0o700
-    assert file_mode == 0o600
-
-
-@pytest.mark.os_agnostic
-def test_get_modes_for_target_returns_library_defaults_for_app_layer(
-    config_factory: Callable[[dict[str, Any]], Config],
-) -> None:
-    """Returns library defaults for app layer when not configured."""
-    config = config_factory({})
-
-    dir_mode, file_mode = get_modes_for_target(DeployTarget.APP, config)
-
-    assert dir_mode == 0o755
-    assert file_mode == 0o644
-
-
-# ======================== parse_mode Tests ========================
-
-
-@pytest.mark.os_agnostic
-def test_parse_mode_accepts_integer() -> None:
-    """parse_mode returns integer values unchanged."""
-    assert parse_mode(493, 0o644) == 493
-    assert parse_mode(0o755, 0o644) == 0o755
-
-
-@pytest.mark.os_agnostic
-def test_parse_mode_accepts_octal_string_with_prefix() -> None:
-    """parse_mode parses '0o755' format."""
-    assert parse_mode("0o755", 0o644) == 0o755
-    assert parse_mode("0o644", 0o755) == 0o644
-    assert parse_mode("0o700", 0o755) == 0o700
-
-
-@pytest.mark.os_agnostic
-def test_parse_mode_accepts_octal_string_without_prefix() -> None:
-    """parse_mode parses '755' format (no 0o prefix)."""
-    assert parse_mode("755", 0o644) == 0o755
-    assert parse_mode("644", 0o755) == 0o644
-    assert parse_mode("600", 0o755) == 0o600
-
-
-@pytest.mark.os_agnostic
-def test_parse_mode_returns_default_on_invalid_string() -> None:
-    """parse_mode returns default for invalid octal strings."""
-    assert parse_mode("abc", 0o644) == 0o644
-    assert parse_mode("999", 0o755) == 0o755  # 9 is not a valid octal digit
-    assert parse_mode("", 0o700) == 0o700
-
-
-@pytest.mark.os_agnostic
-def test_get_permission_defaults_accepts_octal_strings(
-    config_factory: Callable[[dict[str, Any]], Config],
-) -> None:
-    """get_permission_defaults parses octal strings from config."""
-    config = config_factory(
-        {
-            "lib_layered_config": {
-                "default_permissions": {
-                    "user_directory": "0o750",
-                    "user_file": "640",  # Without 0o prefix
-                }
-            }
-        }
-    )
-
-    defaults = get_permission_defaults(config)
-
-    assert defaults.user_directory == 0o750
-    assert defaults.user_file == 0o640
-
 
 # ======================== CLI Option Parsing Tests ========================
 
@@ -202,9 +31,10 @@ class CapturedDeployArgs:
     targets: tuple[DeployTarget, ...]
     force: bool
     profile: str | None
-    set_permissions: bool
+    set_permissions: bool | None
     dir_mode: int | None
     file_mode: int | None
+    permission_overrides: Mapping[str, object] | None
 
 
 @pytest.fixture
@@ -219,9 +49,10 @@ def inject_deploy_with_permission_capture(
             targets: Any,
             force: bool = False,
             profile: str | None = None,
-            set_permissions: bool = True,
+            set_permissions: bool | None = None,
             dir_mode: int | None = None,
             file_mode: int | None = None,
+            permission_overrides: Mapping[str, object] | None = None,
         ) -> list[Path]:
             captured.append(
                 CapturedDeployArgs(
@@ -231,6 +62,7 @@ def inject_deploy_with_permission_capture(
                     set_permissions=set_permissions,
                     dir_mode=dir_mode,
                     file_mode=file_mode,
+                    permission_overrides=permission_overrides,
                 )
             )
             return [deployed_path]
@@ -249,12 +81,12 @@ def inject_deploy_with_permission_capture(
 
 
 @pytest.mark.os_agnostic
-def test_cli_deploy_passes_set_permissions_true_by_default(
+def test_cli_deploy_leaves_the_permission_decision_to_the_library_by_default(
     cli_runner: CliRunner,
     tmp_path: Path,
     inject_deploy_with_permission_capture: Callable[[Path, list[CapturedDeployArgs]], Callable[[], Any]],
 ) -> None:
-    """Default behavior sets permissions (enabled in default config)."""
+    """Without an option the command decides nothing: the library follows the configured ``enabled``."""
     deployed_path = tmp_path / "config.toml"
     deployed_path.touch()
     captured: list[CapturedDeployArgs] = []
@@ -265,7 +97,9 @@ def test_cli_deploy_passes_set_permissions_true_by_default(
 
     assert result.exit_code == 0
     assert len(captured) == 1
-    assert captured[0].set_permissions is True
+    assert (captured[0].set_permissions, captured[0].dir_mode, captured[0].file_mode) == (None, None, None)
+    assert captured[0].permission_overrides is None
+    assert "permissions not set" not in result.output
 
 
 @pytest.mark.os_agnostic
@@ -381,13 +215,13 @@ def test_cli_deploy_invalid_octal_dir_mode_rejected(
     cli_runner: CliRunner,
     production_factory: Callable[[], Any],
 ) -> None:
-    """Invalid octal mode string is rejected with error."""
+    """A mode that is not a plain octal literal is rejected with an error."""
     result: Result = cli_runner.invoke(
         cli_mod.cli, ["config-deploy", "--target", "user", "--dir-mode", "abc"], obj=production_factory
     )
 
     assert result.exit_code != 0
-    assert "Invalid octal mode" in result.output
+    assert "is not a plain octal literal" in result.output
 
 
 @pytest.mark.os_agnostic
@@ -395,13 +229,13 @@ def test_cli_deploy_invalid_octal_file_mode_rejected(
     cli_runner: CliRunner,
     production_factory: Callable[[], Any],
 ) -> None:
-    """Invalid octal mode string for file-mode is rejected."""
+    """A file mode that is not a plain octal literal is rejected."""
     result: Result = cli_runner.invoke(
         cli_mod.cli, ["config-deploy", "--target", "user", "--file-mode", "xyz"], obj=production_factory
     )
 
     assert result.exit_code != 0
-    assert "Invalid octal mode" in result.output
+    assert "is not a plain octal literal" in result.output
 
 
 @pytest.mark.os_agnostic
@@ -488,9 +322,31 @@ def test_deploy_configuration_passes_set_permissions_to_library(
         force=False,
         set_permissions=False,
     )
+    deploy_mod.deploy_configuration(targets=[DeployTarget.USER])
 
-    assert len(captured_kwargs) == 1
-    assert captured_kwargs[0]["set_permissions"] is False
+    assert [kwargs["set_permissions"] for kwargs in captured_kwargs] == [False, None]
+
+
+@pytest.mark.os_agnostic
+def test_deploy_configuration_passes_permission_overrides_to_library(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """deploy_configuration hands permission_overrides to deploy_config unchanged."""
+    from fake_winreg.adapters.config import deploy as deploy_mod
+
+    captured_kwargs: list[dict[str, Any]] = []
+
+    def mock_deploy_config(**kwargs: Any) -> list[Any]:
+        captured_kwargs.append(kwargs)
+        return []
+
+    monkeypatch.setattr(deploy_mod, "deploy_config", mock_deploy_config)
+    overrides = {"user_file": "0o640"}
+
+    deploy_mod.deploy_configuration(targets=[DeployTarget.USER], permission_overrides=overrides)
+    deploy_mod.deploy_configuration(targets=[DeployTarget.USER])
+
+    assert [kwargs["permission_overrides"] for kwargs in captured_kwargs] == [overrides, None]
 
 
 @pytest.mark.os_agnostic

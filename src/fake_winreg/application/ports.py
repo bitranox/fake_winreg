@@ -15,7 +15,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Protocol
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
     from pathlib import Path
 
     from lib_layered_config import Config
@@ -48,9 +48,10 @@ class DeployConfiguration(Protocol):
         targets: Sequence[DeployTarget],
         force: bool = ...,
         profile: str | None = ...,
-        set_permissions: bool = ...,
+        set_permissions: bool | None = ...,
         dir_mode: int | None = ...,
         file_mode: int | None = ...,
+        permission_overrides: Mapping[str, object] | None = ...,
     ) -> list[Path]: ...
 
 

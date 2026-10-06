@@ -82,6 +82,8 @@ Complete (v1.5.3+)
 - `tests/test_declared_dependencies.py` - Every third-party module imported at run time is a declared dependency
 - `tests/test_display.py` — Config display formatting tests
 - `tests/test_deploy_permissions.py` — Deploy permission tests
+- `tests/test_deploy_mode_safety.py` - `--dir-mode`/`--file-mode` refused when malformed or unsafe
+- `tests/test_permission_defaults.py` - lib_layered_config decides the deployed modes from `[lib_layered_config.default_permissions]`, never from `.env`
 - `tests/test_enums.py` — Enum tests
 - `tests/test_errors.py` — Error type tests
 - `tests/test_logging.py` — Logging tests
@@ -178,7 +180,7 @@ Deploy default configuration to system or user directories.
 | `--force` | Overwrite existing files |
 | `--profile NAME` | Deploy to profile subdirectory |
 
-**Exit codes:** 0, 1, 13 (permission denied)
+**Exit codes:** 0, 1, 2 (refused mode, invalid profile, `--no-permissions` with a mode), 13 (permission denied), 78 (refused permission settings)
 
 ### config-generate-examples
 

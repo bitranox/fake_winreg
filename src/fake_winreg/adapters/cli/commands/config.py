@@ -11,20 +11,28 @@ Contents:
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from collections.abc import Mapping
+from typing import TYPE_CHECKING, Final, cast
 
 import click.exceptions as click_exceptions
 import lib_log_rich.runtime
 import rich_click as click
-from lib_layered_config import Config, generate_examples
+from lib_layered_config import (
+    Config,
+    DeployMode,
+    DeployModeError,
+    DeployPermissionsError,
+    ModeKind,
+    generate_examples,
+)
 
 from fake_winreg import __init__conf__
 from fake_winreg.adapters.config.loader import validate_profile
-from fake_winreg.adapters.config.permissions import get_permission_defaults
+from fake_winreg.adapters.config.overrides import nest_overrides
 from fake_winreg.domain.enums import DeployTarget, OutputFormat
 
 from .. import safe_console
-from ..config_load import echo_load_traceback, load_config, report_load_failure, require_config
+from ..config_load import load_config, report_load_failure, require_config
 from ..constants import CLICK_CONTEXT_SETTINGS
 from ..context import CLIContext, get_cli_context
 from ..exit_codes import ExitCode
@@ -123,27 +131,40 @@ def _resolve_config(ctx: click.Context, cli_ctx: CLIContext, profile: str | None
     return config, effective_profile
 
 
-def _parse_octal_mode(ctx: click.Context, param: click.Parameter, value: str | None) -> int | None:
-    """Parse octal mode string (e.g., '750' or '0o750') to int.
+def _parse_deploy_mode(value: str | None, *, kind: ModeKind) -> int | None:
+    """Parse an octal mode string (``750`` or ``0o750``) and refuse an unsafe one.
+
+    lib_layered_config's :class:`DeployMode` holds the one rule for a textual mode and for
+    what is safe on configuration that can hold secrets, so this option and the library's
+    own check can never disagree.
 
     Args:
-        ctx: Click context (unused but required by callback signature).
-        param: Click parameter (unused but required by callback signature).
-        value: Octal mode string from CLI, or None.
+        value: Octal mode string from the CLI, or None when the option was not given.
+        kind: Whether the value is ``--dir-mode`` (a directory) or ``--file-mode`` (a file).
 
     Returns:
-        Integer permission mode, or None if value was None.
+        The permission mode, or None if value was None.
 
     Raises:
-        click.BadParameter: If value cannot be parsed as octal.
+        click.BadParameter: The value is not a plain octal literal, lies outside 0..0o7777,
+            or is unsafe for configuration that can hold secrets.
     """
     if value is None:
         return None
     try:
-        # Handle both '750' and '0o750' formats
-        return int(value, 8) if not value.startswith("0o") else int(value, 0)
-    except ValueError as exc:
-        raise click.BadParameter(f"Invalid octal mode: {value}") from exc
+        return DeployMode.from_text(value, kind).value
+    except DeployModeError as exc:
+        raise click.BadParameter(str(exc)) from exc
+
+
+def _parse_dir_mode(_ctx: click.Context, _param: click.Parameter, value: str | None) -> int | None:
+    """The ``--dir-mode`` callback; see :func:`_parse_deploy_mode`."""
+    return _parse_deploy_mode(value, kind=ModeKind.DIRECTORY)
+
+
+def _parse_file_mode(_ctx: click.Context, _param: click.Parameter, value: str | None) -> int | None:
+    """The ``--file-mode`` callback; see :func:`_parse_deploy_mode`."""
+    return _parse_deploy_mode(value, kind=ModeKind.FILE)
 
 
 def _check_profile_name(_ctx: click.Context, _param: click.Parameter, value: str | None) -> str | None:
@@ -192,20 +213,23 @@ def _check_profile_name(_ctx: click.Context, _param: click.Parameter, value: str
     "--permissions/--no-permissions",
     "set_permissions",
     default=None,
-    help="Set Unix permissions (755/644 for app/host, 700/600 for user). Default: enabled.",
+    help=(
+        "Set Unix permissions (755/644 for app/host, 700/600 for user). "
+        "Default: the configured enabled (on when unset)."
+    ),
 )
 @option(
     "--dir-mode",
     type=str,
     default=None,
-    callback=_parse_octal_mode,
+    callback=_parse_dir_mode,
     help="Override directory mode (octal, e.g., 750 or 0o750)",
 )
 @option(
     "--file-mode",
     type=str,
     default=None,
-    callback=_parse_octal_mode,
+    callback=_parse_file_mode,
     help="Override file mode (octal, e.g., 640 or 0o640)",
 )
 @click.pass_context
@@ -236,29 +260,28 @@ def cli_config_deploy(
     - --dir-mode: Override directory mode (octal, e.g., 750)
     - --file-mode: Override file mode (octal, e.g., 640)
 
+    Without them, lib_layered_config decides the modes from
+    [lib_layered_config.default_permissions] in the bundled defaults, the
+    configuration files this deploy does not overwrite and the environment,
+    with any --set of that section laid over them; never from .env.
+
     Example:
         >>> from click.testing import CliRunner
         >>> runner = CliRunner()
         >>> # Real invocation tested in test_cli_config.py
     """
-    cli_ctx = get_cli_context(ctx)
-    if cli_ctx.config_error is not None:
-        # Deploying is how a broken configuration gets replaced, so it runs anyway, with the
-        # permission defaults of an empty configuration; the user is told which file was skipped.
-        echo_load_traceback(cli_ctx.config_error, show_traceback=cli_ctx.traceback)
-        safe_console.echo(
-            f"Warning: configuration not loaded, using default permissions: {cli_ctx.config_error}", err=True
+    if set_permissions is False and (dir_mode is not None or file_mode is not None):
+        raise click.UsageError(
+            "--no-permissions cannot be combined with --dir-mode or --file-mode: "
+            "a mode cannot be applied while permission setting is off"
         )
+    cli_ctx = get_cli_context(ctx)
     effective_profile = _get_effective_profile(cli_ctx, profile)
     deploy_targets = tuple(DeployTarget(t.lower()) for t in targets)
     target_values = tuple(t.value for t in deploy_targets)
 
     extra = {"command": "config-deploy", "targets": target_values, "force": force, "profile": effective_profile}
     with lib_log_rich.runtime.bind(job_id="cli-config-deploy", extra=extra):
-        logger.info(
-            "Deploying configuration",
-            extra={"targets": target_values, "force": force, "profile": effective_profile},
-        )
         _execute_deploy(
             cli_ctx,
             targets=deploy_targets,
@@ -282,35 +305,45 @@ def _execute_deploy(
 ) -> None:
     """Execute configuration deployment with error handling.
 
+    The command decides no permission itself: what the command line said goes to
+    lib_layered_config's ``deploy_config`` unchanged, and the library reads the configured
+    settings without ``.env`` and without the files it overwrites, so neither can block or
+    change a deploy.
+
     Args:
         cli_ctx: CLI context containing services.
         targets: Deployment target layers.
         force: Whether to overwrite existing files.
         profile: Optional profile name.
-        set_permissions: Whether to set Unix permissions. None uses config default.
-        dir_mode: Override directory permission mode.
-        file_mode: Override file permission mode.
+        set_permissions: ``--permissions`` (True), ``--no-permissions`` (False), or neither
+            (None: the configured ``enabled`` decides).
+        dir_mode: Directory mode for every target; None leaves it to the configured setting.
+        file_mode: File mode for every target; None leaves it to the configured setting.
 
     Raises:
-        click.exceptions.Exit: On permission or other errors, raised through ``ctx.exit`` so
-            ``main()`` returns the code instead of printing a bare ``SystemExit``.
+        click.exceptions.Exit: On a refused permission setting (78), a permission error or
+            any other failure, raised through ``ctx.exit`` so ``main()`` returns the code
+            instead of printing a bare ``SystemExit``.
     """
-    # Get permission defaults from config
-    perm_defaults = get_permission_defaults(cli_ctx.config)
-
-    # CLI --permissions/--no-permissions overrides config enabled setting
-    effective_set_permissions = set_permissions if set_permissions is not None else perm_defaults.enabled
-
+    overrides = _permission_overrides(cli_ctx)
     try:
         deployed_paths = cli_ctx.services.deploy_configuration(
             targets=targets,
             force=force,
             profile=profile,
-            set_permissions=effective_set_permissions,
+            set_permissions=set_permissions,
             dir_mode=dir_mode,
             file_mode=file_mode,
+            permission_overrides=overrides,
         )
-        _report_deployment_result(deployed_paths, profile, effective_set_permissions)
+        # Logged after the call, so the line reports what happened rather than an attempt.
+        logger.info(
+            "Deployed configuration",
+            extra={"targets": tuple(t.value for t in targets), "force": force, "profile": profile},
+        )
+        _report_deployment_result(deployed_paths, profile, set_permissions)
+    except DeployPermissionsError as exc:
+        _refuse_permission_settings(exc)
     except PermissionError as exc:
         logger.error("Permission denied when deploying configuration", extra={"error": str(exc)})
         safe_console.echo(f"\nError: Permission denied. {exc}", err=True)
@@ -326,17 +359,85 @@ def _execute_deploy(
         get_current_context().exit(ExitCode.GENERAL_ERROR)
 
 
-def _report_deployment_result(deployed_paths: list[Path], profile: str | None, set_permissions: bool) -> None:
+_LAYERED_CONFIG_SECTION: Final[str] = "lib_layered_config"
+_PERMISSIONS_KEY: Final[str] = "default_permissions"
+
+#: How to deploy when the configured permission settings cannot be used. Both modes come
+#: first: --no-permissions leaves every mode to the umask, which can make a user file that
+#: holds secrets readable by other accounts.
+_DEPLOY_ANYWAY_HINT: Final[str] = (
+    "Hint: to deploy anyway, pass both --dir-mode and --file-mode (the built-in modes are 700 and 600 "
+    "for user, 755 and 644 for app and host); --no-permissions also deploys, but leaves every mode to "
+    "the umask, which can make a user file that holds secrets readable by other accounts."
+)
+
+
+def _permission_overrides(cli_ctx: CLIContext) -> Mapping[str, object] | None:
+    """Return the ``--set lib_layered_config.default_permissions...`` values, keyed by setting name.
+
+    Read from the same nested ``--set`` tree the ``config`` command lays over its output, so
+    both commands see one value for one key (the last ``--set`` of a key wins in both), and a
+    key such as ``default_permissions_x`` is never taken for the section. A deeper key
+    (``...user_file.x=1``) arrives as a table value, which the library refuses by name.
+
+    Args:
+        cli_ctx: The state the root group stored; only its ``--set`` strings are read.
+
+    Returns:
+        The section's overrides, or None when no ``--set`` names the section.
+
+    Raises:
+        click.exceptions.Exit: The section itself is set to a value that is not a table
+            (``--set lib_layered_config.default_permissions=5`` or ``=null``); one stderr
+            line names it, exit 78, nothing is deployed.
+    """
+    tree, _ = nest_overrides(cli_ctx.set_overrides)
+    section = tree.get(_LAYERED_CONFIG_SECTION, {})
+    if _PERMISSIONS_KEY not in section:
+        return None
+    value = section[_PERMISSIONS_KEY]
+    if isinstance(value, Mapping):
+        return cast("Mapping[str, object]", value)
+    safe_console.echo(
+        f"Error: {_LAYERED_CONFIG_SECTION}.{_PERMISSIONS_KEY}: must be a table, "
+        f"got {type(value).__name__} (source: override)",
+        err=True,
+    )
+    get_current_context().exit(ExitCode.CONFIG_ERROR)
+
+
+def _refuse_permission_settings(exc: DeployPermissionsError) -> None:
+    """Report lib_layered_config's refusal of the permission settings and exit 78.
+
+    One ``Error:`` line per problem. The library's own hint names its Python parameters,
+    so the CLI spelling replaces it. It is shown only when the library offers one: it does
+    for a configured setting (both modes on the command line then deploy anyway), not for
+    a refused ``--set``, which no mode option gets past.
+
+    Raises:
+        click.exceptions.Exit: Always, with exit code 78.
+    """
+    logger.error("Refused permission settings", extra={"problems": [str(problem) for problem in exc.problems]})
+    for problem in exc.problems:
+        safe_console.echo(f"Error: {problem}", err=True)
+    if exc.hint is not None:
+        safe_console.echo(_DEPLOY_ANYWAY_HINT, err=True)
+    get_current_context().exit(ExitCode.CONFIG_ERROR)
+
+
+def _report_deployment_result(deployed_paths: list[Path], profile: str | None, set_permissions: bool | None) -> None:
     """Report deployment results to the user.
 
     Args:
         deployed_paths: List of paths where configs were deployed.
         profile: Optional profile name for display.
-        set_permissions: Whether permissions were set.
+        set_permissions: What the command line said: False for ``--no-permissions``. None
+            means the configured ``enabled`` decided, which this command does not read, so
+            the report claims nothing about it.
     """
     if deployed_paths:
         profile_msg = f" (profile: {profile})" if profile else ""
-        perm_msg = "" if set_permissions else " (permissions not set)"
+        perm_msg = " (permissions not set)" if set_permissions is False else ""
         safe_console.echo(f"\nConfiguration deployed successfully{profile_msg}{perm_msg}:")
         for path in deployed_paths:
             # ASCII marker on purpose: a non-ASCII glyph here crashes config-deploy with a

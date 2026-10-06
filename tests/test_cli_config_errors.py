@@ -13,18 +13,27 @@ loader is a bug and is not dressed up as a configuration error.
 
 ``reg`` reads the configuration only for ``registry.db_path``: with ``--db`` it runs past a
 load failure, without it it refuses like any other command that reads the configuration.
+
+``config-deploy`` reads nothing from the configuration the root loaded: it hands its command
+line to lib_layered_config, which reads the permission settings itself, without ``.env`` and
+without the files the deploy overwrites. A configuration that did not load therefore never
+blocks it, whatever its options; a permission setting the library refuses exits 78 with one
+``Error:`` line per problem and, when the command line can get past it, a hint in the CLI's own
+spelling.
 """
 
 from __future__ import annotations
 
 import dataclasses
+import logging
 import os
+import stat
 import subprocess
 import sys
 from typing import TYPE_CHECKING, Any
 
 import pytest
-from lib_layered_config import Config, ConfigError
+from lib_layered_config import Config, ConfigError, DeployPermissionsError, PermissionProblem
 
 from fake_winreg import __init__conf__
 from fake_winreg.adapters import cli as cli_mod
@@ -103,14 +112,99 @@ def test_reg_with_an_explicit_db_runs_past_a_broken_config(cli_runner: CliRunner
     assert BROKEN_TOML not in result.stderr
 
 
+def _recording_failing_config(error: Exception) -> tuple[list[dict[str, Any]], Callable[[], AppServices]]:
+    """A failing configuration whose deploy records its keyword arguments and writes nothing."""
+    calls: list[dict[str, Any]] = []
+
+    def get_config(**_kwargs: Any) -> Config:
+        raise error
+
+    def deploy(**kwargs: Any) -> list[Path]:
+        calls.append(kwargs)
+        return []
+
+    return calls, lambda: dataclasses.replace(build_testing(), get_config=get_config, deploy_configuration=deploy)
+
+
 @pytest.mark.os_agnostic
-def test_config_deploy_says_it_deploys_without_the_broken_config(cli_runner: CliRunner) -> None:
-    result = cli_runner.invoke(
-        cli_mod.cli, ["config-deploy", "--target", "user"], obj=_failing_config(ConfigError(BROKEN_TOML))
-    )
+@pytest.mark.parametrize(
+    ("options", "expected"),
+    [
+        ([], (None, None, None)),
+        (["--permissions"], (True, None, None)),
+        (["--no-permissions"], (False, None, None)),
+        (["--dir-mode", "750"], (None, 0o750, None)),
+        (["--dir-mode", "750", "--file-mode", "640"], (None, 0o750, 0o640)),
+    ],
+    ids=["no-options", "permissions-on", "no-permissions", "dir-mode-only", "both-modes"],
+)
+def test_config_deploy_runs_whatever_its_options_when_the_config_did_not_load(
+    cli_runner: CliRunner, options: list[str], expected: tuple[bool | None, int | None, int | None]
+) -> None:
+    """The library reads the permission settings itself; the root's failed load is not its business."""
+    calls, factory = _recording_failing_config(ConfigError(BROKEN_TOML))
+
+    result = cli_runner.invoke(cli_mod.cli, ["config-deploy", "--target", "user", *options], obj=factory)
 
     assert result.exit_code == 0, result.output
-    assert BROKEN_TOML in result.stderr
+    assert BROKEN_TOML not in result.stderr
+    assert [(call["set_permissions"], call["dir_mode"], call["file_mode"]) for call in calls] == [expected]
+
+
+def _refusing_deploy(error: DeployPermissionsError) -> Callable[[], AppServices]:
+    def deploy(**_kwargs: Any) -> list[Path]:
+        raise error
+
+    return lambda: dataclasses.replace(build_testing(), deploy_configuration=deploy)
+
+
+_PROBLEMS = (
+    PermissionProblem("lib_layered_config.default_permissions.user_file", "a bare integer", "/etc/xdg/app/config.toml"),
+    PermissionProblem("lib_layered_config.default_permissions.enabled", "must be true or false, got str 'no'", "env"),
+)
+
+
+@pytest.mark.os_agnostic
+def test_a_library_refusal_is_one_error_line_per_problem_then_the_cli_hint(cli_runner: CliRunner) -> None:
+    """The library's hint names its Python parameters (dir_mode); the CLI replaces it with its options."""
+    error = DeployPermissionsError(_PROBLEMS, hint="to deploy anyway, give both modes (dir_mode and file_mode)")
+
+    result = cli_runner.invoke(cli_mod.cli, ["config-deploy", "--target", "user"], obj=_refusing_deploy(error))
+
+    lines = [line for line in result.stderr.splitlines() if line.strip()]
+    assert result.exit_code == 78, result.output
+    assert lines[:2] == [f"Error: {problem}" for problem in _PROBLEMS]
+    assert len(lines) == 3, result.stderr
+    assert lines[2].startswith("Hint: to deploy anyway, pass both --dir-mode and --file-mode")
+    assert "--no-permissions also deploys, but leaves every mode to the umask" in lines[2]
+    assert "dir_mode" not in result.stderr
+
+
+@pytest.mark.os_agnostic
+def test_a_library_refusal_without_a_hint_offers_none(cli_runner: CliRunner) -> None:
+    """A refused --set has no way around it on the command line, so the library gives no hint."""
+    error = DeployPermissionsError(_PROBLEMS[:1])
+
+    result = cli_runner.invoke(cli_mod.cli, ["config-deploy", "--target", "user"], obj=_refusing_deploy(error))
+
+    assert result.exit_code == 78, result.output
+    assert [line for line in result.stderr.splitlines() if line.strip()] == [f"Error: {_PROBLEMS[0]}"]
+
+
+@pytest.mark.os_agnostic
+@pytest.mark.parametrize("refused", [True, False], ids=["refused", "deploys"])
+def test_config_deploy_logs_a_deploy_only_after_it_happened(
+    cli_runner: CliRunner, caplog: pytest.LogCaptureFixture, refused: bool
+) -> None:
+    """An INFO line before the call would tell the log a deploy happened that the library refused."""
+    factory = _refusing_deploy(DeployPermissionsError(_PROBLEMS[:1])) if refused else build_testing
+
+    with caplog.at_level(logging.INFO):
+        result = cli_runner.invoke(cli_mod.cli, ["config-deploy", "--target", "user"], obj=factory)
+
+    announced = [record for record in caplog.records if record.getMessage() == "Deployed configuration"]
+    assert result.exit_code == (78 if refused else 0), result.output
+    assert len(announced) == (0 if refused else 1)
 
 
 @pytest.mark.os_agnostic
@@ -245,10 +339,7 @@ def test_a_non_utf8_env_file_is_a_configuration_error_naming_the_file(
 
 
 @pytest.mark.os_agnostic
-@pytest.mark.parametrize("args", [["config"], ["config-deploy", "--target", "user"]], ids=["config", "config-deploy"])
-def test_traceback_shows_why_the_config_did_not_load(
-    cli_runner: CliRunner, managed_traceback_state: None, args: list[str]
-) -> None:
+def test_traceback_shows_why_the_config_did_not_load(cli_runner: CliRunner, managed_traceback_state: None) -> None:
     def get_config(**_kwargs: Any) -> Config:
         try:
             raise OSError("the underlying cause")
@@ -256,8 +347,9 @@ def test_traceback_shows_why_the_config_did_not_load(
             raise ConfigError(BROKEN_TOML) from cause
 
     services = dataclasses.replace(build_testing(), get_config=get_config)
-    result = cli_runner.invoke(cli_mod.cli, ["--traceback", *args], obj=lambda: services)
+    result = cli_runner.invoke(cli_mod.cli, ["--traceback", "config"], obj=lambda: services)
 
+    assert result.exit_code == 78, result.output
     assert "Traceback" in result.stderr
     assert "OSError: the underlying cause" in result.stderr
     assert BROKEN_TOML in result.stderr
@@ -387,6 +479,28 @@ def test_a_real_broken_user_config_refuses_config_with_78(broken_user_config_env
     assert completed.returncode == 78, stderr
     assert "config.toml is not valid TOML" in stderr
     assert "Traceback" not in stderr
+
+
+@_LINUX_ONLY
+def test_a_real_invalid_permission_section_is_replaced_by_a_forced_deploy(tmp_path: Path) -> None:
+    """End to end: the command that replaces a bad file is not blocked by the value it replaces.
+
+    The library never reads the files a deploy writes, so ``--force`` alone gets past the value.
+    """
+    config_dir = tmp_path / __init__conf__.LAYEREDCONF_SLUG
+    config_dir.mkdir()
+    bad = '[lib_layered_config.default_permissions]\nuser_directory = "0o777"\n'
+    (config_dir / "config.toml").write_text(bad, encoding="utf-8")
+    completed = subprocess.run(
+        [sys.executable, "-m", "fake_winreg", "config-deploy", "--target", "user", "--force"],
+        capture_output=True,
+        check=False,
+        env={**os.environ, "XDG_CONFIG_HOME": str(tmp_path)},
+    )
+
+    assert completed.returncode == 0, completed.stderr.decode("utf-8", "replace")
+    assert (config_dir / "config.toml").read_text(encoding="utf-8") != bad
+    assert stat.S_IMODE(config_dir.stat().st_mode) == 0o700
 
 
 @_LINUX_ONLY

@@ -9,7 +9,7 @@ import pytest
 from fake_winreg.adapters import cli as cli_mod
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Mapping
     from pathlib import Path
 
     from click.testing import CliRunner, Result
@@ -41,9 +41,10 @@ def test_when_config_deploy_has_permission_error_it_exits_with_code_13(
         targets: Any,
         force: bool = False,
         profile: str | None = None,
-        set_permissions: bool = True,
+        set_permissions: bool | None = None,
         dir_mode: int | None = None,
         file_mode: int | None = None,
+        permission_overrides: Mapping[str, object] | None = None,
     ) -> list[Any]:
         raise PermissionError("Permission denied")
 
@@ -67,9 +68,10 @@ def test_when_config_deploy_has_generic_error_it_exits_with_code_1(
         targets: Any,
         force: bool = False,
         profile: str | None = None,
-        set_permissions: bool = True,
+        set_permissions: bool | None = None,
         dir_mode: int | None = None,
         file_mode: int | None = None,
+        permission_overrides: Mapping[str, object] | None = None,
     ) -> list[Any]:
         raise OSError("Disk full")
 

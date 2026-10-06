@@ -139,8 +139,8 @@ Deploy bundled default configuration to platform-specific directories.
 | `--target` | Yes | Target layer: `app`, `host`, or `user`. Can be specified multiple times. |
 | `--force` | No | Overwrite existing configuration files. Without this, existing files are skipped. |
 | `--profile NAME` | No | Deploy to a profile-specific subdirectory (e.g., `profile/production/`). |
-| `--permissions` | No | Enable Unix permission setting (default). |
-| `--no-permissions` | No | Disable permission setting; use system umask instead. |
+| `--permissions` | No | Set Unix permissions even when the configured `enabled` is false. |
+| `--no-permissions` | No | Disable permission setting; use system umask instead. Not combinable with a mode option. |
 | `--dir-mode MODE` | No | Override directory permissions (octal: `750` or `0o750`). |
 | `--file-mode MODE` | No | Override file permissions (octal: `640` or `0o640`). |
 
@@ -236,13 +236,21 @@ fake-winreg config-deploy --target user --dir-mode 750 --file-mode 640
 fake-winreg config-deploy --target user --dir-mode 0o750
 ```
 
+A mode must be a plain octal literal (`750` or `0o750`; no sign, whitespace, `_` or other base)
+within `0`..`0o7777`. Because the deployed files can hold credentials, a mode is also refused when
+it sets the setuid, setgid or sticky bit, grants group or world write, puts an execute bit on a
+file, or takes the owner's access away (a directory needs owner `rwx`, a file owner `rw`). Group
+write is refused like world write because a group can hold every local account (on macOS all of
+them share `staff`), and a configuration file never needs `x`. A refused mode is a usage error
+(exit 2) that names the offending bits, and nothing is written.
+
 **Configurable defaults:**
 
 Permission defaults can be customized in `[lib_layered_config.default_permissions]`:
 
 ```toml
 [lib_layered_config.default_permissions]
-# Values: octal strings ("0o755", "755") or decimal integers (493)
+# Values: octal strings ("0o755", "755"); a bare integer is refused (see below)
 app_directory = "0o755"
 app_file = "0o644"
 host_directory = "0o755"
@@ -253,6 +261,39 @@ user_file = "0o600"
 # Set to false to disable permission setting by default
 enabled = true
 ```
+
+`config-deploy` decides none of this itself: it passes its options and any `--set` of this
+section to lib_layered_config, which applies each target's own layer modes. The library reads the
+section from the bundled defaults, the configuration files this deploy does not overwrite and the
+environment, with the `--set` values laid over them. It never reads `.env` for it (neither one
+found from the working directory nor an explicit `--env-file`), so a `.env` can neither change a
+deployed mode nor block a deploy. `--dir-mode`/`--file-mode` override the configured modes for
+every target, and a key left out falls back to the layer default in the table above. Without
+`--permissions`/`--no-permissions`, `enabled` decides; `enabled = false` behaves like
+`--no-permissions`, and `--permissions` sets the modes anyway.
+
+A configured mode follows the same rules as `--dir-mode`/`--file-mode`: a plain octal STRING
+(`"0o750"`, `"750"`), never setuid/setgid/sticky, group or world write, an execute bit on a file,
+or a directory without owner `rwx` / a file without owner `rw`. A bare integer is refused rather
+than reinterpreted: TOML `user_file = 400`, `--set ...user_file=400` and an environment value `400`
+all arrive as the DECIMAL integer 400, which is `0o620`, not the owner-read-only mode the digits
+suggest. Quote it in TOML (`user_file = "640"`); in an environment variable or `--set`, use the
+`0o` prefix (`0o640`), which is never read as a number. `enabled` must be a real boolean
+(`true`/`false` in TOML, an environment variable or `--set`); `"no"`, `"off"`, `0` or `1` are
+refused rather than read as one. An unknown key in the section is refused rather than ignored.
+Any violation stops `config-deploy` before it writes anything, with exit 78, one line per problem
+naming the key and where it was set, and a hint, for example:
+
+```text
+Error: lib_layered_config.default_permissions.user_file: a bare integer is read as decimal (400 = 0o620); write the mode as an octal string: "0o640" (quoted) in a file, 0o640 in the environment or a runtime override (such as an application's --set) (source: env)
+Hint: to deploy anyway, pass both --dir-mode and --file-mode (the built-in modes are 700 and 600 for user, 755 and 644 for app and host); --no-permissions also deploys, but leaves every mode to the umask, which can make a user file that holds secrets readable by other accounts.
+```
+
+The same refusal applies when a file the library reads cannot be loaded: `config-deploy` never
+falls back to the layer defaults, which may be wider than what was configured. A refused `--set`
+of the section names `(source: override)` and has no hint, since no option gets past it: fix or
+drop the `--set`. The files a deploy writes are never read for it, so `config-deploy --force`
+replaces a destination that carries a bad value, or does not parse at all, without further options.
 
 ### Generate Example Configuration Files
 
