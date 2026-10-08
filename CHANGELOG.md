@@ -6,6 +6,8 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 
 ## [Unreleased]
 
+## [1.10.0] 2026-10-08 10:08:32
+
 ### Changed
 - **Requires lib_layered_config 7.0.1.** An unquoted `.env` value now converts like the
   environment layer, so `ENABLED=false` arrives as the boolean `false` rather than the string
