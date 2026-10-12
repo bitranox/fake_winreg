@@ -95,6 +95,36 @@ pip install "git+https://github.com/bitranox/fake_winreg"
 
 See [INSTALL.md](INSTALL.md) for all options (pipx, Poetry, PDM, system packages).
 
+### Why we recommend uv: supply-chain protection
+
+This repository commits a `uv.lock`. It pins every package the project needs, transitive
+dependencies included, to an exact version and to the hashes of that version's files. The
+`exclude-newer` setting under `[tool.uv]` in `pyproject.toml` adds a cooldown: uv leaves any
+release younger than that out of the lock. CI installs from the lock, so a hijacked release that
+gets pulled again within the cooldown never reaches our builds, and a file whose hash does not
+match is refused.
+
+That protection stays in this repository. The installable package declares only lower bounds
+(`>=`) for its dependencies, so a plain `pip install` takes the newest release of every transitive
+dependency at the moment you run it. If one of them was hijacked an hour earlier, you get the
+hijacked version. `pipx install` and `uv tool install` without options do the same.
+
+To install the command line tool with a cooldown of your own (uv then skips any release younger
+than 7 days, transitive ones included), or to run the exact tree our CI tests:
+
+```bash
+uv tool install --exclude-newer "7 days" fake_winreg
+git clone https://github.com/bitranox/fake_winreg.git && cd fake_winreg && uv sync --locked && uv run fake_winreg --help
+```
+
+If you depend on fake_winreg in your own project, give that project the same cooldown (7 days here, as
+an example) and commit the `uv.lock` that `uv add fake_winreg` writes:
+
+```toml
+[tool.uv]
+exclude-newer = "7 days"
+```
+
 ## Configuration
 
 See [CONFIG.md](CONFIG.md) for detailed documentation on the layered configuration
@@ -338,13 +368,13 @@ winreg.convert_registry("source.reg", "target.json")
 
 #### Character Encoding
 
-| Format | Default Encoding | Notes |
-|--------|-----------------|-------|
-| `.json` | UTF-8 | Per RFC 8259. Binary values are base64-encoded. |
-| `.reg` export (v5) | UTF-16 LE with BOM | Default. Matches Windows `regedit.exe`. Override with `encoding="utf-8"`. |
-| `.reg` export (v4) | ASCII | `export_reg(path, version=4)`. Legacy REGEDIT4 format, no Unicode. |
-| `.reg` import | Auto-detected | UTF-16 LE if BOM (`FF FE`) present, otherwise UTF-8. Both v4 and v5 supported. |
-| `.db` (SQLite) | N/A | Binary format. String values stored as SQLite TEXT (UTF-8 internally). |
+| Format             | Default Encoding   | Notes                                                                          |
+|--------------------|--------------------|--------------------------------------------------------------------------------|
+| `.json`            | UTF-8              | Per RFC 8259. Binary values are base64-encoded.                                |
+| `.reg` export (v5) | UTF-16 LE with BOM | Default. Matches Windows `regedit.exe`. Override with `encoding="utf-8"`.      |
+| `.reg` export (v4) | ASCII              | `export_reg(path, version=4)`. Legacy REGEDIT4 format, no Unicode.             |
+| `.reg` import      | Auto-detected      | UTF-16 LE if BOM (`FF FE`) present, otherwise UTF-8. Both v4 and v5 supported. |
+| `.db` (SQLite)     | N/A                | Binary format. String values stored as SQLite TEXT (UTF-8 internally).         |
 
 The Windows registry stores all strings as UTF-16 LE internally. Values encoded as
 `hex(2):` (REG_EXPAND_SZ) and `hex(7):` (REG_MULTI_SZ) in `.reg` files use UTF-16 LE
@@ -356,49 +386,49 @@ All constants from the `winreg` module are available.
 
 **Hive keys:**
 
-| Constant               | Description                                      |
-|------------------------|--------------------------------------------------|
-| `HKEY_CLASSES_ROOT`    | Registry entries for file associations and COM    |
-| `HKEY_CURRENT_USER`    | Settings for the current user                     |
-| `HKEY_LOCAL_MACHINE`   | System-wide settings                              |
-| `HKEY_USERS`           | Settings for all user profiles                    |
-| `HKEY_CURRENT_CONFIG`  | Current hardware profile                          |
-| `HKEY_PERFORMANCE_DATA` | Performance counters                             |
-| `HKEY_DYN_DATA`        | Dynamic data (Windows 95/98)                      |
+| Constant                | Description                                    |
+|-------------------------|------------------------------------------------|
+| `HKEY_CLASSES_ROOT`     | Registry entries for file associations and COM |
+| `HKEY_CURRENT_USER`     | Settings for the current user                  |
+| `HKEY_LOCAL_MACHINE`    | System-wide settings                           |
+| `HKEY_USERS`            | Settings for all user profiles                 |
+| `HKEY_CURRENT_CONFIG`   | Current hardware profile                       |
+| `HKEY_PERFORMANCE_DATA` | Performance counters                           |
+| `HKEY_DYN_DATA`         | Dynamic data (Windows 95/98)                   |
 
 **Value types:**
 
-| Constant                          | Description                                          |
-|-----------------------------------|------------------------------------------------------|
-| `REG_NONE`                        | No defined value type                                |
-| `REG_SZ`                          | Null-terminated string                               |
-| `REG_EXPAND_SZ`                   | String with unexpanded environment variable refs     |
-| `REG_BINARY`                      | Binary data                                          |
-| `REG_DWORD`                       | 32-bit integer (little-endian)                       |
-| `REG_DWORD_BIG_ENDIAN`            | 32-bit integer (big-endian)                          |
-| `REG_LINK`                        | Symbolic link (Unicode)                              |
-| `REG_MULTI_SZ`                    | Array of null-terminated strings                     |
-| `REG_QWORD`                       | 64-bit integer (little-endian)                       |
-| `REG_RESOURCE_LIST`               | Device driver resource list                          |
-| `REG_FULL_RESOURCE_DESCRIPTOR`    | Hardware resource descriptor                         |
-| `REG_RESOURCE_REQUIREMENTS_LIST`  | Hardware resource requirements                       |
+| Constant                         | Description                                      |
+|----------------------------------|--------------------------------------------------|
+| `REG_NONE`                       | No defined value type                            |
+| `REG_SZ`                         | Null-terminated string                           |
+| `REG_EXPAND_SZ`                  | String with unexpanded environment variable refs |
+| `REG_BINARY`                     | Binary data                                      |
+| `REG_DWORD`                      | 32-bit integer (little-endian)                   |
+| `REG_DWORD_BIG_ENDIAN`           | 32-bit integer (big-endian)                      |
+| `REG_LINK`                       | Symbolic link (Unicode)                          |
+| `REG_MULTI_SZ`                   | Array of null-terminated strings                 |
+| `REG_QWORD`                      | 64-bit integer (little-endian)                   |
+| `REG_RESOURCE_LIST`              | Device driver resource list                      |
+| `REG_FULL_RESOURCE_DESCRIPTOR`   | Hardware resource descriptor                     |
+| `REG_RESOURCE_REQUIREMENTS_LIST` | Hardware resource requirements                   |
 
 **Access rights:**
 
-| Constant                | Description                            |
-|-------------------------|----------------------------------------|
-| `KEY_READ`              | Read access                            |
-| `KEY_WRITE`             | Write access                           |
-| `KEY_ALL_ACCESS`        | Full access                            |
-| `KEY_EXECUTE`           | Execute access (same as `KEY_READ`)    |
-| `KEY_QUERY_VALUE`       | Query subkey values                    |
-| `KEY_SET_VALUE`         | Set subkey values                      |
-| `KEY_CREATE_SUB_KEY`    | Create subkeys                         |
-| `KEY_ENUMERATE_SUB_KEYS` | Enumerate subkeys                     |
-| `KEY_NOTIFY`            | Change notification                    |
-| `KEY_CREATE_LINK`       | Create symbolic link                   |
-| `KEY_WOW64_64KEY` | Access 64-bit registry view |
-| `KEY_WOW64_32KEY` | Access 32-bit registry view |
+| Constant                 | Description                         |
+|--------------------------|-------------------------------------|
+| `KEY_READ`               | Read access                         |
+| `KEY_WRITE`              | Write access                        |
+| `KEY_ALL_ACCESS`         | Full access                         |
+| `KEY_EXECUTE`            | Execute access (same as `KEY_READ`) |
+| `KEY_QUERY_VALUE`        | Query subkey values                 |
+| `KEY_SET_VALUE`          | Set subkey values                   |
+| `KEY_CREATE_SUB_KEY`     | Create subkeys                      |
+| `KEY_ENUMERATE_SUB_KEYS` | Enumerate subkeys                   |
+| `KEY_NOTIFY`             | Change notification                 |
+| `KEY_CREATE_LINK`        | Create symbolic link                |
+| `KEY_WOW64_64KEY`        | Access 64-bit registry view         |
+| `KEY_WOW64_32KEY`        | Access 32-bit registry view         |
 
 ### Data Types
 

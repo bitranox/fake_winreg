@@ -8,10 +8,10 @@ dependencies = [
     "rich-click>=1.9.9",
     # Imported directly (adapters/cli/main.py, commands/config.py), not only through rich-click.
     "click>=8.5.0",
-    "lib_cli_exit_tools>=2.4.0",
-    "lib_log_rich>=6.5.1",
+    "lib_cli_exit_tools>=2.4.1",
+    "lib_log_rich>=6.5.2",
     "python-dotenv>=1.2.4",
-    "lib_layered_config>=7.1.6",
+    "lib_layered_config>=7.1.9",
     "pydantic>=2.14.1",
     "orjson>=3.13.0",
 ]
@@ -26,6 +26,7 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python :: 3.15",
   "License :: OSI Approved :: MIT License",
   "Environment :: Console",
   "Operating System :: OS Independent",
@@ -302,4 +303,4 @@ ignores = ["E003"]
 
 [tool.uv]
 exclude-newer = "1 day"
-exclude-newer-package = {lib-cli-exit-tools = false, lib-layered-config = false, lib-log-rich = false, pydantic = "2026-10-11T18:37:56Z", pydantic-core = "2026-10-11T18:35:45Z", rtoml = "2026-10-12T00:17:16Z", virtualenv = "2026-10-12T01:27:32Z"}
+exclude-newer-package = {lib-cli-exit-tools = false, lib-layered-config = false, lib-log-rich = false, rtoml = "2026-10-12T00:17:16Z", virtualenv = "2026-10-12T01:27:32Z"}
