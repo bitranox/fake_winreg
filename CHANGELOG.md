@@ -6,6 +6,8 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 
 ## [Unreleased]
 
+## [1.10.3] 2026-10-15 16:33:35
+
 ### Fixed
 
 - The source distribution ships only the package, its tests, its docs, `README.md`, `LICENSE`,
