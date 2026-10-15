@@ -9,7 +9,7 @@ dependencies = [
     # Imported directly (adapters/cli/main.py, commands/config.py), not only through rich-click.
     "click>=8.5.0",
     "lib_cli_exit_tools>=2.4.1",
-    "lib_log_rich>=6.5.2",
+    "lib_log_rich>=6.5.3",
     "python-dotenv>=1.2.4",
     "lib_layered_config>=7.1.9",
     "pydantic>=2.14.1",
