@@ -19,8 +19,13 @@ from .reg_io import export_reg, import_reg
 from .sqlite_backend import SqliteBackend
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from fake_winreg.application.ports import RegistryBackend
     from fake_winreg.domain.registry import FakeRegistryKey
+
+
+_EXPORTERS: dict[str, Callable[[Path], None]] = {"json": export_json, "reg": export_reg}
 
 
 def convert_registry(source: str | Path, target: str | Path) -> int:
@@ -52,70 +57,79 @@ def convert_registry(source: str | Path, target: str | Path) -> int:
 def _do_convert(source: Path, source_fmt: str, target: Path, target_fmt: str) -> int:
     """Perform the actual conversion, choosing the most memory-efficient path."""
     if source_fmt == target_fmt and source_fmt == "sqlite":
-        # SQLite → SQLite: stream key by key
-        source_backend = SqliteBackend(source)
-        target_backend = SqliteBackend(target)
-        try:
-            return _stream_backend_to_backend(source_backend, target_backend)
-        finally:
-            source_backend.close()
-            target_backend.close()
-
+        return _convert_sqlite_to_sqlite(source, target)
     if target_fmt == "sqlite":
-        # Import directly into SqliteBackend (streaming for .reg, in-memory for .json)
-        target_backend = SqliteBackend(target)
-        use_backend(target_backend)  # type: ignore[arg-type]
-        if source_fmt == "reg":
-            import_reg(source)
-        elif source_fmt == "json":
-            import_json(source)
-        count = _count_keys(target_backend)
-        target_backend.close()
-        return count
-
+        return _import_into_sqlite(source, source_fmt, target)
     if source_fmt == "sqlite":
-        # Export from SqliteBackend (streaming)
-        source_backend = SqliteBackend(source)
-        use_backend(source_backend)  # type: ignore[arg-type]
-        if target_fmt == "json":
-            export_json(target)
-        elif target_fmt == "reg":
-            export_reg(target)
-        count = _count_keys(source_backend)
+        return _export_from_sqlite(source, target, target_fmt)
+    return _convert_via_loaded_backend(source, source_fmt, target, target_fmt)
+
+
+def _convert_sqlite_to_sqlite(source: Path, target: Path) -> int:
+    """Stream a SQLite registry into another SQLite registry key by key."""
+    source_backend = SqliteBackend(source)
+    target_backend = SqliteBackend(target)
+    try:
+        return _stream_backend_to_backend(source_backend, target_backend)
+    finally:
         source_backend.close()
-        return count
+        target_backend.close()
 
-    if source_fmt == "reg" and target_fmt == "json":
-        # .reg → JSON: import into memory, export JSON
-        mem_backend = InMemoryBackend()
-        use_backend(mem_backend)  # type: ignore[arg-type]
+
+def _import_into_sqlite(source: Path, source_fmt: str, target: Path) -> int:
+    """Import a .reg (streaming) or JSON (in-memory) file directly into a SqliteBackend."""
+    target_backend = SqliteBackend(target)
+    use_backend(target_backend)
+    if source_fmt == "reg":
         import_reg(source)
+    elif source_fmt == "json":
+        import_json(source)
+    count = _count_keys(target_backend)
+    target_backend.close()
+    return count
+
+
+def _export_from_sqlite(source: Path, target: Path, target_fmt: str) -> int:
+    """Export a SqliteBackend (streaming) to a JSON or .reg file."""
+    source_backend = SqliteBackend(source)
+    use_backend(source_backend)
+    if target_fmt == "json":
         export_json(target)
-        return _count_keys(mem_backend)
-
-    if source_fmt == "reg" and target_fmt == "reg":
-        # .reg → .reg: import into memory, re-export (normalize)
-        mem_backend = InMemoryBackend()
-        use_backend(mem_backend)  # type: ignore[arg-type]
-        import_reg(source)
+    elif target_fmt == "reg":
         export_reg(target)
-        return _count_keys(mem_backend)
+    count = _count_keys(source_backend)
+    source_backend.close()
+    return count
 
-    if source_fmt == "json" and target_fmt == "reg":
-        # JSON → .reg: load JSON (must fit in memory), export as .reg
+
+def _convert_via_loaded_backend(source: Path, source_fmt: str, target: Path, target_fmt: str) -> int:
+    """Convert between .reg and JSON by loading the source fully, then exporting it.
+
+    A .reg source is imported into an InMemoryBackend; a JSON source is loaded
+    by a JsonBackend (it must fit in memory). Re-exporting to the same format
+    normalizes the file.
+
+    Raises:
+        ValueError: If the format pair is not a .reg/JSON combination.
+    """
+    exporter = _EXPORTERS.get(target_fmt)
+    if source_fmt not in ("reg", "json") or exporter is None:
+        raise ValueError(f"Unsupported conversion: {source_fmt} → {target_fmt}")
+    backend = _load_source_backend(source, source_fmt)
+    exporter(target)
+    return _count_keys(backend)
+
+
+def _load_source_backend(source: Path, source_fmt: str) -> RegistryBackend:
+    """Activate a backend holding *source*: JsonBackend for JSON, InMemoryBackend for .reg."""
+    if source_fmt == "json":
         json_backend = JsonBackend(source)
-        use_backend(json_backend)  # type: ignore[arg-type]
-        export_reg(target)
-        return _count_keys(json_backend)
-
-    if source_fmt == "json" and target_fmt == "json":
-        # JSON → JSON: load and re-export (normalize format)
-        json_backend = JsonBackend(source)
-        use_backend(json_backend)  # type: ignore[arg-type]
-        export_json(target)
-        return _count_keys(json_backend)
-
-    raise ValueError(f"Unsupported conversion: {source_fmt} → {target_fmt}")
+        use_backend(json_backend)
+        return json_backend
+    mem_backend = InMemoryBackend()
+    use_backend(mem_backend)
+    import_reg(source)
+    return mem_backend
 
 
 def _stream_backend_to_backend(source: RegistryBackend, target: RegistryBackend) -> int:

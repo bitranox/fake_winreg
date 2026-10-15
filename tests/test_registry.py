@@ -133,59 +133,61 @@ def _is_list_of_str(lst: list[object]) -> bool:
     return all(isinstance(e, str) for e in lst)
 
 
+_TYPE_ERROR_REG_BINARY = "Objects of type '{data_type}' can not be used as binary registry values"
+_TYPE_ERROR_REG_NON_BINARY = "Could not convert the data to the specified type."
+
+
+def _is_value_accepted(reg_type: Any, data: Any) -> bool:
+    """Return whether SetValueEx should accept *data* for *reg_type*."""
+    data_type = type(data).__name__
+    if reg_type in (winreg.REG_SZ, winreg.REG_EXPAND_SZ):
+        return data_type in ("NoneType", "str")
+    if reg_type in (winreg.REG_DWORD, winreg.REG_QWORD):
+        return data_type in ("NoneType", "int")
+    if reg_type == winreg.REG_MULTI_SZ:
+        return data is None or (isinstance(data, list) and _is_list_of_str(cast("list[object]", data)))
+    return data_type in ("NoneType", "bytes")
+
+
+def _expected_write_error(reg_type: Any, data: Any) -> tuple[type[Exception], str] | None:
+    """Return the exception type and message SetValueEx should raise, or None if it should succeed."""
+    if _is_value_accepted(reg_type, data):
+        return None
+    non_binary_types = (winreg.REG_SZ, winreg.REG_EXPAND_SZ, winreg.REG_DWORD, winreg.REG_QWORD, winreg.REG_MULTI_SZ)
+    if reg_type in non_binary_types:
+        return ValueError, _TYPE_ERROR_REG_NON_BINARY
+    return TypeError, _TYPE_ERROR_REG_BINARY.format(data_type=type(data).__name__)
+
+
+def _value_write(key_handle: winreg.HKEYType, reg_type: Any, data: Any) -> None:
+    winreg.SetValueEx(key_handle, "test_value_name", 0, reg_type, data)
+
+
+def _is_value_write_ok(key_handle: winreg.HKEYType, reg_type: Any, data: Any) -> bool:
+    try:
+        _value_write(key_handle, reg_type, data)
+        return True
+    except Exception:
+        return False
+
+
+def _value_write_error(key_handle: winreg.HKEYType, reg_type: Any, data: Any) -> str:
+    try:
+        winreg.SetValueEx(key_handle, "test_value_name", 0, reg_type, data)
+        return ""
+    except Exception as _error:
+        return str(_error)
+
+
 @pytest.mark.os_agnostic
 def test_write_value(key_handle_setvalue: winreg.HKEYType, reg_type: Any, data: Any) -> None:
-    type_error_reg_binary = "Objects of type '{data_type}' can not be used as binary registry values"
-    type_error_reg_non_binary = "Could not convert the data to the specified type."
-    data_type = type(data).__name__
+    expected_error = _expected_write_error(reg_type, data)
+    if expected_error is None:
+        assert _is_value_write_ok(key_handle_setvalue, reg_type, data)
+        return
 
-    def value_write() -> None:
-        winreg.SetValueEx(key_handle_setvalue, "test_value_name", 0, reg_type, data)
-
-    def is_value_write_ok() -> bool:
-        try:
-            value_write()
-            return True
-        except Exception:
-            return False
-
-    def value_write_error() -> str:
-        try:
-            winreg.SetValueEx(key_handle_setvalue, "test_value_name", 0, reg_type, data)
-            return ""
-        except Exception as _error:
-            return str(_error)
-
-    if reg_type in (winreg.REG_SZ, winreg.REG_EXPAND_SZ):
-        if data_type in ("NoneType", "str"):
-            assert is_value_write_ok()
-        else:
-            error = value_write_error()
-            with pytest.raises(ValueError):
-                value_write()
-            assert str(error) == type_error_reg_non_binary
-
-    elif reg_type in (winreg.REG_DWORD, winreg.REG_QWORD):
-        if data_type in ("NoneType", "int"):
-            assert is_value_write_ok()
-        else:
-            error = value_write_error()
-            with pytest.raises(ValueError):
-                value_write()
-            assert str(error) == type_error_reg_non_binary
-
-    elif reg_type == winreg.REG_MULTI_SZ:
-        if data is None or (isinstance(data, list) and _is_list_of_str(cast("list[object]", data))):
-            assert is_value_write_ok()
-        else:
-            error = value_write_error()
-            with pytest.raises(ValueError):
-                value_write()
-            assert str(error) == type_error_reg_non_binary
-    elif data_type in ("NoneType", "bytes"):
-        assert is_value_write_ok()
-    else:
-        error = value_write_error()
-        with pytest.raises(TypeError):
-            value_write()
-        assert str(error) == type_error_reg_binary.format(data_type=data_type)
+    expected_exception, expected_message = expected_error
+    error = _value_write_error(key_handle_setvalue, reg_type, data)
+    with pytest.raises(expected_exception):
+        _value_write(key_handle_setvalue, reg_type, data)
+    assert str(error) == expected_message
