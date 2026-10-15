@@ -59,6 +59,7 @@ dev = [
   # 1.5.1 was yanked upstream (unintended breaking changes); never pin a floor to a yanked
   # release, or the floor has ZERO candidates and makes this extra unresolvable.
   "build>=1.6.1",
+  "hatchling>=1.32.4",
   "twine>=7.0.0",
   # codecov-cli is disabled, not dropped: it requires click<8.3.0, which drags click back to
   # 8.2.1 - the version with CVE-2026-7246 (command injection in click.edit(), fixed in 8.3.3).
@@ -101,6 +102,21 @@ include = [
     "src/fake_winreg/adapters/config/defaultconfig.d/*.toml",
 ]
 
+# An allowlist, never a denylist: hatchling reads only the root .gitignore, so tracked working
+# files and files hidden through .git/info/exclude or a nested .gitignore (session records,
+# review notes, helper scripts) would ship. tests/test_packaging.py builds the sdist and
+# refuses any other top-level entry.
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src/fake_winreg",
+    "/tests/*.py",
+    "/docs",
+    "/README.md",
+    "/LICENSE",
+    "/CHANGELOG.md",
+    "/pyproject.toml",
+]
+
 [tool.ruff]
 line-length = 120
 target-version = "py310"
@@ -115,6 +131,7 @@ select = [
   "B",           # bugbear
   "A",           # builtins shadowing
   "C4",          # comprehension simplification
+  "C90",         # mccabe: cyclomatic complexity <= 10 (the house hard limit)
   "SIM",         # simplification
   "TCH",         # type-checking imports
   "RUF",         # ruff-specific
