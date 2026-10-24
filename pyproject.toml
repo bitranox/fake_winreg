@@ -158,7 +158,10 @@ runtime-evaluated-base-classes = ["pydantic.BaseModel"]
 
 [tool.ruff.lint.per-file-ignores]
 # Notebooks: unused imports are often intentional for side effects
-"notebooks/*.ipynb" = ["F401", "T201", "PERF203"]
+# A `!cmd` never raises, so CI sees a failing shell command only through
+# `assert _exit_code == N` after it: IPython injects `_exit_code` at run time (F821)
+# and those asserts are the gate (S101).
+"notebooks/*.ipynb" = ["F401", "T201", "PERF203", "F821", "S101"]
 # Tests: assert is standard, test fixtures have passwords, magic values are clearer inline, temp paths are
 # fine, deferred imports inside a test body are a deliberate idiom (exercising import/cache behavior)
 "tests/*.py" = ["T20", "S101", "S105", "S106", "S108", "FBT001", "FBT003", "PLR0913", "PLR2004", "PLC0415"]
