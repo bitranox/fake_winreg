@@ -8,6 +8,9 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 
 ### Fixed
 
+- `logdemo` refuses a `LOG_*` variable lib_log_rich refuses (`LOG_CONSOLE_LEVEL=bogus`) with exit 78
+  and lib_log_rich's own line, as `config` does. The demo reads the variables itself, so its
+  `ValueError` reached `main()` and exited with the OS errno (22 on POSIX, 87 on Windows).
 - The test suite no longer reads the app and host configuration layers of the machine it runs on.
   An autouse fixture points lib_layered_config's three app-root variables (`LIB_LAYERED_CONFIG_ETC`,
   `_MAC_APP_ROOT`, `_PROGRAMDATA`) at an empty directory under `tmp_path`, so a system-wide deploy
