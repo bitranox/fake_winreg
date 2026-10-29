@@ -37,7 +37,7 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
   a host substring, which also matched `xsmtp.test.com:5870`. The substring form was what CodeQL
   flagged as `py/incomplete-url-substring-sanitization`.
 
-## [1.10.3] 2026-10-15 16:33:35
+## [1.10.3] - 2026-10-15
 
 ### Fixed
 
@@ -58,7 +58,7 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
   (`pytest_runtest_setup` in `tests/conftest.py`); registered in `pyproject.toml` alone they skipped
   nothing, so a test trusting its marker ran everywhere. `tests/test_platform_markers.py` pins it.
 
-## [1.10.2] 2026-10-12 22:56:32
+## [1.10.2] - 2026-10-12
 
 ### Added
 - Python 3.15 is a supported version: declared in the classifiers, so CI and `make test-all` run it.
@@ -70,7 +70,7 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 - The install section explains why installing with uv protects against supply-chain attacks and why
   a plain `pip install` from PyPI does not.
 
-## [1.10.1] 2026-10-12 18:52:40
+## [1.10.1] - 2026-10-12
 
 ### Fixed
 - **A digit-only `.env` value no longer stops logging setup.** lib_layered_config 7.1 reads an
@@ -79,7 +79,7 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
   `Input should be a valid string`. The model now turns such a number back into the text the
   operator wrote; a value that is not a scalar is still refused.
 
-## [1.10.0] 2026-10-08 10:08:32
+## [1.10.0] - 2026-10-08
 
 ### Changed
 - **Requires lib_layered_config 7.0.1.** An unquoted `.env` value now converts like the
@@ -217,7 +217,7 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
   `layer:cli`, as in the template, for every key the `--set` supplied (each leaf of a table
   value too), while every other key keeps its own layer.
 
-## [1.9.3] 2026-08-01 00:16:20
+## [1.9.3] - 2026-08-01
 ### Fixed
 - **Console output no longer crashes on a legacy codepage.** A Windows console at codepage 1252
   hands Python an `errors="strict"` stream, so writing a non-ASCII character such as a check mark
@@ -229,7 +229,7 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
   module reaches for `click.echo` or builds an unwrapped `Console(file=sys.stdout)` again.
 
 
-## [1.9.2] 2026-07-24 13:25:20
+## [1.9.2] - 2026-07-24
 
 ### Fixed
 - Latest-ruff regression (PLR0917, RUF036, RUF002, PLC0415, TC001-3, TC006, RUF022): fixed all
@@ -257,7 +257,7 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 - Replaced remaining en-dash/em-dash characters (RUF002 and adjacent AI-writing tells) with ASCII
   hyphens in docstrings/comments touched by this change.
 
-## [1.9.1] 2026-06-14
+## [1.9.1] - 2026-06-14
 
 ### Changed
 - Added a `typed_click.py` facade wrapping rich-click's `option` / `version_option` / `argument` decorators behind explicit, fully-known signatures, keeping the CLI strict-clean under pyright 1.1.410 (`reportUnknownMemberType`) without disabling the rule (ignore isolated to the facade).
