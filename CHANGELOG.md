@@ -8,6 +8,11 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 
 ### Fixed
 
+- `notebooks/Quickstart.ipynb` installs the checkout it runs in, so CI's "Execute notebooks" job
+  tests the commit under test. It used to install `git+https://github.com/...` every time, which is
+  the pushed default branch, so a pull request's notebook run tested the code already there.
+  Outside a checkout (a downloaded notebook) it still installs from GitHub.
+
 - `logdemo` refuses a `LOG_*` variable lib_log_rich refuses (`LOG_CONSOLE_LEVEL=bogus`) with exit 78
   and lib_log_rich's own line, as `config` does. The demo reads the variables itself, so its
   `ValueError` reached `main()` and exited with the OS errno (22 on POSIX, 87 on Windows).
