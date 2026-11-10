@@ -12,7 +12,7 @@ dependencies = [
     "lib_log_rich>=8.1.2",
     "python-dotenv>=1.2.4",
     "lib_layered_config>=7.7.0",
-    "pydantic>=2.14.1",
+    "pydantic>=2.14.2",
     "orjson>=3.13.0",
 ]
 license = { text = "MIT" }
@@ -81,7 +81,7 @@ dev = [
   "wheel>=0.48.0",               # CVE-2025-24049
   "pynacl>=1.6.2",               # CVE-2025-69277
   "urllib3>=2.8.0",              # CVE-2025-66471, CVE-2025-66418
-  "virtualenv>=21.15.1",        # CVE-2025-22702, CVE-2026-113722
+  "virtualenv>=21.15.2",        # CVE-2025-22702, CVE-2026-113722
   "certifi>=2026.10.23",         # PYSEC-2026-4320
 ]
 
@@ -328,4 +328,4 @@ ignores = ["E003"]
 
 [tool.uv]
 exclude-newer = "7 days"
-exclude-newer-package = {lib-cli-exit-tools = false, lib-layered-config = false, lib-log-rich = false, hatchling = "2026-10-28T02:27:31Z", pytest = "2026-10-27T21:30:21Z", ruff = "2026-10-27T00:34:06Z", virtualenv = "2026-10-28T01:12:51Z"}
+exclude-newer-package = {lib-cli-exit-tools = false, lib-layered-config = false, lib-log-rich = false}
