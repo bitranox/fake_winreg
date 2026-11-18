@@ -11,7 +11,7 @@ dependencies = [
     "lib_cli_exit_tools>=2.4.1",
     "lib_log_rich>=8.2.0",
     "python-dotenv>=1.2.4",
-    "lib_layered_config>=7.7.0",
+    "lib_layered_config>=8.1.0",
     "pydantic>=2.14.3",
     "orjson>=3.13.0",
 ]
