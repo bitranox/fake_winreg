@@ -31,9 +31,9 @@ def cli_convert(args: tuple[str, ...]) -> None:
 
     \b
     Supported formats (detected by extension):
-      .db, .sqlite  SQLite database
-      .json         JSON file
-      .reg          Windows Registry Editor format
+      .db, .sqlite, .sqlite3  SQLite database
+      .json                   JSON file
+      .reg                    Windows Registry Editor format
     """
     source: str | None = None
     target: str | None = None

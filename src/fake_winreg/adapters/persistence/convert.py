@@ -1,6 +1,6 @@
 """Stream-convert registries between formats without loading into memory.
 
-Supports SQLite (.db/.sqlite), JSON (.json), and .reg file formats.
+Supports SQLite (.db/.sqlite/.sqlite3), JSON (.json), and .reg file formats.
 Uses the backend interface to stream key-by-key for memory efficiency.
 """
 
@@ -54,15 +54,16 @@ def convert_registry(source: str | Path, target: str | Path) -> int:
     """Stream-convert a registry between formats.
 
     Auto-detects format by file extension:
-      .db, .sqlite -> SQLite
-      .json        -> JSON
-      .reg         -> Windows Registry Editor format
+      .db, .sqlite, .sqlite3 -> SQLite
+      .json                  -> JSON
+      .reg                   -> Windows Registry Editor format
 
     Returns the number of keys converted.
 
     Raises:
         ValueError: If the file extension is not recognized.
         FileNotFoundError: If *source* does not exist.
+        IsADirectoryError: If *source* is a directory.
     """
     source = Path(source)
     target = Path(target)
@@ -79,14 +80,21 @@ def convert_registry(source: str | Path, target: str | Path) -> int:
 
 
 def _require_existing_source(source: Path) -> None:
-    """Refuse a missing source before any backend is opened.
+    """Refuse a missing source, or a directory, before any backend is opened.
 
     Opening one would not fail: SqliteBackend creates an empty database and
     JsonBackend starts empty for a missing file, so the conversion "succeeded"
     with only the empty hives, and a SQLite source or target file was left
-    behind. The error has the shape open() raises, which a missing .reg source
-    already produced, so every format exits the same way.
+    behind. A directory reached SQLite as "unable to open database file" but
+    open() as IsADirectoryError. The errors have the shape open() raises, so
+    every format exits the same way.
+
+    Raises:
+        IsADirectoryError: If *source* is a directory.
+        FileNotFoundError: If *source* does not exist.
     """
+    if source.is_dir():
+        raise IsADirectoryError(errno.EISDIR, os.strerror(errno.EISDIR), str(source))
     if not source.exists():
         raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), str(source))
 
@@ -112,7 +120,9 @@ def _import_into_sqlite(source: Path, source_fmt: RegistryFormat, target: Path) 
     """Import a .reg (streaming) or JSON (in-memory) file directly into a SqliteBackend.
 
     The whole import is one transaction: one commit instead of one per key and
-    value, and a failed import leaves the target as it was.
+    value. A failed import leaves an existing target as it was; a target that
+    did not exist is left created, holding only the empty hives, because
+    SqliteBackend creates the file and its schema before the import starts.
     """
     importer = _IMPORTERS[source_fmt]
     with SqliteBackend(target) as target_backend:
@@ -224,7 +234,9 @@ def _detect_format(path: Path) -> RegistryFormat:
     """
     registry_format = _FORMAT_BY_SUFFIX.get(path.suffix.lower())
     if registry_format is None:
-        raise ValueError(f"Unknown registry format for '{path.name}'. Supported extensions: .db, .sqlite, .json, .reg")
+        # Built from the table, so the message cannot omit an accepted extension.
+        supported = ", ".join(_FORMAT_BY_SUFFIX)
+        raise ValueError(f"Unknown registry format for '{path.name}'. Supported extensions: {supported}")
     return registry_format
 
 

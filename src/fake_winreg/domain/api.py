@@ -191,6 +191,9 @@ def CreateKey(key: Handle, sub_key: str | None, /) -> PyHKEY:
     original_access = key_handle._access  # type: ignore[reportPrivateUsage]
 
     # Mirrors winreg: an empty sub_key is refused (WinError 1010) unless key is a hive root.
+    # The root test reads full_key because it is the one field every backend fills:
+    # parent_fake_registry_key cannot stand in for it (an in-memory hive root has an
+    # anonymous parent, and SQLite keys carry no parent at all).
     if key_handle.handle.full_key not in hive_int_by_name and not sub_key:
         _raise_os_error_1010()
 

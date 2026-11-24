@@ -618,6 +618,101 @@ def test_failed_outer_bulk_undoes_a_finished_inner_block(tmp_path: Path) -> None
         assert _committed_key_paths(db_path) == set()
 
 
+def _limit_database_growth(monkeypatch: pytest.MonkeyPatch, *, extra_pages: int) -> None:
+    """Make every new SQLite connection refuse to grow its file past *extra_pages* more pages.
+
+    ``PRAGMA max_page_count`` is per connection, and SqliteBackend opens its own,
+    so the stdlib's connect is the only place to set it. A write past the limit
+    fails with SQLITE_FULL, which makes SQLite roll back the whole transaction.
+    """
+    real_connect = sqlite3.connect
+
+    def connect(database: str) -> sqlite3.Connection:
+        conn = real_connect(database)
+        pages = conn.execute("PRAGMA page_count").fetchone()[0]
+        conn.execute(f"PRAGMA max_page_count = {pages + extra_pages}")
+        return conn
+
+    monkeypatch.setattr(sqlite3, "connect", connect)
+
+
+def _fill_until_full(backend: SqliteBackend, key: FakeRegistryKey) -> None:
+    """Create keys until the page limit is hit.
+
+    Keys, not values: a failing INSERT OR REPLACE of a value is undone on its own
+    (SQLite keeps a statement journal for it), while a failing key insert makes
+    SQLite roll back the whole transaction, the case under test.
+    """
+    for index in range(3000):
+        backend.create_key(key, f"k{index:04d}")
+
+
+_ABORTED = "rolled back by SQLite"
+
+
+@pytest.mark.os_agnostic
+def test_a_transaction_sqlite_rolled_back_is_never_committed_in_part(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """SQLITE_FULL rolls back the whole transaction; nothing written after it may commit."""
+    db_path = tmp_path / "full.db"
+    SqliteBackend(db_path).close()
+    _limit_database_growth(monkeypatch, extra_pages=2)
+    with SqliteBackend(db_path) as backend:
+        hive = backend.get_hive(HKEY_CURRENT_USER)
+        with pytest.raises(sqlite3.OperationalError, match=_ABORTED), backend.bulk():
+            outer = backend.create_key(hive, "Outer")
+            with pytest.raises(sqlite3.OperationalError, match="full"), backend.bulk():
+                _fill_until_full(backend, outer)
+            with pytest.raises(sqlite3.OperationalError, match=_ABORTED):
+                backend.create_key(hive, "AfterFull")
+            entered: list[bool] = []
+            with pytest.raises(sqlite3.OperationalError, match=_ABORTED), backend.bulk():
+                entered.append(True)
+            assert entered == []  # refused on entry, before its SAVEPOINT could open a new transaction
+        assert backend.enum_keys(hive) == []
+        assert _committed_key_paths(db_path) == set()
+        with backend.bulk():
+            pass
+
+
+@pytest.mark.os_agnostic
+def test_a_failed_statement_sqlite_undoes_alone_leaves_the_outer_block_committing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A full database on a value write keeps the transaction, so only the inner block is undone."""
+    db_path = tmp_path / "full_statement.db"
+    SqliteBackend(db_path).close()
+    _limit_database_growth(monkeypatch, extra_pages=2)
+    with SqliteBackend(db_path) as backend:
+        hive = backend.get_hive(HKEY_CURRENT_USER)
+        with backend.bulk():
+            outer = backend.create_key(hive, "Outer")
+            with pytest.raises(sqlite3.OperationalError, match="full"), backend.bulk():
+                for index in range(500):
+                    backend.set_value(outer, f"v{index:04d}", "x" * 500, REG_SZ)
+        assert _committed_key_paths(db_path) == {r"HKEY_CURRENT_USER\Outer"}
+        assert backend.enum_values(outer) == []
+
+
+@pytest.mark.os_agnostic
+def test_a_full_database_caught_inside_one_block_still_refuses_later_writes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    db_path = tmp_path / "full_same_block.db"
+    SqliteBackend(db_path).close()
+    _limit_database_growth(monkeypatch, extra_pages=2)
+    with SqliteBackend(db_path) as backend:
+        hive = backend.get_hive(HKEY_CURRENT_USER)
+        with pytest.raises(sqlite3.OperationalError, match=_ABORTED), backend.bulk():
+            outer = backend.create_key(hive, "Outer")
+            with pytest.raises(sqlite3.OperationalError, match="full"):
+                _fill_until_full(backend, outer)
+            with pytest.raises(sqlite3.OperationalError, match=_ABORTED):
+                backend.set_value(outer, "late", "x", REG_SZ)
+        assert _committed_key_paths(db_path) == set()
+
+
 # ---------------------------------------------------------------------------
 # Stored value text
 # ---------------------------------------------------------------------------

@@ -54,6 +54,11 @@ CREATE TABLE IF NOT EXISTS registry_values (
 # EXISTS so databases created before the index get it on their next open.
 _CREATE_PARENT_INDEX = "CREATE INDEX IF NOT EXISTS ix_registry_keys_parent_path ON registry_keys(parent_path)"
 
+_ABORTED_MESSAGE = (
+    "the bulk() transaction was rolled back by SQLite after an earlier error; its writes are lost, "
+    "and nothing more is written until the outermost bulk() block ends"
+)
+
 
 def _encode_value(value: RegData) -> str | None:
     """Encode a registry value for SQLite TEXT storage.
@@ -154,6 +159,9 @@ class SqliteBackend:
         self._conn.execute("PRAGMA journal_mode=WAL")
         self._conn.execute("PRAGMA foreign_keys=ON")
         self._bulk_depth = 0
+        # Set when SQLite rolls back a bulk transaction on its own; cleared when
+        # the outermost block ends.
+        self._bulk_aborted = False
         self._initialize_schema()
         self._initialize_hives()
 
@@ -186,6 +194,17 @@ class SqliteBackend:
         raises. Blocks nest: an inner block is a SAVEPOINT, so an exception the
         outer block catches undoes only the inner block's writes.
 
+        Some errors (SQLITE_FULL on a key insert, an I/O error) make SQLite roll
+        back the whole transaction, outer blocks' writes included. The error
+        that caused it propagates unchanged; from then on every write and every
+        new inner block raises, and so does the end of the outermost block, so
+        no part of the lost transaction is ever committed by a caller that
+        caught the error and went on.
+
+        Raises:
+            sqlite3.OperationalError: On a write, a new inner block, or the end
+                of the outermost block after SQLite rolled the transaction back.
+
         Example:
             >>> import tempfile, os
             >>> db_path = os.path.join(tempfile.mkdtemp(), "bulk.db")
@@ -204,28 +223,72 @@ class SqliteBackend:
             if not self._conn.in_transaction:
                 self._conn.execute("BEGIN")
         else:
+            self._require_live_transaction()
             self._conn.execute(f"SAVEPOINT {savepoint}")
         self._bulk_depth = depth + 1
         try:
             yield
         except BaseException:
             self._bulk_depth = depth
-            self._end_block(depth, savepoint, success=False)
+            self._end_failed_block(depth, savepoint)
             raise
         self._bulk_depth = depth
-        self._end_block(depth, savepoint, success=True)
+        self._end_finished_block(depth, savepoint)
 
-    def _end_block(self, depth: int, savepoint: str, *, success: bool) -> None:
-        """Commit or roll back the outermost block, release or undo an inner one."""
-        if depth == 0:
-            if success:
-                self._conn.commit()
-            else:
+    def _end_finished_block(self, depth: int, savepoint: str) -> None:
+        """Commit the outermost block or release an inner one, unless SQLite already rolled it back.
+
+        Raises:
+            sqlite3.OperationalError: If SQLite rolled back the transaction while
+                the block ran; nothing of it is committed.
+        """
+        if self._transaction_lost():
+            if depth == 0:
+                self._bulk_aborted = False
                 self._conn.rollback()
+            raise sqlite3.OperationalError(_ABORTED_MESSAGE)
+        if depth == 0:
+            self._conn.commit()
+        else:
+            self._conn.execute(f"RELEASE {savepoint}")
+
+    def _end_failed_block(self, depth: int, savepoint: str) -> None:
+        """Roll back the outermost block or undo an inner one; the caller re-raises the block's error.
+
+        When SQLite has already rolled back the whole transaction (SQLITE_FULL,
+        an I/O error), the savepoint is gone with it, and ROLLBACK TO would
+        raise "no such savepoint" in place of the error that caused it.
+        """
+        if depth == 0:
+            self._bulk_aborted = False
+            self._conn.rollback()
             return
-        if not success:
+        if not self._transaction_lost():
             self._conn.execute(f"ROLLBACK TO {savepoint}")
-        self._conn.execute(f"RELEASE {savepoint}")
+            self._conn.execute(f"RELEASE {savepoint}")
+
+    def _transaction_lost(self) -> bool:
+        """Tell whether SQLite rolled back the bulk transaction, and remember it if so.
+
+        Called only while a bulk block is open (or ending), where the transaction
+        BEGIN opened must still be there: if it is not, SQLite rolled it back.
+        """
+        if not self._conn.in_transaction:
+            self._bulk_aborted = True
+        return self._bulk_aborted
+
+    def _require_live_transaction(self) -> None:
+        """Refuse a write or a new inner block once SQLite rolled back the bulk transaction.
+
+        Python's sqlite3 would otherwise open a fresh transaction for the next
+        write, and the outermost block would commit it: a partial result whose
+        earlier writes are silently gone.
+
+        Raises:
+            sqlite3.OperationalError: If the bulk transaction was rolled back.
+        """
+        if self._bulk_depth > 0 and self._transaction_lost():
+            raise sqlite3.OperationalError(_ABORTED_MESSAGE)
 
     def _commit(self) -> None:
         """Commit a single write, unless a :meth:`bulk` block commits it later."""
@@ -284,6 +347,7 @@ class SqliteBackend:
         """Create a key and all intermediate parents. Returns the leaf key."""
         if not sub_key:
             return _make_key(base_key.full_key)
+        self._require_live_transaction()
 
         now = get_windows_timestamp_now()
         parts = sub_key.split("\\")
@@ -303,6 +367,7 @@ class SqliteBackend:
 
     def delete_key(self, base_key: FakeRegistryKey, sub_key: str) -> None:
         """Delete a leaf key. Raises PermissionError if it has subkeys."""
+        self._require_live_transaction()
         full_path = _build_full_path(base_key.full_key, sub_key)
 
         row = self._conn.execute(
@@ -345,6 +410,7 @@ class SqliteBackend:
 
     def set_value(self, key: FakeRegistryKey, value_name: str, value: RegData, value_type: int) -> None:
         """Create or update a value."""
+        self._require_live_transaction()
         now = get_windows_timestamp_now()
         encoded = _encode_value(value)
         self._conn.execute(
@@ -356,6 +422,7 @@ class SqliteBackend:
 
     def delete_value(self, key: FakeRegistryKey, value_name: str) -> None:
         """Delete a value. Raises FileNotFoundError if missing."""
+        self._require_live_transaction()
         cursor = self._conn.execute(
             "DELETE FROM registry_values WHERE full_path = ? AND value_name = ?",
             (key.full_key, value_name),

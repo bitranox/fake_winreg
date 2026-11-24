@@ -21,7 +21,7 @@ from fake_winreg.domain.test_registries import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Callable, Mapping
 
 from .. import safe_console
 from ..constants import click_context_settings
@@ -35,6 +35,37 @@ _EXTENSION_BY_FORMAT: Final[Mapping[RegistryFormat, str]] = MappingProxyType(
 )
 
 
+def _write_json(path: Path, _source: InMemoryBackend) -> None:
+    # Deferred: json_io pulls in orjson - keep it off `--help` and every other subcommand's path.
+    from fake_winreg.adapters.persistence.json_io import export_json  # noqa: PLC0415
+
+    export_json(path)
+
+
+def _write_reg(path: Path, _source: InMemoryBackend) -> None:
+    export_reg(path)
+
+
+def _write_sqlite(path: Path, source: InMemoryBackend) -> None:
+    # Deferred: convert and sqlite_backend pull in sqlite3 - only this export needs them.
+    from fake_winreg.adapters.persistence.convert import copy_backend  # noqa: PLC0415
+    from fake_winreg.adapters.persistence.sqlite_backend import SqliteBackend  # noqa: PLC0415
+
+    # One transaction for the whole copy: committing every write costs a disk sync each.
+    with SqliteBackend(path) as db_backend, db_backend.bulk():
+        copy_backend(source, db_backend)
+
+
+#: The writer for each format. Both tables must cover every RegistryFormat member (checked
+#: below at import), so a new format fails loudly instead of being written by the wrong code.
+_WRITER_BY_FORMAT: Final[Mapping[RegistryFormat, Callable[[Path, InMemoryBackend], None]]] = MappingProxyType(
+    {RegistryFormat.JSON: _write_json, RegistryFormat.REG: _write_reg, RegistryFormat.SQLITE: _write_sqlite}
+)
+
+if set(_WRITER_BY_FORMAT) != set(RegistryFormat) or set(_EXTENSION_BY_FORMAT) != set(RegistryFormat):
+    raise RuntimeError("demo_registries: every RegistryFormat needs a writer and an extension")
+
+
 @click.command("export-demo-registries", context_settings=click_context_settings())
 def cli_export_demo_registries() -> None:
     """Export demo registry files (Windows 10, Windows 11, Wine) to the current directory.
@@ -46,12 +77,6 @@ def cli_export_demo_registries() -> None:
       wine.json, wine.reg, wine.db
     """
     with lib_log_rich.runtime.bind(job_id="cli-export-demo", extra={"command": "export-demo-registries"}):
-        # Deferred: convert, json_io and sqlite_backend pull in orjson/sqlite3 - keep those out
-        # of `--help` and every other subcommand's path; only this command's db-export needs them.
-        from fake_winreg.adapters.persistence.convert import copy_backend  # noqa: PLC0415
-        from fake_winreg.adapters.persistence.json_io import export_json  # noqa: PLC0415
-        from fake_winreg.adapters.persistence.sqlite_backend import SqliteBackend  # noqa: PLC0415
-
         builders = {
             "windows10": get_minimal_windows_testregistry,
             "windows11": get_minimal_windows11_testregistry,
@@ -59,23 +84,11 @@ def cli_export_demo_registries() -> None:
         }
 
         for name, builder in builders.items():
-            registry = builder()
-            backend = InMemoryBackend(registry)
+            backend = InMemoryBackend(builder())
             use_backend(backend)
-
             for fmt, extension in _EXTENSION_BY_FORMAT.items():
                 filename = f"{name}{extension}"
-                path = Path(filename)
-
-                if fmt is RegistryFormat.JSON:
-                    export_json(path)
-                elif fmt is RegistryFormat.REG:
-                    export_reg(path)
-                else:  # RegistryFormat.SQLITE, the one member left
-                    # One transaction for the whole copy: committing every write costs a disk sync each.
-                    with SqliteBackend(path) as db_backend, db_backend.bulk():
-                        copy_backend(backend, db_backend)
-
+                _WRITER_BY_FORMAT[fmt](Path(filename), backend)
                 safe_console.echo(f"Created {filename}")
 
         # Restore default backend

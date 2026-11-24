@@ -6,6 +6,7 @@ and values, plus functions to create and retrieve them.
 
 from __future__ import annotations
 
+import threading
 import time
 from collections.abc import Iterator, MutableMapping
 from typing import TYPE_CHECKING, TypeVar
@@ -29,18 +30,30 @@ if TYPE_CHECKING:
 
 _V = TypeVar("_V")
 
+# One lock for every ChildMap rather than one per map: a registry holds two
+# maps per key, so per-map locks would add two lock objects per key. Writers
+# hold it for a single dict operation, so sharing it costs no real contention.
+# Re-entrant because ChildMap.item_at calls name_at while holding it.
+_WRITE_LOCK = threading.RLock()
+
 
 class ChildMap(MutableMapping[str, _V]):
     """Insertion-ordered name -> child mapping that can answer "the n-th name" cheaply.
 
     ``EnumKey``/``EnumValue`` ask for children by position, one call per index.
     Building a fresh name list per call made a full enumeration quadratic, so
-    the map keeps one ordered name snapshot and drops it on every mutation.
+    the map keeps one ordered name snapshot and drops it whenever the set or
+    order of names changes (adding or removing a name; replacing the child of
+    an existing name keeps its position and keeps the snapshot).
     It is a ``MutableMapping`` over a private dict rather than a ``dict``
     subclass: the mixin ``pop``/``popitem``/``setdefault``/``update`` all route
     through ``__setitem__``/``__delitem__``, so no mutating path can skip the
     invalidation (a ``dict`` subclass would have to re-implement every C-level
     mutator and would still miss ``dict.__setitem__(m, ...)`` calls).
+
+    Thread safety: writers and snapshot builds hold one module-wide lock, so a
+    snapshot built from the old names can never be stored after a writer has
+    dropped it; reading an existing snapshot takes no lock.
 
     Example:
         >>> children: ChildMap[int] = ChildMap()
@@ -67,14 +80,21 @@ class ChildMap(MutableMapping[str, _V]):
         return self._data[name]
 
     def __setitem__(self, name: str, child: _V) -> None:
-        # Replacing an existing name keeps its position, but invalidating on
-        # every write is simpler to reason about than tracking new-vs-existing.
-        self._data[name] = child
-        self._names = None
+        # Replacing the child of an existing name keeps its position, so the
+        # snapshot stays valid; dropping it anyway made an enumerate-and-
+        # replace walk quadratic. The new-or-existing test must sit under the
+        # same lock as the write, or a concurrent delete between the two
+        # re-adds the name at the end with the snapshot still in place.
+        with _WRITE_LOCK:
+            is_new = name not in self._data
+            self._data[name] = child
+            if is_new:
+                self._names = None
 
     def __delitem__(self, name: str) -> None:
-        del self._data[name]
-        self._names = None
+        with _WRITE_LOCK:
+            del self._data[name]
+            self._names = None
 
     def __iter__(self) -> Iterator[str]:
         return iter(self._data)
@@ -90,8 +110,35 @@ class ChildMap(MutableMapping[str, _V]):
 
     def clear(self) -> None:
         """Remove every child (one dict clear instead of the mixin's popitem loop)."""
-        self._data.clear()
-        self._names = None
+        with _WRITE_LOCK:
+            self._data.clear()
+            self._names = None
+
+    def get_or_add(self, name: str, child: _V) -> _V:
+        """Return the child stored under *name*, first storing *child* there if *name* is absent.
+
+        Atomic, unlike the mixin ``setdefault`` (look up, then store): two
+        threads creating the same name both get the one child that was stored,
+        so neither goes on writing into an orphan.
+
+        Args:
+            name: Child name.
+            child: Child to store when *name* is absent.
+
+        Returns:
+            The child now stored under *name*.
+
+        Example:
+            >>> children: ChildMap[int] = ChildMap()
+            >>> children.get_or_add("a", 1), children.get_or_add("a", 2)
+            (1, 1)
+        """
+        with _WRITE_LOCK:
+            if name in self._data:
+                return self._data[name]
+            self._data[name] = child
+            self._names = None
+            return child
 
     def keys(self) -> KeysView[str]:
         """Return a live read-only view of the child names in insertion order."""
@@ -120,17 +167,36 @@ class ChildMap(MutableMapping[str, _V]):
         """
         names = self._names
         if names is None:
-            names = list(self._data)
-            self._names = names
+            # Build and store under the writers' lock: built outside it, a
+            # writer could drop the snapshot between the build and the store,
+            # and the stale list would then be served until the next mutation.
+            with _WRITE_LOCK:
+                names = self._names
+                if names is None:
+                    names = list(self._data)
+                    self._names = names
         return names[index]
 
     def item_at(self, index: int) -> _V:
         """Return the child at *index* in insertion order (see :meth:`name_at`).
 
+        A name deleted by another thread between the position lookup and the
+        child lookup is never reported as ``KeyError``: the lookup is repeated
+        once with writers held off, so the answer is the child now at *index*
+        or ``IndexError``.
+
         Raises:
             IndexError: If *index* is out of range.
         """
-        return self._data[self.name_at(index)]
+        try:
+            return self._data[self.name_at(index)]
+        except KeyError:
+            pass
+        # The delete that removed the name has finished (it held the lock) and
+        # dropped the snapshot, so name_at here reads a fresh one; the lock is
+        # re-entrant and keeps writers out until the child is read.
+        with _WRITE_LOCK:
+            return self._data[self.name_at(index)]
 
 
 class FakeRegistry:
@@ -215,12 +281,17 @@ def set_fake_reg_key(
     data = fake_reg_key
     for key_part in key_parts_sub:
         key_parts_full.append(key_part)
-        if key_part not in data.subkeys:
-            data.subkeys[key_part] = FakeRegistryKey()
-            data.subkeys[key_part].full_key = "\\".join(key_parts_full).strip("\\")
-            data.subkeys[key_part].last_modified_ns = last_modified_ns
-            data.subkeys[key_part].parent_fake_registry_key = data
-        data = data.subkeys[key_part]
+        child = data.subkeys.get(key_part)
+        if child is None:
+            # Fill the key in before publishing it: a thread enumerating or
+            # opening it in between would otherwise see an empty full_key.
+            # get_or_add keeps the one child a racing creator stored first.
+            new_child = FakeRegistryKey()
+            new_child.full_key = "\\".join(key_parts_full).strip("\\")
+            new_child.last_modified_ns = last_modified_ns
+            new_child.parent_fake_registry_key = data
+            child = data.subkeys.get_or_add(key_part, new_child)
+        data = child
 
     return data
 
@@ -286,14 +357,21 @@ def set_fake_reg_value(
 
     fake_reg_key = set_fake_reg_key(fake_reg_key=fake_reg_key, sub_key=sub_key, last_modified_ns=last_modified_ns)
 
-    if value_name not in fake_reg_key.values:
-        fake_reg_key.values[value_name] = FakeRegistryValue()
-        fake_reg_value = fake_reg_key.values[value_name]
-        fake_reg_value.full_key = fake_reg_key.full_key
-        fake_reg_value.value_name = value_name
-    else:
-        fake_reg_value = fake_reg_key.values[value_name]
-
+    fake_reg_value = fake_reg_key.values.get(value_name)
+    if fake_reg_value is None:
+        # Fill the value in before publishing it: a thread enumerating the key
+        # in between would otherwise read a value named "" holding None.
+        new_value = FakeRegistryValue()
+        new_value.full_key = fake_reg_key.full_key
+        new_value.value_name = value_name
+        new_value.value = value
+        new_value.value_type = value_type
+        new_value.last_modified_ns = last_modified_ns
+        fake_reg_value = fake_reg_key.values.get_or_add(value_name, new_value)
+        if fake_reg_value is new_value:
+            return new_value
+    # An existing value (or one a racing writer stored first) is updated in
+    # place, so a caller holding it sees the new data: last writer wins.
     fake_reg_value.value = value
     fake_reg_value.value_type = value_type
     fake_reg_value.last_modified_ns = last_modified_ns

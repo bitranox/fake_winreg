@@ -158,6 +158,28 @@ def test_unknown_target_extension_raises(tmp_path: Path) -> None:
         convert_registry(db, tmp_path / "out.xyz")
 
 
+@pytest.mark.os_agnostic
+def test_unknown_extension_message_lists_every_accepted_extension(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match=r"Supported extensions: \.db, \.sqlite, \.sqlite3, \.json, \.reg$"):
+        convert_registry(tmp_path / "file.xyz", tmp_path / "out.db")
+
+
+@pytest.mark.os_agnostic
+@pytest.mark.parametrize(
+    ("source_name", "target_name"), [("src.db", "out.json"), ("src.json", "out.reg"), ("src.reg", "out.db")]
+)
+def test_a_directory_source_raises_is_a_directory_for_every_format(
+    tmp_path: Path, source_name: str, target_name: str
+) -> None:
+    source = tmp_path / source_name
+    source.mkdir()
+    target = tmp_path / target_name
+    with pytest.raises(IsADirectoryError) as caught:
+        convert_registry(source, target)
+    assert caught.value.filename == str(source)
+    assert not target.exists()
+
+
 # ---------------------------------------------------------------------------
 # Backend restoration
 # ---------------------------------------------------------------------------

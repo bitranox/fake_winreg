@@ -11,6 +11,9 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 - `SqliteBackend.bulk()`: a context manager that commits every write inside it once at the end and
   rolls back if the block raises. Nested blocks are savepoints, so a failure caught by the outer
   block undoes only the inner block's writes. Writes outside a block still commit one by one.
+  When SQLite itself rolls back the whole transaction (for example SQLITE_FULL on a key insert),
+  the original error propagates, and every later write, new inner block and the end of the
+  outermost block raise `sqlite3.OperationalError` instead of committing what is left.
 - `copy_backend(source, target)` in `fake_winreg.adapters.persistence`: copies every key and value
   from one backend into another and returns the key count.
 - `get_backend()`: returns the active backend, the counterpart of `use_backend()`.
@@ -18,6 +21,7 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
   by position, with list indexing rules (a negative index counts from the end, `IndexError` past
   either end).
 - `RegistryFormat` enum and the `ValueEntry` / `KeyInfo` records (`domain.types`).
+- `ChildMap.get_or_add(name, child)`: an atomic insert-if-absent on a key's `subkeys` / `values`.
 
 ### Changed
 
@@ -48,7 +52,17 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 - `reg` CLI, two faults at once: `create-key HKEY_BOGUS` and `delete-key HKEY_BOGUS` report
   "Unknown hive" instead of "Cannot create a root hive key", and `set` with an unknown `--type`
   and missing DATA reports the type. Single-fault messages are unchanged.
-- `.reg` encoding errors report the position within the line instead of within the whole file.
+- `.reg` decoding errors report the position within the block being decoded (the file is decoded
+  about 8 KiB at a time) instead of within the whole file. As before, nothing is imported from a
+  file that does not decode.
+- `convert_registry` with an unknown extension lists `.sqlite3` among the supported extensions
+  ("Supported extensions: .db, .sqlite, .sqlite3, .json, .reg"); it was accepted but not listed.
+- `convert_registry` with a directory as source raises `IsADirectoryError` for every format (exit 21
+  through the CLI on Linux and macOS). A `.db`, `.sqlite` or `.sqlite3` directory used to raise
+  `sqlite3.OperationalError: unable to open database file` (exit 1).
+- `export_reg` over an existing file whose write fails partway (a full disk) raises an `OSError`
+  with the original errno whose message names a temp file holding the complete export; the file
+  is kept. Before, the export was lost and the error was the bare OS message.
 - `export-demo-registries --help` names Windows 11 too.
 
 ### Performance
@@ -61,6 +75,7 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
   16000 subkeys and values take 0.011 s instead of 78.7 s.
 - `.reg` import and export stream line by line. Peak memory for an 80000-key, 46 MB file fell from
   146 MiB to about 6 MiB for export and from 87 MiB to 0 for import; the output bytes are unchanged.
+  The import reads the file twice, once to check that it decodes and once to import it.
 - `.reg` encoding detection reads 2 bytes instead of the whole file.
 
 ### Fixed
@@ -77,6 +92,12 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
   the document is checked before anything is written.
 - SQLite connections opened by `convert_registry`, `export-demo-registries` and the `reg` CLI are
   closed when an error occurs.
+- `export_reg(encoding="utf_16_le")` (and other spellings with an underscore, such as `UTF_16_LE`)
+  writes UTF-16 LE with a BOM, as `"utf-16-le"` does. It wrote no BOM, which regedit cannot read.
+- A registry shared between threads: a value or key being created is no longer visible to a
+  concurrent `EnumValue` / `EnumKey` before it is filled in (it showed as a value named `''`
+  holding `None`), and `EnumValue` reports WinError 259 instead of raising `KeyError` when a value
+  is deleted during the lookup. Writes take a lock, which costs about 10% on write-heavy loops.
 
 ### Removed
 

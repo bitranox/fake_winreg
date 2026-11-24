@@ -3,7 +3,13 @@
 
 from __future__ import annotations
 
+import os
+import signal
+import subprocess
+import sys
 import textwrap
+import time
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -22,6 +28,9 @@ from fake_winreg.domain.constants import (
 )
 from fake_winreg.domain.memory_backend import InMemoryBackend
 from fake_winreg.domain.test_registries import get_minimal_windows_testregistry
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -739,12 +748,266 @@ def test_export_version_other_than_4_writes_version_5(tmp_path):
 
 
 @pytest.mark.os_agnostic
-@pytest.mark.parametrize("encoding", ["utf-16-le", "UTF-16", "utf16"])
+@pytest.mark.parametrize(
+    "encoding", ["utf-16-le", "UTF-16", "utf16", "utf16le", "UTF-16-LE", "utf_16_le", "UTF_16_LE", "utf_16", "u16"]
+)
 def test_export_every_utf16_spelling_writes_le_with_bom(tmp_path, encoding):
     _fresh_backend()
     target = tmp_path / "u.reg"
     export_reg(target, encoding=encoding)
     assert target.read_bytes().startswith(b"\xff\xfe" + "Windows".encode("utf-16-le"))
+
+
+@pytest.mark.os_agnostic
+@pytest.mark.parametrize("encoding", ["UTF-16-LE", "utf16le", "utf_16_le"])
+def test_regedit4_keeps_an_explicitly_named_utf16_encoding(tmp_path: Path, encoding: str) -> None:
+    """Only the default spelling ``utf-16-le`` becomes ASCII under version 4; a named one is kept."""
+    _fresh_backend()
+    target = tmp_path / "v4.reg"
+    export_reg(target, encoding=encoding, version=4)
+    assert target.read_bytes().startswith(b"\xff\xfe" + "REGEDIT4".encode("utf-16-le"))
+
+
+# ---------------------------------------------------------------------------
+# Import is all or nothing for an undecodable file
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.os_agnostic
+def test_import_with_an_undecodable_last_line_writes_nothing(tmp_path: Path) -> None:
+    """The file is decoded once before the first write, so a bad byte at the end adds no keys."""
+    backend = _fresh_backend()
+    lines = [b"Windows Registry Editor Version 5.00", b""]
+    lines += [b"[HKEY_CURRENT_USER\\Early%04d]" % index for index in range(2000)]
+    lines.append(b'"bad"="ab\xffcd"')
+    reg_file = tmp_path / "bad.reg"
+    reg_file.write_bytes(b"\r\n".join(lines) + b"\r\n")
+
+    with pytest.raises(UnicodeDecodeError):
+        import_reg(reg_file)
+
+    assert backend.enum_keys(backend.get_hive(HKEY_CURRENT_USER)) == []
+
+
+# ---------------------------------------------------------------------------
+# Export target handling: new paths, symlinks, non-writable directories, copy-back failures
+# ---------------------------------------------------------------------------
+
+
+def _export_reference(tmp_path: Path) -> bytes:
+    """Export the active backend into a fresh file of its own and return its bytes."""
+    reference_dir = tmp_path / "reference"
+    reference_dir.mkdir()
+    reference = reference_dir / "fresh.reg"
+    export_reg(reference, encoding="utf-8")
+    return reference.read_bytes()
+
+
+def _running_as_root() -> bool:
+    """Return True for a POSIX root process, which ignores directory write permissions."""
+    if sys.platform == "win32":
+        return False
+    return os.geteuid() == 0
+
+
+@pytest.mark.os_posix
+def test_failed_export_through_a_dangling_symlink_keeps_the_link(tmp_path: Path) -> None:
+    """A dangling symlink is an existing path: a failed export must not delete it."""
+    backend = _fresh_backend()
+    key = backend.create_key(backend.get_hive(HKEY_LOCAL_MACHINE), r"SOFTWARE\Enc")
+    backend.set_value(key, "Z", "caf" + chr(0xE9), REG_SZ)
+    destination = tmp_path / "missing.reg"
+    link = tmp_path / "link.reg"
+    link.symlink_to(destination)
+
+    with pytest.raises(UnicodeEncodeError):
+        export_reg(link, encoding="ascii")
+
+    assert link.is_symlink()
+    assert not destination.exists()
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["link.reg"]
+
+
+@pytest.mark.os_posix
+def test_export_through_a_dangling_symlink_writes_its_destination(tmp_path: Path) -> None:
+    backend = _fresh_backend()
+    backend.create_key(backend.get_hive(HKEY_LOCAL_MACHINE), r"SOFTWARE\Link")
+    expected = _export_reference(tmp_path)
+    destination = tmp_path / "missing.reg"
+    link = tmp_path / "link.reg"
+    link.symlink_to(destination)
+
+    export_reg(link, encoding="utf-8")
+
+    assert link.is_symlink()
+    assert destination.read_bytes() == expected
+
+
+@pytest.mark.os_posix
+@pytest.mark.skipif(_running_as_root(), reason="root writes into a read-only directory anyway")
+def test_export_over_a_writable_file_in_a_read_only_directory(tmp_path: Path) -> None:
+    """The temp file falls back to the system temp dir when the target's directory is read-only."""
+    backend = _fresh_backend()
+    backend.create_key(backend.get_hive(HKEY_LOCAL_MACHINE), r"SOFTWARE\ReadOnlyDir")
+    expected = _export_reference(tmp_path)
+    locked_dir = tmp_path / "locked"
+    locked_dir.mkdir()
+    target = locked_dir / "out.reg"
+    target.write_bytes(b"previous export\r\n")
+    locked_dir.chmod(0o555)
+    try:
+        export_reg(target, encoding="utf-8")
+    finally:
+        locked_dir.chmod(0o755)
+
+    assert target.read_bytes() == expected
+    assert sorted(p.name for p in locked_dir.iterdir()) == ["out.reg"]
+
+
+# Both children build the same registry and export it once into a reference
+# file, so the parent can compare the kept temp file against a complete export.
+_CHILD_SETUP = """\
+import os
+import resource
+import signal
+import sys
+from pathlib import Path
+
+from fake_winreg.adapters.persistence.reg_io import export_reg
+from fake_winreg.domain.api import use_backend
+from fake_winreg.domain.constants import HKEY_LOCAL_MACHINE, REG_SZ
+from fake_winreg.domain.memory_backend import InMemoryBackend
+
+target = Path(os.environ["EXPORT_TARGET"])
+reference = Path(os.environ["EXPORT_REFERENCE"])
+backend = InMemoryBackend()
+use_backend(backend)
+key = backend.create_key(backend.get_hive(HKEY_LOCAL_MACHINE), "SOFTWARE\\\\Big")
+for index in range(2000):
+    backend.set_value(key, f"V{index:05d}", "x" * 50, REG_SZ)
+export_reg(reference, encoding="utf-8")
+"""
+
+_CHILD_REPORT = """\
+try:
+    export_reg(target, encoding="utf-8")
+except BaseException as exc:
+    print(type(exc).__name__)
+    print(exc)
+else:
+    print("no error")
+"""
+
+# The file size limit is set only once the export opens the target for the
+# copy-back, so the temp file is complete and the copy-back fails partway with
+# EFBIG, as a disk filling up during the copy would.
+_FILE_TOO_LARGE_CHILD = (
+    _CHILD_SETUP
+    + """\
+signal.signal(signal.SIGXFSZ, signal.SIG_IGN)
+
+
+def limit_on_target_open(event, args):
+    if event == "open" and str(args[0]) == str(target) and "w" in str(args[1]):
+        resource.setrlimit(resource.RLIMIT_FSIZE, (4096, resource.getrlimit(resource.RLIMIT_FSIZE)[1]))
+
+
+sys.addaudithook(limit_on_target_open)
+"""
+    + _CHILD_REPORT
+)
+
+# The target is a FIFO whose reader takes one byte and then stops reading, so the
+# copy-back blocks in write until the parent's SIGINT arrives mid-copy.
+_INTERRUPTED_CHILD = _CHILD_SETUP + "signal.signal(signal.SIGINT, signal.default_int_handler)\n" + _CHILD_REPORT
+
+
+def _write_child(tmp_path: Path, source: str) -> tuple[Path, Path, dict[str, str]]:
+    """Write *source* as ``child.py`` in *tmp_path*; return the target, the reference and the child's env.
+
+    The paths travel in the environment, so the child's argv stays literal.
+    """
+    out_dir = tmp_path / "out"
+    out_dir.mkdir()
+    (tmp_path / "child.py").write_text(source, encoding="utf-8")
+    target = out_dir / "out.reg"
+    reference = tmp_path / "reference.reg"
+    env = {**os.environ, "EXPORT_TARGET": str(target), "EXPORT_REFERENCE": str(reference)}
+    return target, reference, env
+
+
+def _kept_temp_files(target: Path) -> list[Path]:
+    return sorted(target.parent.glob(f".{target.name}.*.tmp"))
+
+
+def _wait_for_first_byte(reader: int, deadline_s: float) -> None:
+    """Read one byte from a non-blocking FIFO reader, polling until the writer has sent some."""
+    deadline = time.monotonic() + deadline_s
+    while time.monotonic() < deadline:
+        try:
+            if os.read(reader, 1):
+                return
+        except BlockingIOError:
+            pass
+        time.sleep(0.01)
+    pytest.fail("the child never started copying into the FIFO")
+
+
+@pytest.mark.os_posix
+def test_failed_copy_back_keeps_the_complete_export_and_names_it(tmp_path: Path) -> None:
+    target, reference, env = _write_child(tmp_path, _FILE_TOO_LARGE_CHILD)
+    target.write_bytes(b"previous export\r\n")
+
+    completed = subprocess.run(
+        [sys.executable, "child.py"],
+        cwd=tmp_path,
+        env=env,
+        capture_output=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=120,
+        check=False,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    report = completed.stdout.splitlines()
+    kept = _kept_temp_files(target)
+    assert len(kept) == 1
+    assert kept[0].read_bytes() == reference.read_bytes()
+    assert report[0] == "OSError"
+    assert str(kept[0]) in report[1]
+    assert "File too large" in report[1]
+    assert target.stat().st_size <= 4096
+
+
+@pytest.mark.os_posix
+def test_interrupted_copy_back_keeps_the_complete_export(tmp_path: Path) -> None:
+    if sys.platform == "win32":
+        pytest.skip("a FIFO needs POSIX")
+    target, reference, env = _write_child(tmp_path, _INTERRUPTED_CHILD)
+    os.mkfifo(target)
+    reader = os.open(target, os.O_RDONLY | os.O_NONBLOCK)
+    try:
+        with subprocess.Popen(
+            [sys.executable, "child.py"],
+            cwd=tmp_path,
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            encoding="utf-8",
+            errors="replace",
+        ) as proc:
+            _wait_for_first_byte(reader, deadline_s=60)
+            proc.send_signal(signal.SIGINT)
+            stdout, stderr = proc.communicate(timeout=60)
+    finally:
+        os.close(reader)
+
+    assert proc.returncode == 0, stderr
+    assert stdout.splitlines()[0] == "KeyboardInterrupt"
+    kept = _kept_temp_files(target)
+    assert len(kept) == 1
+    assert kept[0].read_bytes() == reference.read_bytes()
 
 
 @pytest.mark.os_agnostic

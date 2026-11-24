@@ -12,6 +12,7 @@ import re
 import shutil
 import struct
 import tempfile
+from collections import deque
 from enum import IntEnum
 from pathlib import Path
 from types import MappingProxyType
@@ -44,6 +45,8 @@ _REGEDIT4_HEADER = "REGEDIT4"
 _LINE_WRAP_LIMIT = 80
 _LINE_END = "\r\n"
 _UTF16_BOM = b"\xff\xfe"
+# Canonical codec names (codecs.lookup(...).name) export_reg writes as UTF-16 LE plus a BOM.
+_UTF16_CODEC_NAMES: Final = frozenset({"utf-16", "utf-16-le"})
 
 # Patterns for parsing .reg lines
 _RE_KEY_LINE = re.compile(r"^\[(-?)(HKEY_\w+)(?:\\(.+))?\]$")
@@ -69,6 +72,7 @@ def import_reg(path: str | Path, *, encoding: str | None = None) -> None:
     path = Path(path)
     if encoding is None:
         encoding = _detect_reg_encoding(path)
+    _require_decodable(path, encoding)
     backend = get_backend()
     # Iterate the open file instead of read_text + splitlines, so only one
     # logical line is held at a time. File iteration splits on \n, \r and \r\n
@@ -76,6 +80,21 @@ def import_reg(path: str | Path, *, encoding: str | None = None) -> None:
     # on \x0b, \x0c, \x1c-\x1e, \x85, U+2028 and U+2029.
     with path.open(encoding=encoding) as reg_file:
         _import_lines(_join_continuation_lines(_strip_line_ends(reg_file)), backend)
+
+
+def _require_decodable(path: Path, encoding: str) -> None:
+    """Decode the whole file once and discard the text, so a bad byte raises before any write.
+
+    The import writes each key as it reads it, so without this pass an
+    undecodable byte near the end would leave every key before it imported. It
+    reads the file the same way the import does, one line at a time, so memory
+    stays flat at the cost of reading the file twice.
+
+    Raises:
+        UnicodeDecodeError: If the file is not valid in *encoding*.
+    """
+    with path.open(encoding=encoding) as reg_file:
+        deque(reg_file, maxlen=0)
 
 
 def _import_lines(lines: Iterable[str], backend: RegistryBackend) -> None:
@@ -280,6 +299,11 @@ def export_reg(
         version: Registry file format version. ``5`` (default) writes
             ``Windows Registry Editor Version 5.00`` header. ``4`` writes
             ``REGEDIT4`` header with ANSI encoding.
+
+    Raises:
+        OSError: If copying the finished export over an existing *path* stops
+            partway. *path* may then be incomplete; the complete export is kept
+            in a temp file whose path the message names.
     """
     path = Path(path)
     backend = get_backend()
@@ -288,16 +312,23 @@ def export_reg(
     encoder = codecs.getincrementalencoder(file_format.codec)()
     lines = _iter_export_lines(backend, file_format.header, _resolve_target_hives(hives))
 
-    if path.exists():
-        _export_over_existing(path, file_format.bom, encoder, lines)
-    else:
-        _export_to_new(path, file_format.bom, encoder, lines)
-
-
-def _export_to_new(path: Path, bom: bytes, encoder: IncrementalEncoder, lines: Iterable[str]) -> None:
-    """Write straight into a path that does not exist yet; remove the partial file on failure."""
+    # Exclusive creation instead of an exists() check: a file created between
+    # the check and the open, or a dangling symlink (O_EXCL never follows one),
+    # would otherwise count as new and be deleted if the export failed.
     try:
-        with path.open("wb") as reg_file:
+        new_file = path.open("xb")
+    except FileExistsError:
+        _export_over_existing(path, file_format.bom, encoder, lines)
+        return
+    _export_to_new(path, new_file, file_format.bom, encoder, lines)
+
+
+def _export_to_new(
+    path: Path, reg_file: BinaryIO, bom: bytes, encoder: IncrementalEncoder, lines: Iterable[str]
+) -> None:
+    """Write into the file this export just created at *path*; remove it again on failure."""
+    try:
+        with reg_file:
             _write_reg_lines(reg_file, bom, encoder, lines)
     except BaseException:
         path.unlink(missing_ok=True)
@@ -305,25 +336,76 @@ def _export_to_new(path: Path, bom: bytes, encoder: IncrementalEncoder, lines: I
 
 
 def _export_over_existing(path: Path, bom: bytes, encoder: IncrementalEncoder, lines: Iterable[str]) -> None:
-    """Export into a temp file beside *path*, then copy its bytes into *path*.
+    """Export into a temp file, then copy its bytes into *path*.
 
     A failure partway (a value the codec cannot encode) must leave the existing
     file as it was, so nothing touches it until the whole export succeeded.
     The bytes are copied into the existing file instead of renaming the temp
     file over it: a rename would replace the file's own permissions, ACL,
     extended attributes and hard links with the temp file's.
+
+    Once the target is opened it is truncated, so from then on the temp file
+    holds the only complete export: a copy-back that fails (a full disk, an
+    interrupt) keeps it, and an OSError names where it is.
     """
-    handle, temp_name = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.", suffix=".tmp")
-    temp_path = Path(temp_name)
-    try:
-        with os.fdopen(handle, "w+b") as temp_file:
+    handle, temp_path = _create_temp_file(path)
+    with os.fdopen(handle, "w+b") as temp_file:
+        try:
             _write_reg_lines(temp_file, bom, encoder, lines)
             temp_file.seek(0)
-            with path.open("wb") as reg_file:
-                # Chunked copy, so memory stays flat however large the export.
-                shutil.copyfileobj(temp_file, reg_file)
-    finally:
-        temp_path.unlink(missing_ok=True)
+            target = path.open("wb")
+        except BaseException:
+            # The target is untouched, so the temp file holds nothing worth keeping.
+            # Closed first: Windows cannot delete a file that is still open.
+            try:
+                temp_file.close()
+            finally:
+                temp_path.unlink(missing_ok=True)
+            raise
+        _copy_back(temp_file, target, path, temp_path)
+    temp_path.unlink(missing_ok=True)
+
+
+def _create_temp_file(path: Path) -> tuple[int, Path]:
+    """Create the export's temp file beside *path*, or in the system temp dir if that is refused.
+
+    Beside the target is preferred: the export then takes space on the target's
+    own filesystem, and a temp file kept after a failed copy-back sits next to
+    the file it belongs to. Because the bytes are copied back rather than
+    renamed, the temp file may live anywhere, so a writable file in a read-only
+    directory can still be exported over. mkstemp makes the file readable by
+    its owner only, which matters in a shared temp dir.
+    """
+    prefix = f".{path.name}."
+    try:
+        handle, temp_name = tempfile.mkstemp(dir=path.parent, prefix=prefix, suffix=".tmp")
+    except PermissionError:
+        handle, temp_name = tempfile.mkstemp(prefix=prefix, suffix=".tmp")
+    return handle, Path(temp_name)
+
+
+def _copy_back(temp_file: BinaryIO, target: BinaryIO, path: Path, temp_path: Path) -> None:
+    """Copy the finished export into the opened *target*, keeping the temp file on failure.
+
+    Raises:
+        OSError: The copy failed partway; the message names the kept temp file.
+            The errno is the original one, so ``except OSError`` subclasses such
+            as ``PermissionError`` still match. An interrupt is re-raised as it is.
+    """
+    try:
+        with target:
+            # Chunked copy, so memory stays flat however large the export.
+            shutil.copyfileobj(temp_file, target)
+    except OSError as error:
+        raise _copy_back_error(error, path, temp_path) from error
+
+
+def _copy_back_error(error: OSError, path: Path, temp_path: Path) -> OSError:
+    """Build the error for a copy-back that stopped partway, naming the kept temp file."""
+    message = f"{error.strerror or error}: writing {path} stopped partway; the complete export is kept in {temp_path}"
+    if error.errno is None:
+        return OSError(message)
+    return OSError(error.errno, message)
 
 
 def _write_reg_lines(reg_file: BinaryIO, bom: bytes, encoder: IncrementalEncoder, lines: Iterable[str]) -> None:
@@ -366,20 +448,43 @@ def _resolve_file_format(encoding: str, version: _RegVersion) -> _RegFileFormat:
     _RegFileFormat(header='REGEDIT4', codec='ascii', bom=b'')
     >>> _resolve_file_format("UTF-16", _RegVersion.V5).bom
     b'\\xff\\xfe'
+    >>> _resolve_file_format("utf_16_le", _RegVersion.V5).bom
+    b'\\xff\\xfe'
     """
     if version is _RegVersion.REGEDIT4:
         header = _REGEDIT4_HEADER
         # Only the exact default spelling is swapped: REGEDIT4 files are ANSI,
         # and a caller who names an encoding explicitly gets that encoding.
+        # Not normalised on purpose: "utf16le" or "UTF-16-LE" with version 4
+        # has always written UTF-16, and normalising would turn it into ASCII.
         if encoding == "utf-16-le":
             encoding = "ascii"
     else:
         header = _REG_FILE_HEADER
-    if encoding.lower().replace("-", "") in ("utf16le", "utf16"):
+    if _names_utf16(encoding):
         # regedit writes UTF-16 LE with a BOM; the plain utf-16 codec would pick
         # the platform byte order, so both spellings mean LE plus an explicit BOM.
         return _RegFileFormat(header=header, codec="utf-16-le", bom=_UTF16_BOM)
     return _RegFileFormat(header=header, codec=encoding, bom=b"")
+
+
+def _names_utf16(encoding: str) -> bool:
+    """Tell whether *encoding* names UTF-16 or UTF-16 LE, written as LE with a BOM.
+
+    The codec registry's own name catches every spelling it knows (``utf_16_le``,
+    ``UTF-16LE``, ``u16``). The text check before it keeps spellings that only
+    it accepts, as earlier releases did, so each still writes the same bytes.
+
+    >>> _names_utf16("utf_16_le"), _names_utf16("utf-16-be"), _names_utf16("no-such-codec")
+    (True, False, False)
+    """
+    if encoding.lower().replace("-", "") in ("utf16le", "utf16"):
+        return True
+    try:
+        return codecs.lookup(encoding).name in _UTF16_CODEC_NAMES
+    except LookupError:
+        # Not decided here: export_reg's encoder lookup reports the unknown codec.
+        return False
 
 
 def _iter_export_lines(backend: RegistryBackend, header: str, target_hives: set[str]) -> Iterator[str]:
