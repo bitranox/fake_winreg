@@ -25,6 +25,7 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 
 ### Changed
 
+- Runtime dependency floor raised: `lib_layered_config>=8.1.0` -> `>=9.0.3`.
 - A backend of your own passed to `use_backend()` must now implement `subkey_name_at` and
   `value_at`; `EnumKey` and `EnumValue` call them instead of listing every subkey or value on each
   call. The three shipped backends implement them.

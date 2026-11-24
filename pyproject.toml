@@ -11,7 +11,7 @@ dependencies = [
     "lib_cli_exit_tools>=2.5.0",
     "lib_log_rich>=8.2.2",
     "python-dotenv>=1.2.4",
-    "lib_layered_config>=8.1.0",
+    "lib_layered_config>=9.0.3",
     "pydantic>=2.14.3",
     "orjson>=3.13.0",
 ]
@@ -54,7 +54,7 @@ dev = [
   "pytest-cov>=7.1.0",
   "pytest-xdist>=3.8.0",
   "hypothesis>=6.168.5",
-  "ruff>=0.17.4",
+  "ruff>=0.17.5",
   "pyright[nodejs]>=1.1.414",
   "bandit>=1.9.4",
   # 1.5.1 was yanked upstream (unintended breaking changes); never pin a floor to a yanked
@@ -81,7 +81,7 @@ dev = [
   "wheel>=0.48.0",               # CVE-2025-24049
   "pynacl>=1.6.2",               # CVE-2025-69277
   "urllib3>=2.8.0",              # CVE-2025-66471, CVE-2025-66418
-  "virtualenv>=21.15.6",        # CVE-2025-22702, CVE-2026-113722
+  "virtualenv>=21.15.7",        # CVE-2025-22702, CVE-2026-113722
   "certifi>=2026.10.23",         # PYSEC-2026-4320
 ]
 
@@ -328,4 +328,4 @@ ignores = ["E003"]
 
 [tool.uv]
 exclude-newer = "7 days"
-exclude-newer-package = {lib-cli-exit-tools = false, lib-layered-config = false, lib-log-rich = false}
+exclude-newer-package = {lib-cli-exit-tools = false, lib-layered-config = false, lib-log-rich = false, fake-winreg = false}
