@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+from types import MappingProxyType
+from typing import Final
+
 # ---------------------------------------------------------------------------
 # Predefined HKEY root constants
 # ---------------------------------------------------------------------------
@@ -74,15 +78,25 @@ KEY_WOW64_32KEY: int = 512
 # ---------------------------------------------------------------------------
 # Hive name lookup by integer constant
 # ---------------------------------------------------------------------------
-hive_name_hashed_by_int: dict[int, str] = {
-    18446744071562067968: "HKEY_CLASSES_ROOT",
-    18446744071562067973: "HKEY_CURRENT_CONFIG",
-    18446744071562067969: "HKEY_CURRENT_USER",
-    18446744071562067974: "HKEY_DYN_DATA",
-    18446744071562067970: "HKEY_LOCAL_MACHINE",
-    18446744071562067972: "HKEY_PERFORMANCE_DATA",
-    18446744071562067971: "HKEY_USERS",
-}
+# Read-only and keyed by the named HKEY_* constants: the whole package iterates
+# and indexes this table, so a caller mutating it would change every backend's hives.
+hive_name_hashed_by_int: Final[Mapping[int, str]] = MappingProxyType(
+    {
+        HKEY_CLASSES_ROOT: "HKEY_CLASSES_ROOT",
+        HKEY_CURRENT_CONFIG: "HKEY_CURRENT_CONFIG",
+        HKEY_CURRENT_USER: "HKEY_CURRENT_USER",
+        HKEY_DYN_DATA: "HKEY_DYN_DATA",
+        HKEY_LOCAL_MACHINE: "HKEY_LOCAL_MACHINE",
+        HKEY_PERFORMANCE_DATA: "HKEY_PERFORMANCE_DATA",
+        HKEY_USERS: "HKEY_USERS",
+    }
+)
+
+# The one reverse table (hive name -> HKEY_* integer), shared by every parser of
+# hive names (.reg import, JSON import, the reg CLI) instead of a copy per module.
+hive_int_by_name: Final[Mapping[str, int]] = MappingProxyType(
+    {name: hive for hive, name in hive_name_hashed_by_int.items()}
+)
 
 __all__ = [
     "HKEY_CLASSES_ROOT",
@@ -136,5 +150,6 @@ __all__ = [
     "REG_RESOURCE_REQUIREMENTS_LIST",
     "REG_SZ",
     "REG_WHOLE_HIVE_VOLATILE",
+    "hive_int_by_name",
     "hive_name_hashed_by_int",
 ]

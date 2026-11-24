@@ -49,7 +49,23 @@ class DeployTarget(str, Enum):
     USER = "user"
 
 
+class RegistryFormat(str, Enum):
+    """On-disk registry file formats the converter and the demo exporter handle.
+
+    Example:
+        >>> RegistryFormat.SQLITE.value
+        'sqlite'
+        >>> RegistryFormat("reg") is RegistryFormat.REG
+        True
+    """
+
+    SQLITE = "sqlite"
+    JSON = "json"
+    REG = "reg"
+
+
 __all__ = [
     "DeployTarget",
     "OutputFormat",
+    "RegistryFormat",
 ]
