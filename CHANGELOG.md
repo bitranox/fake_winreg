@@ -94,6 +94,8 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
   closed when an error occurs.
 - `export_reg(encoding="utf_16_le")` (and other spellings with an underscore, such as `UTF_16_LE`)
   writes UTF-16 LE with a BOM, as `"utf-16-le"` does. It wrote no BOM, which regedit cannot read.
+  The codec aliases `utf_16` and `u16` now also always write little-endian with a BOM; on a
+  big-endian host they used to write that host's byte order.
 - A registry shared between threads: a value or key being created is no longer visible to a
   concurrent `EnumValue` / `EnumKey` before it is filled in (it showed as a value named `''`
   holding `None`), and `EnumValue` reports WinError 259 instead of raising `KeyError` when a value

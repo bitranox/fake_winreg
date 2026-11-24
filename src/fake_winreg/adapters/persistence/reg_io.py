@@ -348,8 +348,9 @@ def _export_over_existing(path: Path, bom: bytes, encoder: IncrementalEncoder, l
     holds the only complete export: a copy-back that fails (a full disk, an
     interrupt) keeps it, and an OSError names where it is.
     """
-    handle, temp_path = _create_temp_file(path)
-    with os.fdopen(handle, "w+b") as temp_file:
+    temp = _create_temp_file(path)
+    temp_path = temp.path
+    with os.fdopen(temp.handle, "w+b") as temp_file:
         try:
             _write_reg_lines(temp_file, bom, encoder, lines)
             temp_file.seek(0)
@@ -366,7 +367,14 @@ def _export_over_existing(path: Path, bom: bytes, encoder: IncrementalEncoder, l
     temp_path.unlink(missing_ok=True)
 
 
-def _create_temp_file(path: Path) -> tuple[int, Path]:
+class _TempFile(NamedTuple):
+    """An open temp file's OS descriptor and its path."""
+
+    handle: int
+    path: Path
+
+
+def _create_temp_file(path: Path) -> _TempFile:
     """Create the export's temp file beside *path*, or in the system temp dir if that is refused.
 
     Beside the target is preferred: the export then takes space on the target's
@@ -381,7 +389,7 @@ def _create_temp_file(path: Path) -> tuple[int, Path]:
         handle, temp_name = tempfile.mkstemp(dir=path.parent, prefix=prefix, suffix=".tmp")
     except PermissionError:
         handle, temp_name = tempfile.mkstemp(prefix=prefix, suffix=".tmp")
-    return handle, Path(temp_name)
+    return _TempFile(handle=handle, path=Path(temp_name))
 
 
 def _copy_back(temp_file: BinaryIO, target: BinaryIO, path: Path, temp_path: Path) -> None:

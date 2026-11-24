@@ -10,7 +10,10 @@ from typing import TYPE_CHECKING, Final
 import lib_log_rich.runtime
 import rich_click as click
 
+from fake_winreg.adapters.persistence.convert import copy_backend
+from fake_winreg.adapters.persistence.json_io import export_json
 from fake_winreg.adapters.persistence.reg_io import export_reg
+from fake_winreg.adapters.persistence.sqlite_backend import SqliteBackend
 from fake_winreg.domain.api import use_backend
 from fake_winreg.domain.enums import RegistryFormat
 from fake_winreg.domain.memory_backend import InMemoryBackend
@@ -36,9 +39,6 @@ _EXTENSION_BY_FORMAT: Final[Mapping[RegistryFormat, str]] = MappingProxyType(
 
 
 def _write_json(path: Path, _source: InMemoryBackend) -> None:
-    # Deferred: json_io pulls in orjson - keep it off `--help` and every other subcommand's path.
-    from fake_winreg.adapters.persistence.json_io import export_json  # noqa: PLC0415
-
     export_json(path)
 
 
@@ -47,10 +47,6 @@ def _write_reg(path: Path, _source: InMemoryBackend) -> None:
 
 
 def _write_sqlite(path: Path, source: InMemoryBackend) -> None:
-    # Deferred: convert and sqlite_backend pull in sqlite3 - only this export needs them.
-    from fake_winreg.adapters.persistence.convert import copy_backend  # noqa: PLC0415
-    from fake_winreg.adapters.persistence.sqlite_backend import SqliteBackend  # noqa: PLC0415
-
     # One transaction for the whole copy: committing every write costs a disk sync each.
     with SqliteBackend(path) as db_backend, db_backend.bulk():
         copy_backend(source, db_backend)
