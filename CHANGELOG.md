@@ -6,6 +6,8 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-11-24
+
 ### Added
 
 - `SqliteBackend.bulk()`: a context manager that commits every write inside it once at the end and
