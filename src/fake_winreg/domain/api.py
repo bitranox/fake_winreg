@@ -45,10 +45,11 @@ from .constants import (
     KEY_WOW64_32KEY,
     KEY_WRITE,
     REG_SZ,
+    hive_int_by_name,
 )
 from .handles import Handle, HKEYType, PyHKEY
 from .memory_backend import InMemoryBackend
-from .serialization import key_to_dict, populate_key_from_dict
+from .serialization import key_to_dict, parse_key_document, populate_key
 from .test_registries import (
     get_minimal_windows_testregistry,  # noqa: F401  # pyright: ignore[reportUnusedImport] - used in doctests
 )
@@ -74,11 +75,25 @@ _backend: RegistryBackend | None = None
 _network_resolver: Callable[[str], bool] | None = None
 
 
-def _get_backend() -> RegistryBackend:
-    """Return the active backend, creating a default InMemoryBackend if none set."""
+def get_backend() -> RegistryBackend:
+    """Return the active registry backend (the read counterpart of :func:`use_backend`).
+
+    Creates and installs an empty :class:`InMemoryBackend` the first time it is
+    called with no backend set, so the winreg API always has a registry to act on.
+
+    Returns:
+        The backend every winreg API function currently reads and writes.
+
+    Example:
+        >>> from fake_winreg.domain.memory_backend import InMemoryBackend
+        >>> backend = InMemoryBackend()
+        >>> use_backend(backend)
+        >>> get_backend() is backend
+        True
+    """
     global _backend
     if _backend is None:
-        _backend = InMemoryBackend()  # type: ignore[assignment]
+        _backend = InMemoryBackend()
     return _backend
 
 
@@ -94,7 +109,7 @@ def use_backend(backend: RegistryBackend) -> None:
 
 def load_fake_registry(fake_registry: FakeRegistry, /) -> None:
     """Install a FakeRegistry instance (backward compat - wraps in InMemoryBackend)."""
-    use_backend(InMemoryBackend(fake_registry))  # type: ignore[arg-type]
+    use_backend(InMemoryBackend(fake_registry))
 
 
 def configure_network_resolver(resolver: Callable[[str], bool]) -> None:
@@ -155,7 +170,7 @@ def ConnectRegistry(computer_name: str | None, key: Handle, /) -> PyHKEY:
             network_error.winerror = 1707  # type: ignore[attr-defined]
             raise network_error
 
-    fake_reg_handle = _get_backend().get_hive(key if isinstance(key, int) else int(key))
+    fake_reg_handle = get_backend().get_hive(key if isinstance(key, int) else int(key))
     return PyHKEY(handle=fake_reg_handle)
 
 
@@ -169,26 +184,17 @@ def CreateKey(key: Handle, sub_key: str | None, /) -> PyHKEY:
     >>> DeleteKey(reg_handle, r'SOFTWARE\xxxx\yyyy')
     >>> DeleteKey(reg_handle, r'SOFTWARE\xxxx')
     """
-    l_predefined_hkeys = [
-        "HKEY_CLASSES_ROOT",
-        "HKEY_CURRENT_CONFIG",
-        "HKEY_CURRENT_USER",
-        "HKEY_DYN_DATA",
-        "HKEY_LOCAL_MACHINE",
-        "HKEY_PERFORMANCE_DATA",
-        "HKEY_USERS",
-    ]
-
     _check_key(key)
     _check_argument_must_be_str_or_none(2, sub_key)
 
     key_handle = _resolve_key(key)
     original_access = key_handle._access  # type: ignore[reportPrivateUsage]
 
-    if key_handle.handle.full_key not in l_predefined_hkeys and not sub_key:
+    # Mirrors winreg: an empty sub_key is refused (WinError 1010) unless key is a hive root.
+    if key_handle.handle.full_key not in hive_int_by_name and not sub_key:
         _raise_os_error_1010()
 
-    fake_reg_key = _get_backend().create_key(key_handle.handle, sub_key)
+    fake_reg_key = get_backend().create_key(key_handle.handle, sub_key)
     return PyHKEY(fake_reg_key, access=original_access | KEY_WRITE)
 
 
@@ -212,7 +218,7 @@ def CreateKeyEx(key: Handle, sub_key: str, reserved: int = 0, access: int = KEY_
 
     key_handle = _resolve_key(key)
     resolved_access = key_handle._access  # type: ignore[reportPrivateUsage]
-    fake_reg_key = _get_backend().create_key(key_handle.handle, sub_key)
+    fake_reg_key = get_backend().create_key(key_handle.handle, sub_key)
     return PyHKEY(fake_reg_key, access=resolved_access)
 
 
@@ -232,7 +238,7 @@ def DeleteKey(key: Handle, sub_key: str, /) -> None:
 
     sub_key = str(sub_key)
     key_handle = _resolve_key(key)
-    _get_backend().delete_key(key_handle.handle, sub_key)
+    get_backend().delete_key(key_handle.handle, sub_key)
 
 
 def DeleteKeyEx(
@@ -279,7 +285,7 @@ def DeleteValue(key: Handle, value: str | None, /) -> None:
         value = ""
 
     key_handle = _resolve_key(key)
-    _get_backend().delete_value(key_handle.handle, value)
+    get_backend().delete_value(key_handle.handle, value)
 
 
 def EnumKey(key: Handle, index: int, /) -> str:
@@ -295,9 +301,8 @@ def EnumKey(key: Handle, index: int, /) -> str:
     _check_index(index)
 
     key_handle = _resolve_key(key)
-    keys = _get_backend().enum_keys(key_handle.handle)
     try:
-        return keys[index]
+        return get_backend().subkey_name_at(key_handle.handle, index)
     except IndexError:
         error = OSError("[WinError 259] No more data is available")
         error.winerror = 259  # type: ignore[attr-defined]
@@ -318,13 +323,14 @@ def EnumValue(key: Handle, index: int, /) -> tuple[str, RegData, int]:
     _check_index(index)
 
     key_handle = _resolve_key(key)
-    values = _get_backend().enum_values(key_handle.handle)
     try:
-        return values[index]
+        entry = get_backend().value_at(key_handle.handle, index)
     except IndexError:
         error = OSError("[WinError 259] No more data is available")
         error.winerror = 259  # type: ignore[attr-defined]
         raise error
+    # winreg returns a plain tuple, so callers comparing or printing it see no record type.
+    return (entry.name, entry.data, entry.value_type)
 
 
 def OpenKey(
@@ -352,7 +358,7 @@ def OpenKey(
         sub_key = ""
 
     key_handle = _resolve_key(key)
-    reg_key = _get_backend().get_key(key_handle.handle, sub_key)
+    reg_key = get_backend().get_key(key_handle.handle, sub_key)
     return PyHKEY(reg_key, access=access)
 
 
@@ -392,7 +398,9 @@ def QueryInfoKey(key: Handle, /) -> tuple[int, int, int]:
     """
     _check_key(key)
     reg_handle = _resolve_key(key)
-    return _get_backend().query_info(reg_handle.handle)
+    info = get_backend().query_info(reg_handle.handle)
+    # winreg returns a plain tuple, so callers comparing or printing it see no record type.
+    return (info.subkey_count, info.value_count, info.last_modified_ns)
 
 
 def QueryValue(key: Handle, sub_key: str | None, /) -> str:
@@ -411,7 +419,7 @@ def QueryValue(key: Handle, sub_key: str | None, /) -> str:
     key_handle = _resolve_key(key)
     key_handle = OpenKey(key_handle, sub_key)
     try:
-        fval = _get_backend().get_value(key_handle.handle, "")
+        fval = get_backend().get_value(key_handle.handle, "")
         if not isinstance(fval.value, str):
             os_error = OSError("[WinError 13] The data is invalid")
             os_error.winerror = 13  # type: ignore[attr-defined]
@@ -437,7 +445,7 @@ def QueryValueEx(key: Handle, value_name: str | None, /) -> tuple[RegData, int]:
     if value_name is None:
         value_name = ""
     key_handle = _resolve_key(key)
-    fval = _get_backend().get_value(key_handle.handle, value_name)
+    fval = get_backend().get_value(key_handle.handle, value_name)
     return fval.value, fval.value_type
 
 
@@ -496,13 +504,13 @@ def SetValueEx(
         value_name = ""
     check_value_type_matches_type(value, type)
     key_handle = _resolve_key(key)
-    _get_backend().set_value(key_handle.handle, value_name, value, type)
+    get_backend().set_value(key_handle.handle, value_name, value, type)
 
 
 def DisableReflectionKey(key: Handle, /) -> None:
     """Disable registry reflection for 32-bit processes on 64-bit systems.
 
-    No-op in fake implementation — reflection is not simulated.
+    No-op in fake implementation - reflection is not simulated.
 
     >>> fake_registry = get_minimal_windows_testregistry()
     >>> load_fake_registry(fake_registry)
@@ -514,7 +522,7 @@ def DisableReflectionKey(key: Handle, /) -> None:
 def EnableReflectionKey(key: Handle, /) -> None:
     """Re-enable registry reflection for 32-bit processes on 64-bit systems.
 
-    No-op in fake implementation — reflection is not simulated.
+    No-op in fake implementation - reflection is not simulated.
 
     >>> fake_registry = get_minimal_windows_testregistry()
     >>> load_fake_registry(fake_registry)
@@ -540,7 +548,7 @@ def QueryReflectionKey(key: Handle, /) -> bool:
 def FlushKey(key: Handle, /) -> None:
     """Write all attributes of a key to the registry.
 
-    No-op in fake implementation — data is already in memory.
+    No-op in fake implementation - data is already in memory.
 
     >>> fake_registry = get_minimal_windows_testregistry()
     >>> load_fake_registry(fake_registry)
@@ -609,12 +617,13 @@ def LoadKey(key: Handle, sub_key: str, file_name: str, /) -> None:
     _check_argument_must_be_type_expected(2, file_name, str)
 
     key_handle = _resolve_key(key)
-    target_key = _get_backend().create_key(key_handle.handle, sub_key)
+    target_key = get_backend().create_key(key_handle.handle, sub_key)
 
     with Path(file_name).open(encoding="utf-8") as fh:
-        data = json.load(fh)
+        document: object = json.load(fh)
 
-    populate_key_from_dict(target_key, data, target_key.full_key, parent=target_key.parent_fake_registry_key)
+    record = parse_key_document(document)
+    populate_key(target_key, record, full_key=target_key.full_key, parent=target_key.parent_fake_registry_key)
 
 
 def ExpandEnvironmentStrings(string: str, /) -> str:
@@ -642,7 +651,7 @@ def _resolve_key(key: Handle) -> PyHKEY:
     if isinstance(key, PyHKEY):
         return key
     elif isinstance(key, int):
-        hive_key = _get_backend().get_hive(key)
+        hive_key = get_backend().get_hive(key)
         return PyHKEY(hive_key)
     elif isinstance(key, HKEYType):  # type: ignore[reportUnnecessaryIsInstance]
         return PyHKEY(handle=key.handle, access=key._access)  # type: ignore[reportPrivateUsage]
@@ -676,6 +685,7 @@ __all__ = [
     "SetValueEx",
     "configure_network_resolver",
     "error",
+    "get_backend",
     "load_fake_registry",
     "use_backend",
 ]

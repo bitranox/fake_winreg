@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Final, cast
 
 import orjson
 from lib_layered_config import OVERRIDE_LAYER, Config
@@ -12,7 +12,7 @@ from lib_layered_config import OVERRIDE_LAYER, Config
 if TYPE_CHECKING:
     from lib_layered_config.domain.config import SourceInfo
 
-CLI_LAYER = "cli"
+CLI_LAYER: Final[str] = "cli"
 """Provenance layer recorded for a value that came from ``--set``.
 
 It is not one of the library's file layers because it names no file: the
@@ -174,24 +174,22 @@ def _refuse_conflicts(dotted_keys: list[str]) -> None:
             raise ValueError(f"conflicting --set overrides: {key} is given a value and {nested} puts a key under it")
 
 
-def nest_overrides(raw_overrides: tuple[str, ...]) -> tuple[dict[str, dict[str, object]], frozenset[str]]:
+def nest_overrides(raw_overrides: tuple[str, ...]) -> dict[str, dict[str, object]]:
     """Parse ``--set`` values into the nested mapping they override, checking them together.
 
     Args:
         raw_overrides: Tuple of ``SECTION.KEY=VALUE`` strings from ``--set``.
 
     Returns:
-        The nested override mapping and the dotted keys it sets. For one key given twice,
-        the last value wins.
+        The nested override mapping. For one key given twice, the last value wins.
 
     Raises:
         ValueError: An override is malformed, or two of them conflict (one gives a key a
             value, another puts a key under it).
 
     Example:
-        >>> tree, keys = nest_overrides(("a.b=1", "a.c.d=x"))
-        >>> tree, sorted(keys)
-        ({'a': {'b': 1, 'c': {'d': 'x'}}}, ['a.b', 'a.c.d'])
+        >>> nest_overrides(("a.b=1", "a.c.d=x"))
+        {'a': {'b': 1, 'c': {'d': 'x'}}}
     """
     parsed = [parse_override(raw) for raw in raw_overrides]
     dotted_keys = [".".join((override.section, *override.key_path)) for override in parsed]
@@ -199,7 +197,7 @@ def nest_overrides(raw_overrides: tuple[str, ...]) -> tuple[dict[str, dict[str, 
     overrides: dict[str, dict[str, object]] = {}
     for override in parsed:
         _nest_override(overrides, override)
-    return overrides, frozenset(dotted_keys)
+    return overrides
 
 
 def _dotted_keys(data: Mapping[str, object], prefix: str = "") -> Iterator[str]:
@@ -282,7 +280,7 @@ def apply_overrides(config: Config, raw_overrides: tuple[str, ...]) -> Config:
     if not raw_overrides:
         return config
 
-    overrides, _ = nest_overrides(raw_overrides)
+    overrides = nest_overrides(raw_overrides)
     merged = config.with_overrides(overrides)
     return Config(merged.as_dict(), _provenance_naming_the_cli(merged))
 

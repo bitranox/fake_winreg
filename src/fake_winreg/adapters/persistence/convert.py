@@ -6,11 +6,15 @@ Uses the backend interface to stream key-by-key for memory efficiency.
 
 from __future__ import annotations
 
+import errno
+import os
 from pathlib import Path
-from typing import TYPE_CHECKING
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Final
 
-from fake_winreg.domain.api import _get_backend, use_backend  # pyright: ignore[reportPrivateUsage]
+from fake_winreg.domain.api import get_backend, use_backend
 from fake_winreg.domain.constants import hive_name_hashed_by_int
+from fake_winreg.domain.enums import RegistryFormat
 from fake_winreg.domain.memory_backend import InMemoryBackend
 
 from .json_backend import JsonBackend
@@ -19,90 +23,117 @@ from .reg_io import export_reg, import_reg
 from .sqlite_backend import SqliteBackend
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Mapping
 
     from fake_winreg.application.ports import RegistryBackend
     from fake_winreg.domain.registry import FakeRegistryKey
 
 
-_EXPORTERS: dict[str, Callable[[Path], None]] = {"json": export_json, "reg": export_reg}
+# The file formats, each with the function that writes the active backend to
+# such a file and the one that reads such a file into it. SQLite has neither:
+# it is a backend itself and is converted by streaming key by key.
+_EXPORTERS: Final[Mapping[RegistryFormat, Callable[[Path], None]]] = MappingProxyType(
+    {RegistryFormat.JSON: export_json, RegistryFormat.REG: export_reg}
+)
+_IMPORTERS: Final[Mapping[RegistryFormat, Callable[[Path], None]]] = MappingProxyType(
+    {RegistryFormat.JSON: import_json, RegistryFormat.REG: import_reg}
+)
+
+_FORMAT_BY_SUFFIX: Final[Mapping[str, RegistryFormat]] = MappingProxyType(
+    {
+        ".db": RegistryFormat.SQLITE,
+        ".sqlite": RegistryFormat.SQLITE,
+        ".sqlite3": RegistryFormat.SQLITE,
+        ".json": RegistryFormat.JSON,
+        ".reg": RegistryFormat.REG,
+    }
+)
 
 
 def convert_registry(source: str | Path, target: str | Path) -> int:
     """Stream-convert a registry between formats.
 
     Auto-detects format by file extension:
-      .db, .sqlite → SQLite
-      .json        → JSON
-      .reg         → Windows Registry Editor format
+      .db, .sqlite -> SQLite
+      .json        -> JSON
+      .reg         -> Windows Registry Editor format
 
     Returns the number of keys converted.
 
     Raises:
         ValueError: If the file extension is not recognized.
+        FileNotFoundError: If *source* does not exist.
     """
     source = Path(source)
     target = Path(target)
     source_fmt = _detect_format(source)
     target_fmt = _detect_format(target)
+    _require_existing_source(source)
 
     # Save and restore the active backend after conversion
-    previous_backend = _get_backend()
+    previous_backend = get_backend()
     try:
         return _do_convert(source, source_fmt, target, target_fmt)
     finally:
-        use_backend(previous_backend)  # type: ignore[arg-type]
+        use_backend(previous_backend)
 
 
-def _do_convert(source: Path, source_fmt: str, target: Path, target_fmt: str) -> int:
+def _require_existing_source(source: Path) -> None:
+    """Refuse a missing source before any backend is opened.
+
+    Opening one would not fail: SqliteBackend creates an empty database and
+    JsonBackend starts empty for a missing file, so the conversion "succeeded"
+    with only the empty hives, and a SQLite source or target file was left
+    behind. The error has the shape open() raises, which a missing .reg source
+    already produced, so every format exits the same way.
+    """
+    if not source.exists():
+        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), str(source))
+
+
+def _do_convert(source: Path, source_fmt: RegistryFormat, target: Path, target_fmt: RegistryFormat) -> int:
     """Perform the actual conversion, choosing the most memory-efficient path."""
-    if source_fmt == target_fmt and source_fmt == "sqlite":
+    if source_fmt is RegistryFormat.SQLITE and target_fmt is RegistryFormat.SQLITE:
         return _convert_sqlite_to_sqlite(source, target)
-    if target_fmt == "sqlite":
+    if target_fmt is RegistryFormat.SQLITE:
         return _import_into_sqlite(source, source_fmt, target)
-    if source_fmt == "sqlite":
+    if source_fmt is RegistryFormat.SQLITE:
         return _export_from_sqlite(source, target, target_fmt)
     return _convert_via_loaded_backend(source, source_fmt, target, target_fmt)
 
 
 def _convert_sqlite_to_sqlite(source: Path, target: Path) -> int:
     """Stream a SQLite registry into another SQLite registry key by key."""
-    source_backend = SqliteBackend(source)
-    target_backend = SqliteBackend(target)
-    try:
-        return _stream_backend_to_backend(source_backend, target_backend)
-    finally:
-        source_backend.close()
-        target_backend.close()
+    with SqliteBackend(source) as source_backend, SqliteBackend(target) as target_backend, target_backend.bulk():
+        return copy_backend(source_backend, target_backend)
 
 
-def _import_into_sqlite(source: Path, source_fmt: str, target: Path) -> int:
-    """Import a .reg (streaming) or JSON (in-memory) file directly into a SqliteBackend."""
-    target_backend = SqliteBackend(target)
-    use_backend(target_backend)
-    if source_fmt == "reg":
-        import_reg(source)
-    elif source_fmt == "json":
-        import_json(source)
-    count = _count_keys(target_backend)
-    target_backend.close()
-    return count
+def _import_into_sqlite(source: Path, source_fmt: RegistryFormat, target: Path) -> int:
+    """Import a .reg (streaming) or JSON (in-memory) file directly into a SqliteBackend.
+
+    The whole import is one transaction: one commit instead of one per key and
+    value, and a failed import leaves the target as it was.
+    """
+    importer = _IMPORTERS[source_fmt]
+    with SqliteBackend(target) as target_backend:
+        use_backend(target_backend)
+        with target_backend.bulk():
+            importer(source)
+        return _count_keys(target_backend)
 
 
-def _export_from_sqlite(source: Path, target: Path, target_fmt: str) -> int:
+def _export_from_sqlite(source: Path, target: Path, target_fmt: RegistryFormat) -> int:
     """Export a SqliteBackend (streaming) to a JSON or .reg file."""
-    source_backend = SqliteBackend(source)
-    use_backend(source_backend)
-    if target_fmt == "json":
-        export_json(target)
-    elif target_fmt == "reg":
-        export_reg(target)
-    count = _count_keys(source_backend)
-    source_backend.close()
-    return count
+    exporter = _EXPORTERS[target_fmt]
+    with SqliteBackend(source) as source_backend:
+        use_backend(source_backend)
+        exporter(target)
+        return _count_keys(source_backend)
 
 
-def _convert_via_loaded_backend(source: Path, source_fmt: str, target: Path, target_fmt: str) -> int:
+def _convert_via_loaded_backend(
+    source: Path, source_fmt: RegistryFormat, target: Path, target_fmt: RegistryFormat
+) -> int:
     """Convert between .reg and JSON by loading the source fully, then exporting it.
 
     A .reg source is imported into an InMemoryBackend; a JSON source is loaded
@@ -113,27 +144,33 @@ def _convert_via_loaded_backend(source: Path, source_fmt: str, target: Path, tar
         ValueError: If the format pair is not a .reg/JSON combination.
     """
     exporter = _EXPORTERS.get(target_fmt)
-    if source_fmt not in ("reg", "json") or exporter is None:
-        raise ValueError(f"Unsupported conversion: {source_fmt} → {target_fmt}")
+    if source_fmt not in _IMPORTERS or exporter is None:
+        raise ValueError(f"Unsupported conversion: {source_fmt.value} \u2192 {target_fmt.value}")
     backend = _load_source_backend(source, source_fmt)
     exporter(target)
     return _count_keys(backend)
 
 
-def _load_source_backend(source: Path, source_fmt: str) -> RegistryBackend:
+def _load_source_backend(source: Path, source_fmt: RegistryFormat) -> RegistryBackend:
     """Activate a backend holding *source*: JsonBackend for JSON, InMemoryBackend for .reg."""
-    if source_fmt == "json":
+    if source_fmt is RegistryFormat.JSON:
         json_backend = JsonBackend(source)
         use_backend(json_backend)
         return json_backend
     mem_backend = InMemoryBackend()
     use_backend(mem_backend)
-    import_reg(source)
+    _IMPORTERS[source_fmt](source)
     return mem_backend
 
 
-def _stream_backend_to_backend(source: RegistryBackend, target: RegistryBackend) -> int:
-    """Stream all keys and values from source to target backend, key by key."""
+def copy_backend(source: RegistryBackend, target: RegistryBackend) -> int:
+    """Copy every key and value of *source* into *target*, key by key, and return the key count.
+
+    Keys and values are written in the order *source* enumerates them, one key's
+    values at a time, so memory holds one key's listing rather than the tree.
+    Run it inside ``target.bulk()`` when the target is a SqliteBackend, or each
+    write commits on its own.
+    """
     count = 0
     for hive_int in sorted(hive_name_hashed_by_int):
         source_hive = source.get_hive(hive_int)
@@ -150,11 +187,9 @@ def _stream_key_recursive(
 ) -> int:
     """Recursively stream keys and values from source to target."""
     count = 1
-    # Copy values
-    for vname, vdata, vtype in source.enum_values(source_key):
-        target.set_value(target_key, vname, vdata, vtype)
+    for entry in source.enum_values(source_key):
+        target.set_value(target_key, entry.name, entry.data, entry.value_type)
 
-    # Recurse into subkeys
     for subkey_name in source.enum_keys(source_key):
         child_src = source.get_key(source_key, subkey_name)
         child_tgt = target.create_key(target_key, subkey_name)
@@ -181,16 +216,16 @@ def _count_keys_recursive(backend: RegistryBackend, key: FakeRegistryKey) -> int
     return count
 
 
-def _detect_format(path: Path) -> str:
-    """Detect registry format from file extension."""
-    suffix = path.suffix.lower()
-    if suffix in (".db", ".sqlite", ".sqlite3"):
-        return "sqlite"
-    if suffix == ".json":
-        return "json"
-    if suffix == ".reg":
-        return "reg"
-    raise ValueError(f"Unknown registry format for '{path.name}'. Supported extensions: .db, .sqlite, .json, .reg")
+def _detect_format(path: Path) -> RegistryFormat:
+    """Detect registry format from file extension.
+
+    >>> _detect_format(Path("hive.SQLITE3"))
+    <RegistryFormat.SQLITE: 'sqlite'>
+    """
+    registry_format = _FORMAT_BY_SUFFIX.get(path.suffix.lower())
+    if registry_format is None:
+        raise ValueError(f"Unknown registry format for '{path.name}'. Supported extensions: .db, .sqlite, .json, .reg")
+    return registry_format
 
 
-__all__ = ["convert_registry"]
+__all__ = ["convert_registry", "copy_backend"]

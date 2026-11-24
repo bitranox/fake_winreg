@@ -63,6 +63,7 @@ from .domain.api import (
     SetValue,
     SetValueEx,
     error,
+    get_backend,
     load_fake_registry,
     use_backend,
 )
@@ -239,6 +240,7 @@ __all__ = [
     # Module aliases
     "fake_reg",
     "fake_reg_tools",
+    "get_backend",
     "get_config",
     "get_fake_reg_key",
     "get_windows_timestamp_now",

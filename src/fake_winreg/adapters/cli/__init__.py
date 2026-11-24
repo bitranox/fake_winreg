@@ -25,7 +25,7 @@ from .commands import (
     cli_logdemo,
     cli_reg,
 )
-from .constants import CLICK_CONTEXT_SETTINGS, TRACEBACK_SUMMARY_LIMIT, TRACEBACK_VERBOSE_LIMIT
+from .constants import TRACEBACK_SUMMARY_LIMIT, TRACEBACK_VERBOSE_LIMIT, click_context_settings
 from .context import (
     TracebackState,
     apply_traceback_preferences,
@@ -38,7 +38,6 @@ from .root import cli
 
 __all__ = [
     # Constants
-    "CLICK_CONTEXT_SETTINGS",
     "TRACEBACK_SUMMARY_LIMIT",
     "TRACEBACK_VERBOSE_LIMIT",
     # Traceback management
@@ -55,6 +54,7 @@ __all__ = [
     "cli_info",
     "cli_logdemo",
     "cli_reg",
+    "click_context_settings",
     # Entry point
     "main",
     "restore_traceback_state",

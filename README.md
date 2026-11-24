@@ -338,10 +338,25 @@ fake_registry = winreg.fake_reg_tools.get_minimal_windows_testregistry()
 winreg.load_fake_registry(fake_registry)
 ```
 
+The SQLite backend commits each write on its own. To build or change many keys at once, wrap
+the writes in `bulk()`: they commit together at the end of the block and roll back if it raises
+(nested blocks roll back only their own writes).
+
+```python
+with winreg.SqliteBackend("/path/to/registry.db") as backend, backend.bulk():
+    winreg.use_backend(backend)
+    for name in names:
+        winreg.CreateKey(winreg.HKEY_CURRENT_USER, rf"Software\Example\{name}")
+```
+
+A backend of your own passed to `use_backend()` implements the `RegistryBackend` protocol in
+`fake_winreg.application.ports`, including `subkey_name_at(key, index)` and
+`value_at(key, index)`, which `EnumKey` and `EnumValue` call for one entry at a time.
+
 ### Import/Export
 
 Exchange registry data between formats. All exports produce deterministic,
-alphabetically sorted output — keys and values are ordered by name regardless
+alphabetically sorted output: keys and values are ordered by name regardless
 of which backend is active.
 
 ```python

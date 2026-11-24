@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NamedTuple
 
 import lib_cli_exit_tools
 
@@ -13,8 +13,19 @@ if TYPE_CHECKING:
 
     from fake_winreg.composition import AppServices
 
-TracebackState = tuple[bool, bool]
-"""Captured traceback configuration: (traceback_enabled, force_color)."""
+
+class TracebackState(NamedTuple):
+    """Captured traceback configuration of ``lib_cli_exit_tools``.
+
+    A NamedTuple so a caller comparing it to a plain ``(enabled, force_color)`` pair still works.
+
+    Attributes:
+        traceback_enabled: Whether full tracebacks are printed.
+        force_color: Whether tracebacks are coloured even off a terminal.
+    """
+
+    traceback_enabled: bool
+    force_color: bool
 
 
 @dataclass(slots=True)
@@ -136,16 +147,16 @@ def snapshot_traceback_state() -> TracebackState:
     """Capture the current traceback configuration for later restoration.
 
     Returns:
-        Tuple of (traceback_enabled, force_color) booleans.
+        The two flags as a :class:`TracebackState`.
 
     Example:
         >>> state = snapshot_traceback_state()
         >>> isinstance(state, tuple) and len(state) == 2
         True
     """
-    return (
-        bool(getattr(lib_cli_exit_tools.config, "traceback", False)),
-        bool(getattr(lib_cli_exit_tools.config, "traceback_force_color", False)),
+    return TracebackState(
+        traceback_enabled=bool(getattr(lib_cli_exit_tools.config, "traceback", False)),
+        force_color=bool(getattr(lib_cli_exit_tools.config, "traceback_force_color", False)),
     )
 
 
@@ -153,17 +164,17 @@ def restore_traceback_state(state: TracebackState) -> None:
     """Reapply a previously captured traceback configuration.
 
     Args:
-        state: Tuple from :func:`snapshot_traceback_state`.
+        state: The value :func:`snapshot_traceback_state` returned.
 
     Example:
         >>> original = snapshot_traceback_state()
         >>> apply_traceback_preferences(True)
         >>> restore_traceback_state(original)
-        >>> lib_cli_exit_tools.config.traceback == original[0]
+        >>> lib_cli_exit_tools.config.traceback == original.traceback_enabled
         True
     """
-    lib_cli_exit_tools.config.traceback = state[0]
-    lib_cli_exit_tools.config.traceback_force_color = state[1]
+    lib_cli_exit_tools.config.traceback = state.traceback_enabled
+    lib_cli_exit_tools.config.traceback_force_color = state.force_color
 
 
 __all__ = [

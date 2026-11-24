@@ -6,6 +6,83 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 
 ## [Unreleased]
 
+### Added
+
+- `SqliteBackend.bulk()`: a context manager that commits every write inside it once at the end and
+  rolls back if the block raises. Nested blocks are savepoints, so a failure caught by the outer
+  block undoes only the inner block's writes. Writes outside a block still commit one by one.
+- `copy_backend(source, target)` in `fake_winreg.adapters.persistence`: copies every key and value
+  from one backend into another and returns the key count.
+- `get_backend()`: returns the active backend, the counterpart of `use_backend()`.
+- `RegistryBackend.subkey_name_at(key, index)` and `value_at(key, index)`: one subkey name or value
+  by position, with list indexing rules (a negative index counts from the end, `IndexError` past
+  either end).
+- `RegistryFormat` enum and the `ValueEntry` / `KeyInfo` records (`domain.types`).
+
+### Changed
+
+- A backend of your own passed to `use_backend()` must now implement `subkey_name_at` and
+  `value_at`; `EnumKey` and `EnumValue` call them instead of listing every subkey or value on each
+  call. The three shipped backends implement them.
+- `RegistryBackend.enum_values()` returns `ValueEntry` records and `query_info()` a `KeyInfo`
+  record. Both are named tuples, so code that unpacks them positionally keeps working.
+  `EnumValue` and `QueryInfoKey` still return plain tuples, as `winreg` does.
+- `hive_name_hashed_by_int` is read-only (a mapping proxy); writing to it raises `TypeError`.
+  Before, a write silently changed the hives of every backend. The reverse table is
+  `hive_int_by_name`.
+- `FakeRegistryKey.subkeys` and `.values` are read-only properties holding a `ChildMap` (a
+  `MutableMapping`, not a `dict`). Their contents can still be changed; the attributes cannot be
+  rebound.
+- `domain.serialization`: `populate_key_from_dict(key, data, full_key, parent)` is replaced by
+  `parse_key_document(document)` plus `populate_key(key, record, *, full_key, parent)`, and
+  `_encode_value` is public as `encode_value`. One lenient parser now reads every JSON registry
+  document (`JsonBackend`, `import_json`, `LoadKey`) and accepts the same malformed shapes as
+  before. A top-level document that is not an object raises `AttributeError` with the message
+  "a registry document must be a JSON object, got list" instead of Python's attribute message.
+- `fake_winreg.adapters.cli.CLICK_CONTEXT_SETTINGS` is replaced by `click_context_settings()`,
+  which returns a new dict per command, because rich-click updates a command's settings dict in
+  place. `nest_overrides()` returns only the nested tree.
+- Value type checks compare exact types instead of type names, so a user class that happens to be
+  named `str`, `int`, `list`, `bytes` or `NoneType` is refused. `bool` is still refused for
+  `REG_DWORD` and `REG_QWORD`.
+- `reg` CLI, two faults at once: `create-key HKEY_BOGUS` and `delete-key HKEY_BOGUS` report
+  "Unknown hive" instead of "Cannot create a root hive key", and `set` with an unknown `--type`
+  and missing DATA reports the type. Single-fault messages are unchanged.
+- `.reg` encoding errors report the position within the line instead of within the whole file.
+- `export-demo-registries --help` names Windows 11 too.
+
+### Performance
+
+- SQLite: an index on `parent_path` is created on open, also for existing databases. Walking a
+  2058-key tree went from 0.16-0.46 s to 0.006 s. `convert_registry` imports into SQLite inside one
+  transaction: `.reg` to SQLite went from 2.3 s to 0.03-0.06 s, SQLite to SQLite from 2.3 s to
+  0.03 s (2000 keys and 2000 values, three interleaved runs each).
+- `EnumKey` / `EnumValue` over every index of a key take linear instead of quadratic time:
+  16000 subkeys and values take 0.011 s instead of 78.7 s.
+- `.reg` import and export stream line by line. Peak memory for an 80000-key, 46 MB file fell from
+  146 MiB to about 6 MiB for export and from 87 MiB to 0 for import; the output bytes are unchanged.
+- `.reg` encoding detection reads 2 bytes instead of the whole file.
+
+### Fixed
+
+- `.reg` round trip of a `REG_SZ` value containing `\x0b`, `\x0c`, `\x1c`-`\x1e`, `\x85`, U+2028 or
+  U+2029: the import split the line there and truncated the value.
+- `convert_registry` with a missing `.db`, `.sqlite` or `.json` source created an empty database
+  (or read an empty registry), reported success with 7 keys and exited 0. It now raises
+  `FileNotFoundError` (exit 2 through the CLI) and creates no file, as a missing `.reg` source
+  already did.
+- A `convert_registry` into an existing `.db` that fails partway (bad hex, undecodable bytes) left
+  the keys before the failure committed; the target is now unchanged.
+- An `import_json` or `LoadKey` with a bad `_base64` payload no longer leaves a partial import:
+  the document is checked before anything is written.
+- SQLite connections opened by `convert_registry`, `export-demo-registries` and the `reg` CLI are
+  closed when an error occurs.
+
+### Removed
+
+- Doctest stubs in six click command docstrings, which pytest never collected and which could not
+  have passed. The checks they described are real tests.
+
 ## [1.10.5] - 2026-11-18
 
 ### Changed

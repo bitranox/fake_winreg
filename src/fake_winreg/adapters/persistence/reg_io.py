@@ -1,17 +1,23 @@
 """Import and export functions for Windows .reg file format.
 
-Supports Registry Editor Version 5.00 format — the same format produced
+Supports Registry Editor Version 5.00 format - the same format produced
 by Windows ``regedit.exe`` when exporting keys.
 """
 
 from __future__ import annotations
 
+import codecs
+import os
 import re
+import shutil
 import struct
+import tempfile
+from enum import IntEnum
 from pathlib import Path
-from typing import TYPE_CHECKING
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Final, NamedTuple
 
-from fake_winreg.domain.api import _get_backend  # pyright: ignore[reportPrivateUsage]
+from fake_winreg.domain.api import get_backend
 from fake_winreg.domain.constants import (
     REG_BINARY,
     REG_DWORD,
@@ -20,30 +26,24 @@ from fake_winreg.domain.constants import (
     REG_NONE,
     REG_QWORD,
     REG_SZ,
+    hive_int_by_name,
     hive_name_hashed_by_int,
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from codecs import IncrementalEncoder
+    from collections.abc import Callable, Iterable, Iterator, Mapping
+    from typing import BinaryIO
 
     from fake_winreg.application.ports import RegistryBackend
     from fake_winreg.domain.registry import FakeRegistryKey
+    from fake_winreg.domain.types import RegData
 
 _REG_FILE_HEADER = "Windows Registry Editor Version 5.00"
 _REGEDIT4_HEADER = "REGEDIT4"
 _LINE_WRAP_LIMIT = 80
-
-# Reverse mapping: hive name string -> hive integer constant
-_HIVE_NAME_TO_INT: dict[str, int] = {name: key for key, name in hive_name_hashed_by_int.items()}
-
-# hex(N) type code -> REG_* constant
-_HEX_TYPE_MAP: dict[int, int] = {
-    0: REG_NONE,
-    2: REG_EXPAND_SZ,
-    3: REG_BINARY,
-    7: REG_MULTI_SZ,
-    11: REG_QWORD,
-}
+_LINE_END = "\r\n"
+_UTF16_BOM = b"\xff\xfe"
 
 # Patterns for parsing .reg lines
 _RE_KEY_LINE = re.compile(r"^\[(-?)(HKEY_\w+)(?:\\(.+))?\]$")
@@ -69,10 +69,17 @@ def import_reg(path: str | Path, *, encoding: str | None = None) -> None:
     path = Path(path)
     if encoding is None:
         encoding = _detect_reg_encoding(path)
-    raw_text = path.read_text(encoding=encoding)
-    lines = _join_continuation_lines(raw_text.splitlines())
-    backend = _get_backend()
+    backend = get_backend()
+    # Iterate the open file instead of read_text + splitlines, so only one
+    # logical line is held at a time. File iteration splits on \n, \r and \r\n
+    # only, which is all a .reg file uses; splitlines also split inside values
+    # on \x0b, \x0c, \x1c-\x1e, \x85, U+2028 and U+2029.
+    with path.open(encoding=encoding) as reg_file:
+        _import_lines(_join_continuation_lines(_strip_line_ends(reg_file)), backend)
 
+
+def _import_lines(lines: Iterable[str], backend: RegistryBackend) -> None:
+    """Apply each logical .reg line to *backend*, tracking the current key."""
     current_key: FakeRegistryKey | None = None
 
     for line in lines:
@@ -101,9 +108,14 @@ def import_reg(path: str | Path, *, encoding: str | None = None) -> None:
             _handle_value_assignment(value_name, named_match.group(2), current_key, backend)
 
 
-def _join_continuation_lines(lines: list[str]) -> list[str]:
-    """Join lines ending with backslash continuation."""
-    result: list[str] = []
+def _strip_line_ends(raw_lines: Iterable[str]) -> Iterator[str]:
+    """Yield each physical line without its terminator (universal newlines leave only \\n)."""
+    for raw_line in raw_lines:
+        yield raw_line.removesuffix("\n")
+
+
+def _join_continuation_lines(lines: Iterable[str]) -> Iterator[str]:
+    """Yield logical lines, joining a line ending with a backslash to the next one."""
     current = ""
     for raw_line in lines:
         if current:
@@ -112,11 +124,10 @@ def _join_continuation_lines(lines: list[str]) -> list[str]:
         if current.endswith("\\"):
             current = current[:-1]
         else:
-            result.append(current)
+            yield current
             current = ""
     if current:
-        result.append(current)
-    return result
+        yield current
 
 
 def _handle_key_line(match: re.Match[str], backend: RegistryBackend) -> FakeRegistryKey | None:
@@ -125,7 +136,7 @@ def _handle_key_line(match: re.Match[str], backend: RegistryBackend) -> FakeRegi
     hive_name = match.group(2)
     sub_path = match.group(3) or ""
 
-    hive_int = _HIVE_NAME_TO_INT.get(hive_name)
+    hive_int = hive_int_by_name.get(hive_name)
     if hive_int is None:
         return None
     hive_root = backend.get_hive(hive_int)
@@ -189,11 +200,8 @@ def _handle_hex_value(
     backend: RegistryBackend,
 ) -> None:
     """Parse a hex(...) value and store it."""
-    if type_code_str is None:
-        reg_type = REG_BINARY
-    else:
-        type_code = int(type_code_str, 16)
-        reg_type = _HEX_TYPE_MAP.get(type_code, type_code)
+    # hex(N) names the REG_* type by its number, so the code is the type.
+    reg_type = REG_BINARY if type_code_str is None else int(type_code_str, 16)
 
     raw_bytes = _parse_hex_bytes(hex_data_str)
 
@@ -225,16 +233,18 @@ def _decode_utf16le_multi_string(data: bytes) -> list[str]:
     return text.split("\x00")
 
 
-_HEX_DECODERS: dict[int, Callable[[bytes], bytes | int | str | list[str] | None]] = {
-    REG_EXPAND_SZ: _decode_utf16le_string,
-    REG_MULTI_SZ: _decode_utf16le_multi_string,
-    REG_QWORD: lambda b: struct.unpack("<Q", b)[0] if len(b) == 8 else (b or None),
-    REG_NONE: lambda b: b or None,
-    REG_BINARY: lambda b: b,
-}
+_HEX_DECODERS: Final[Mapping[int, Callable[[bytes], RegData]]] = MappingProxyType(
+    {
+        REG_EXPAND_SZ: _decode_utf16le_string,
+        REG_MULTI_SZ: _decode_utf16le_multi_string,
+        REG_QWORD: lambda b: struct.unpack("<Q", b)[0] if len(b) == 8 else (b or None),
+        REG_NONE: lambda b: b or None,
+        REG_BINARY: lambda b: b,
+    }
+)
 
 
-def _decode_hex_value(reg_type: int, raw_bytes: bytes) -> bytes | int | str | list[str] | None:
+def _decode_hex_value(reg_type: int, raw_bytes: bytes) -> RegData:
     """Decode raw bytes into the appropriate Python value for the given type."""
     decoder = _HEX_DECODERS.get(reg_type)
     if decoder is not None:
@@ -272,31 +282,115 @@ def export_reg(
             ``REGEDIT4`` header with ANSI encoding.
     """
     path = Path(path)
-    backend = _get_backend()
+    backend = get_backend()
+    file_format = _resolve_file_format(encoding, _RegVersion.parse(version))
+    # Looked up before the file is opened, so an unknown codec leaves no file behind.
+    encoder = codecs.getincrementalencoder(file_format.codec)()
+    lines = _iter_export_lines(backend, file_format.header, _resolve_target_hives(hives))
 
-    if version == 4:
+    if path.exists():
+        _export_over_existing(path, file_format.bom, encoder, lines)
+    else:
+        _export_to_new(path, file_format.bom, encoder, lines)
+
+
+def _export_to_new(path: Path, bom: bytes, encoder: IncrementalEncoder, lines: Iterable[str]) -> None:
+    """Write straight into a path that does not exist yet; remove the partial file on failure."""
+    try:
+        with path.open("wb") as reg_file:
+            _write_reg_lines(reg_file, bom, encoder, lines)
+    except BaseException:
+        path.unlink(missing_ok=True)
+        raise
+
+
+def _export_over_existing(path: Path, bom: bytes, encoder: IncrementalEncoder, lines: Iterable[str]) -> None:
+    """Export into a temp file beside *path*, then copy its bytes into *path*.
+
+    A failure partway (a value the codec cannot encode) must leave the existing
+    file as it was, so nothing touches it until the whole export succeeded.
+    The bytes are copied into the existing file instead of renaming the temp
+    file over it: a rename would replace the file's own permissions, ACL,
+    extended attributes and hard links with the temp file's.
+    """
+    handle, temp_name = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.", suffix=".tmp")
+    temp_path = Path(temp_name)
+    try:
+        with os.fdopen(handle, "w+b") as temp_file:
+            _write_reg_lines(temp_file, bom, encoder, lines)
+            temp_file.seek(0)
+            with path.open("wb") as reg_file:
+                # Chunked copy, so memory stays flat however large the export.
+                shutil.copyfileobj(temp_file, reg_file)
+    finally:
+        temp_path.unlink(missing_ok=True)
+
+
+def _write_reg_lines(reg_file: BinaryIO, bom: bytes, encoder: IncrementalEncoder, lines: Iterable[str]) -> None:
+    """Encode and write each line as it is produced, so memory stays at one line.
+
+    An incremental encoder writes a codec's own BOM (utf-8-sig) once, exactly as
+    encoding the whole text did. Binary mode keeps \\r\\n as written on Windows,
+    where text mode would translate it.
+    """
+    reg_file.write(bom)
+    for line in lines:
+        reg_file.write(encoder.encode(line + _LINE_END))
+    reg_file.write(encoder.encode("", final=True))
+
+
+class _RegVersion(IntEnum):
+    """The two .reg file format versions regedit writes."""
+
+    REGEDIT4 = 4
+    V5 = 5
+
+    @classmethod
+    def parse(cls, version: int) -> _RegVersion:
+        """Map export_reg's ``version`` argument: 4 is REGEDIT4, anything else version 5."""
+        return cls.REGEDIT4 if version == cls.REGEDIT4 else cls.V5
+
+
+class _RegFileFormat(NamedTuple):
+    """How export_reg writes a file: the header line, the text codec, and a BOM written before it."""
+
+    header: str
+    codec: str
+    bom: bytes
+
+
+def _resolve_file_format(encoding: str, version: _RegVersion) -> _RegFileFormat:
+    """Decide header, codec and BOM once from export_reg's arguments.
+
+    >>> _resolve_file_format("utf-16-le", _RegVersion.REGEDIT4)
+    _RegFileFormat(header='REGEDIT4', codec='ascii', bom=b'')
+    >>> _resolve_file_format("UTF-16", _RegVersion.V5).bom
+    b'\\xff\\xfe'
+    """
+    if version is _RegVersion.REGEDIT4:
         header = _REGEDIT4_HEADER
+        # Only the exact default spelling is swapped: REGEDIT4 files are ANSI,
+        # and a caller who names an encoding explicitly gets that encoding.
         if encoding == "utf-16-le":
             encoding = "ascii"
     else:
         header = _REG_FILE_HEADER
+    if encoding.lower().replace("-", "") in ("utf16le", "utf16"):
+        # regedit writes UTF-16 LE with a BOM; the plain utf-16 codec would pick
+        # the platform byte order, so both spellings mean LE plus an explicit BOM.
+        return _RegFileFormat(header=header, codec="utf-16-le", bom=_UTF16_BOM)
+    return _RegFileFormat(header=header, codec=encoding, bom=b"")
 
-    lines: list[str] = [header, ""]
 
-    target_hives = _resolve_target_hives(hives)
-
+def _iter_export_lines(backend: RegistryBackend, header: str, target_hives: set[str]) -> Iterator[str]:
+    """Yield every line of the .reg file, without line terminators."""
+    yield header
+    yield ""
     for hive_int, hive_name in sorted(hive_name_hashed_by_int.items(), key=lambda kv: kv[1]):
         if hive_name not in target_hives:
             continue
         hive_root = backend.get_hive(hive_int)
-        _export_key_recursive(hive_root, hive_name, lines, backend)
-
-    content = "\r\n".join(lines) + "\r\n"
-    if encoding.lower().replace("-", "") in ("utf16le", "utf16"):
-        path.write_bytes(b"\xff\xfe" + content.encode("utf-16-le"))
-    else:
-        # Write as bytes to avoid Python text-mode \n → \r\n on Windows
-        path.write_bytes(content.encode(encoding))
+        yield from _export_key_recursive(hive_root, hive_name, backend)
 
 
 def _resolve_target_hives(hives: list[str] | None) -> set[str]:
@@ -309,46 +403,30 @@ def _resolve_target_hives(hives: list[str] | None) -> set[str]:
 def _export_key_recursive(
     key: FakeRegistryKey,
     full_path: str,
-    lines: list[str],
     backend: RegistryBackend,
-) -> None:
-    """Recursively export a key and all its subkeys."""
-    lines.append(f"[{full_path}]")
-    _export_values(key, lines, backend)
-    lines.append("")
+) -> Iterator[str]:
+    """Yield the lines of a key and all its subkeys."""
+    yield f"[{full_path}]"
+    for entry in sorted(backend.enum_values(key), key=lambda e: e.name):
+        yield _format_value_line(entry.name, entry.data, entry.value_type)
+    yield ""
 
     for subkey_name in sorted(backend.enum_keys(key)):
         child = backend.get_key(key, subkey_name)
-        _export_key_recursive(child, f"{full_path}\\{subkey_name}", lines, backend)
+        yield from _export_key_recursive(child, f"{full_path}\\{subkey_name}", backend)
 
 
-def _export_values(key: FakeRegistryKey, lines: list[str], backend: RegistryBackend) -> None:
-    """Export all values of a single key."""
-
-    values = sorted(backend.enum_values(key), key=lambda t: t[0])
-    for value_name, value_data, value_type in values:
-        _export_single_value(value_name, value_data, value_type, lines)
-
-
-def _export_single_value(
-    value_name: str,
-    value_data: bytes | int | str | list[str] | None,
-    value_type: int,
-    lines: list[str],
-) -> None:
-    """Format and append a single value line."""
+def _format_value_line(value_name: str, value_data: RegData, value_type: int) -> str:
+    """Format one value as its .reg line (a hex value may carry embedded continuations)."""
     name_prefix = _format_value_name(value_name)
 
     if value_type == REG_SZ:
         escaped = _escape_reg_string(str(value_data) if value_data is not None else "")
-        lines.append(f'{name_prefix}"{escaped}"')
-    elif value_type == REG_DWORD:
+        return f'{name_prefix}"{escaped}"'
+    if value_type == REG_DWORD:
         int_val = value_data if isinstance(value_data, int) else 0
-        lines.append(f"{name_prefix}dword:{int_val:08x}")
-    else:
-        hex_prefix, hex_bytes = _encode_typed_hex(value_data, value_type)
-        formatted = _format_hex_line(name_prefix, hex_prefix, hex_bytes)
-        lines.append(formatted)
+        return f"{name_prefix}dword:{int_val:08x}"
+    return _format_hex_line(name_prefix, _hex_type_prefix(value_type), _value_to_bytes(value_data, value_type))
 
 
 def _format_value_name(value_name: str) -> str:
@@ -364,22 +442,18 @@ def _escape_reg_string(s: str) -> str:
     return s.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n").replace("\r", "\\r")
 
 
-def _encode_typed_hex(
-    value_data: bytes | int | str | list[str] | None,
-    value_type: int,
-) -> tuple[str, bytes]:
-    """Return (hex_type_prefix, raw_bytes) for a hex-encoded value."""
-    raw_bytes = _value_to_bytes(value_data, value_type)
+def _hex_type_prefix(value_type: int) -> str:
+    """Return the ``hex:`` / ``hex(N):`` prefix that names a hex-encoded value's type.
 
+    >>> _hex_type_prefix(REG_BINARY), _hex_type_prefix(REG_QWORD)
+    ('hex:', 'hex(b):')
+    """
     if value_type == REG_BINARY:
-        return "hex:", raw_bytes
-    return f"hex({value_type:x}):", raw_bytes
+        return "hex:"
+    return f"hex({value_type:x}):"
 
 
-def _value_to_bytes(
-    value_data: bytes | int | str | list[str] | None,
-    value_type: int,
-) -> bytes:
+def _value_to_bytes(value_data: RegData, value_type: int) -> bytes:
     """Convert a value to its raw byte representation."""
     if value_data is None:
         return b""
@@ -430,7 +504,7 @@ def _format_hex_line(name_prefix: str, hex_prefix: str, raw_bytes: bytes) -> str
         separator = "," if i < len(hex_parts) - 1 else ""
         addition = part + separator
         if current_len + len(addition) > _LINE_WRAP_LIMIT:
-            result += "\\\r\n  "
+            result += "\\" + _LINE_END + "  "
             current_len = 2
         result += addition
         current_len += len(addition)
@@ -444,8 +518,9 @@ def _detect_reg_encoding(path: Path) -> str:
     Returns ``"utf-16-le"`` if the file starts with the UTF-16 LE BOM
     (``FF FE``), otherwise ``"utf-8-sig"`` (handles optional UTF-8 BOM).
     """
-    raw = path.read_bytes()[:4]
-    if raw[:2] == b"\xff\xfe":
+    with path.open("rb") as reg_file:
+        raw = reg_file.read(2)
+    if raw == _UTF16_BOM:
         return "utf-16"  # utf-16 codec auto-strips BOM
     return "utf-8-sig"
 

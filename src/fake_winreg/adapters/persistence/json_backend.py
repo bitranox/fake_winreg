@@ -17,7 +17,7 @@ from fake_winreg.domain.registry import FakeRegistry, FakeRegistryKey, FakeRegis
 from fake_winreg.domain.serialization import dict_to_registry, registry_to_dict
 
 if TYPE_CHECKING:
-    from fake_winreg.domain.types import RegData
+    from fake_winreg.domain.types import KeyInfo, RegData, ValueEntry
 
 
 class JsonBackend:
@@ -88,12 +88,20 @@ class JsonBackend:
         """List subkey names."""
         return self._inner.enum_keys(key)
 
-    def enum_values(self, key: FakeRegistryKey) -> list[tuple[str, RegData, int]]:
-        """List values as (name, data, type) tuples."""
+    def enum_values(self, key: FakeRegistryKey) -> list[ValueEntry]:
+        """List the values of *key*."""
         return self._inner.enum_values(key)
 
-    def query_info(self, key: FakeRegistryKey) -> tuple[int, int, int]:
-        """Return (num_subkeys, num_values, last_modified_ns)."""
+    def subkey_name_at(self, key: FakeRegistryKey, index: int) -> str:
+        """Return the name of the subkey at *index*. Raises IndexError past the end."""
+        return self._inner.subkey_name_at(key, index)
+
+    def value_at(self, key: FakeRegistryKey, index: int) -> ValueEntry:
+        """Return the value at *index*. Raises IndexError past the end."""
+        return self._inner.value_at(key, index)
+
+    def query_info(self, key: FakeRegistryKey) -> KeyInfo:
+        """Return the subkey count, value count and last-modified time of *key*."""
         return self._inner.query_info(key)
 
     # ------------------------------------------------------------------

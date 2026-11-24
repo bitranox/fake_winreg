@@ -1,4 +1,4 @@
-"""Application ports — callable Protocol definitions for adapter functions.
+"""Application ports - callable Protocol definitions for adapter functions.
 
 Each Protocol class defines a ``__call__`` method whose signature exactly
 matches the corresponding adapter function.  Existing module-level functions
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
     from ..domain.enums import DeployTarget, OutputFormat
     from ..domain.registry import FakeRegistryKey, FakeRegistryValue
-    from ..domain.types import RegData
+    from ..domain.types import KeyInfo, RegData, ValueEntry
 
 
 class GetConfig(Protocol):
@@ -118,12 +118,36 @@ class RegistryBackend(Protocol):
         """List subkey names."""
         ...
 
-    def enum_values(self, key: FakeRegistryKey) -> list[tuple[str, RegData, int]]:
-        """List values as (name, data, type) tuples."""
+    def enum_values(self, key: FakeRegistryKey) -> list[ValueEntry]:
+        """List the values of a key."""
         ...
 
-    def query_info(self, key: FakeRegistryKey) -> tuple[int, int, int]:
-        """Return (num_subkeys, num_values, last_modified_ns)."""
+    def subkey_name_at(self, key: FakeRegistryKey, index: int) -> str:
+        """Return the name of the subkey at *index*, in ``enum_keys`` order.
+
+        ``EnumKey`` calls this once per index while a caller walks a key, so an
+        implementation must not rebuild the whole name list per call.  A
+        negative *index* counts from the end (list indexing), as it did when
+        ``EnumKey`` indexed ``enum_keys()`` directly.
+
+        Raises:
+            IndexError: If *index* is out of range (``EnumKey`` turns this into
+                WinError 259, "No more data is available").
+        """
+        ...
+
+    def value_at(self, key: FakeRegistryKey, index: int) -> ValueEntry:
+        """Return the value at *index*, in ``enum_values`` order.
+
+        Same cost and indexing contract as :meth:`subkey_name_at`.
+
+        Raises:
+            IndexError: If *index* is out of range.
+        """
+        ...
+
+    def query_info(self, key: FakeRegistryKey) -> KeyInfo:
+        """Return the subkey count, value count and last-modified time of a key."""
         ...
 
 

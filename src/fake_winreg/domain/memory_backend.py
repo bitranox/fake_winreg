@@ -1,6 +1,6 @@
 """In-memory registry backend wrapping FakeRegistry.
 
-This is the default backend — all data lives in Python dicts in memory.
+This is the default backend - all data lives in Python dicts in memory.
 Equivalent to the original fake_winreg behavior before backends were introduced.
 """
 
@@ -16,6 +16,7 @@ from .registry import (
     set_fake_reg_key,
     set_fake_reg_value,
 )
+from .types import KeyInfo, ValueEntry
 
 if TYPE_CHECKING:
     from .types import RegData
@@ -106,13 +107,40 @@ class InMemoryBackend:
         """List subkey names in insertion order."""
         return list(key.subkeys.keys())
 
-    def enum_values(self, key: FakeRegistryKey) -> list[tuple[str, RegData, int]]:
-        """List values as (name, data, type) tuples in insertion order."""
-        return [(v.value_name, v.value, v.value_type) for v in key.values.values()]
+    def enum_values(self, key: FakeRegistryKey) -> list[ValueEntry]:
+        """List the values of *key* in insertion order."""
+        return [_value_entry(v) for v in key.values.values()]
 
-    def query_info(self, key: FakeRegistryKey) -> tuple[int, int, int]:
-        """Return (num_subkeys, num_values, last_modified_ns)."""
-        return len(key.subkeys), len(key.values), key.last_modified_ns
+    def subkey_name_at(self, key: FakeRegistryKey, index: int) -> str:
+        """Return the name of the subkey at *index* (insertion order).
+
+        Amortised O(1): the key's child map keeps an ordered name snapshot
+        that every mutation drops.
+
+        Raises:
+            IndexError: If *index* is out of range.
+        """
+        return key.subkeys.name_at(index)
+
+    def value_at(self, key: FakeRegistryKey, index: int) -> ValueEntry:
+        """Return the value at *index* (insertion order), amortised O(1).
+
+        Raises:
+            IndexError: If *index* is out of range.
+        """
+        return _value_entry(key.values.item_at(index))
+
+    def query_info(self, key: FakeRegistryKey) -> KeyInfo:
+        """Return the subkey count, value count and last-modified time of *key*."""
+        return KeyInfo(
+            subkey_count=len(key.subkeys),
+            value_count=len(key.values),
+            last_modified_ns=key.last_modified_ns,
+        )
+
+
+def _value_entry(value: FakeRegistryValue) -> ValueEntry:
+    return ValueEntry(name=value.value_name, data=value.value, value_type=value.value_type)
 
 
 __all__ = ["InMemoryBackend"]

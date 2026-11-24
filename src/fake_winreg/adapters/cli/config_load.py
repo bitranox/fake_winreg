@@ -13,6 +13,7 @@ loading so that a broken file cannot hide it from a command that does not read t
 configuration.
 
 Contents:
+    * :class:`LoadedConfig` - a configuration and why it could not be loaded, if it could not.
     * :func:`load_config` - load with profile, ``.env`` and ``--set``, or say why not.
     * :func:`start_logging` - start logging; an invalid ``[lib_log_rich]`` value or ``LOG_*``
       variable is a load failure.
@@ -23,6 +24,7 @@ Contents:
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from traceback import format_exception
 from typing import TYPE_CHECKING
 
@@ -48,6 +50,20 @@ if TYPE_CHECKING:
 _LOAD_ERRORS = (ConfigError, OSError)
 
 
+@dataclass(frozen=True, slots=True)
+class LoadedConfig:
+    """The outcome of loading the configuration: what loaded, or why nothing did.
+
+    Attributes:
+        config: The loaded configuration; empty when ``error`` is set.
+        error: Why loading failed, None when it succeeded. Recorded rather than raised, so a
+            command that never reads the configuration still runs.
+    """
+
+    config: Config
+    error: Exception | None = None
+
+
 def _check_command_line(profile: str | None, set_overrides: tuple[str, ...]) -> None:
     """Refuse a malformed or conflicting ``--set`` or an invalid ``--profile`` name (exit 2)."""
     try:
@@ -60,7 +76,7 @@ def _check_command_line(profile: str | None, set_overrides: tuple[str, ...]) -> 
 
 def load_config(
     services: AppServices, *, profile: str | None, env_file: str | None, set_overrides: tuple[str, ...]
-) -> tuple[Config, Exception | None]:
+) -> LoadedConfig:
     """Load the layered configuration, or say why it could not be loaded.
 
     Args:
@@ -70,8 +86,8 @@ def load_config(
         set_overrides: The ``--set`` values, applied only to a configuration that loaded.
 
     Returns:
-        The configuration and None, or an empty configuration and the exception that says
-        why loading failed.
+        The configuration with no error, or an empty configuration and the exception that
+        says why loading failed.
 
     Raises:
         click.UsageError: A ``--set`` value is malformed, two of them conflict, or the
@@ -80,22 +96,20 @@ def load_config(
 
     Example:
         >>> from fake_winreg.composition import build_testing
-        >>> config, error = load_config(build_testing(), profile=None, env_file=None, set_overrides=("a.b=1",))
-        >>> config.get("a"), error
+        >>> loaded = load_config(build_testing(), profile=None, env_file=None, set_overrides=("a.b=1",))
+        >>> loaded.config.get("a"), loaded.error
         ({'b': 1}, None)
     """
     _check_command_line(profile, set_overrides)
     try:
         config = services.get_config(profile=profile, dotenv_path=env_file)
     except _LOAD_ERRORS as exc:
-        return Config({}, {}), exc
-    return apply_overrides(config, set_overrides), None
+        return LoadedConfig(config=Config({}, {}), error=exc)
+    return LoadedConfig(config=apply_overrides(config, set_overrides))
 
 
-def start_logging(
-    services: AppServices, config: Config, config_error: Exception | None, *, env_file: str | None
-) -> tuple[Config, Exception | None]:
-    """Start logging with ``config``; a logging section it refuses is recorded like a load failure.
+def start_logging(services: AppServices, loaded: LoadedConfig, *, env_file: str | None) -> LoadedConfig:
+    """Start logging with ``loaded.config``; a logging section it refuses is recorded like a load failure.
 
     An invalid ``[lib_log_rich]`` value or ``LOG_*`` variable would otherwise stop every
     command, ``config-deploy`` (which replaces the file holding it) included. ``init_logging``
@@ -107,19 +121,18 @@ def start_logging(
 
     Args:
         services: The composition's services; only ``init_logging`` is used.
-        config: The configuration :func:`load_config` returned.
-        config_error: The failure :func:`load_config` returned, or None.
+        loaded: What :func:`load_config` returned.
         env_file: The ``--env-file`` path, or None; logging reads its ``LOG_*`` lines from it.
 
     Returns:
-        ``config`` and ``config_error`` unchanged, or an empty configuration and the logging
-        failure when no earlier failure was recorded.
+        ``loaded`` unchanged, or an empty configuration with the earlier failure, or with the
+        logging failure when no earlier failure was recorded.
     """
     try:
-        services.init_logging(config, dotenv_path=env_file)
+        services.init_logging(loaded.config, dotenv_path=env_file)
     except InvalidLoggingConfigError as exc:
-        return Config({}, {}), config_error or exc
-    return config, config_error
+        return LoadedConfig(config=Config({}, {}), error=loaded.error or exc)
+    return loaded
 
 
 def echo_load_traceback(error: Exception, *, show_traceback: bool) -> None:
@@ -169,4 +182,11 @@ def require_config(ctx: click.Context, cli_ctx: CLIContext) -> Config:
     return cli_ctx.config
 
 
-__all__ = ["echo_load_traceback", "load_config", "report_load_failure", "require_config", "start_logging"]
+__all__ = [
+    "LoadedConfig",
+    "echo_load_traceback",
+    "load_config",
+    "report_load_failure",
+    "require_config",
+    "start_logging",
+]

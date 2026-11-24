@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Mapping
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final, cast
 
 import click.exceptions as click_exceptions
@@ -33,7 +34,7 @@ from fake_winreg.domain.enums import DeployTarget, OutputFormat
 
 from .. import safe_console
 from ..config_load import load_config, report_load_failure, require_config
-from ..constants import CLICK_CONTEXT_SETTINGS
+from ..constants import click_context_settings
 from ..context import CLIContext, get_cli_context
 from ..exit_codes import ExitCode
 from ..typed_click import get_current_context, option
@@ -44,12 +45,29 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-@click.command("config", context_settings=CLICK_CONTEXT_SETTINGS)
+def _to_output_format(_ctx: click.Context, _param: click.Parameter, value: str) -> OutputFormat:
+    """The ``--format`` callback: the choice click accepted, as the enum the command works with.
+
+    The ``click.Choice`` lists the enum's ``str`` values, never its members (click matches an
+    Enum member on its ``.name``), and returns the matching value in its own spelling.
+    """
+    return OutputFormat(value)
+
+
+def _to_deploy_targets(
+    _ctx: click.Context, _param: click.Parameter, value: tuple[str, ...]
+) -> tuple[DeployTarget, ...]:
+    """The ``--target`` callback: every accepted choice as a :class:`DeployTarget`; see :func:`_to_output_format`."""
+    return tuple(DeployTarget(target) for target in value)
+
+
+@click.command("config", context_settings=click_context_settings())
 @option(
     "--format",
     "output_format",
     type=click.Choice([f.value for f in OutputFormat], case_sensitive=False),
     default=OutputFormat.HUMAN.value,
+    callback=_to_output_format,
     help="Output format (human-readable or JSON)",
 )
 @option(
@@ -65,35 +83,27 @@ logger = logging.getLogger(__name__)
     help="Override profile from root command (e.g., 'production', 'test')",
 )
 @click.pass_context
-def cli_config(ctx: click.Context, output_format: str, section: str | None, profile: str | None) -> None:
+def cli_config(ctx: click.Context, output_format: OutputFormat, section: str | None, profile: str | None) -> None:
     """Display the current merged configuration from all sources.
 
     Shows configuration loaded from defaults, application/user config files,
     .env files, and environment variables.
 
     Precedence: defaults -> app -> host -> user -> dotenv -> env
-
-    \f
-    Example:
-        >>> from click.testing import CliRunner
-        >>> from unittest.mock import MagicMock
-        >>> runner = CliRunner()
-        >>> # Real invocation tested in test_cli_config.py
     """
     cli_ctx = get_cli_context(ctx)
-    effective_config, effective_profile = _resolve_config(ctx, cli_ctx, profile)
-    fmt = OutputFormat(output_format.lower())
+    resolved = _resolve_config(ctx, cli_ctx, profile)
 
-    extra = {"command": "config", "format": fmt.value, "profile": effective_profile}
+    extra = {"command": "config", "format": output_format.value, "profile": resolved.profile}
     with lib_log_rich.runtime.bind(job_id="cli-config", extra=extra):
         logger.info(
             "Displaying configuration",
-            extra={"format": fmt.value, "section": section, "profile": effective_profile},
+            extra={"format": output_format.value, "section": section, "profile": resolved.profile},
         )
         safe_console.echo()
         try:
             cli_ctx.services.display_config(
-                effective_config, output_format=fmt, section=section, profile=effective_profile
+                resolved.config, output_format=output_format, section=section, profile=resolved.profile
             )
         except ValueError as exc:
             safe_console.echo(f"\nError: {exc}", err=True)
@@ -105,7 +115,20 @@ def _get_effective_profile(cli_ctx: CLIContext, profile_override: str | None) ->
     return profile_override if profile_override else cli_ctx.profile
 
 
-def _resolve_config(ctx: click.Context, cli_ctx: CLIContext, profile: str | None) -> tuple[Config, str | None]:
+@dataclass(frozen=True, slots=True)
+class _ResolvedConfig:
+    """The configuration the ``config`` command shows, and the profile it was loaded with.
+
+    Attributes:
+        config: The configuration to display.
+        profile: The effective profile (the command's ``--profile``, else the root's), or None.
+    """
+
+    config: Config
+    profile: str | None
+
+
+def _resolve_config(ctx: click.Context, cli_ctx: CLIContext, profile: str | None) -> _ResolvedConfig:
     """Resolve configuration from context or reload with profile override.
 
     When a subcommand-level profile override is specified, reloads config
@@ -118,18 +141,18 @@ def _resolve_config(ctx: click.Context, cli_ctx: CLIContext, profile: str | None
         profile: Optional profile override.
 
     Returns:
-        Tuple of (config, effective_profile).
+        The configuration and the effective profile.
     """
     effective_profile = _get_effective_profile(cli_ctx, profile)
     if not profile:
-        return require_config(ctx, cli_ctx), effective_profile
-    config, error = load_config(
+        return _ResolvedConfig(config=require_config(ctx, cli_ctx), profile=effective_profile)
+    loaded = load_config(
         cli_ctx.services, profile=profile, env_file=cli_ctx.env_file, set_overrides=cli_ctx.set_overrides
     )
-    if error is not None:
-        report_load_failure(error, show_traceback=cli_ctx.traceback)
+    if loaded.error is not None:
+        report_load_failure(loaded.error, show_traceback=cli_ctx.traceback)
         ctx.exit(ExitCode.CONFIG_ERROR)
-    return config, effective_profile
+    return _ResolvedConfig(config=loaded.config, profile=effective_profile)
 
 
 def _parse_deploy_mode(value: str | None, *, kind: ModeKind) -> int | None:
@@ -188,13 +211,14 @@ def _check_profile_name(_ctx: click.Context, _param: click.Parameter, value: str
     return value
 
 
-@click.command("config-deploy", context_settings=CLICK_CONTEXT_SETTINGS)
+@click.command("config-deploy", context_settings=click_context_settings())
 @option(
     "--target",
     "targets",
     type=click.Choice([t.value for t in DeployTarget], case_sensitive=False),
     multiple=True,
     required=True,
+    callback=_to_deploy_targets,
     help="Target configuration layer(s) to deploy to (can specify multiple)",
 )
 @option(
@@ -237,7 +261,7 @@ def _check_profile_name(_ctx: click.Context, _param: click.Parameter, value: str
 def cli_config_deploy(
     ctx: click.Context,
     *,
-    targets: tuple[str, ...],
+    targets: tuple[DeployTarget, ...],
     force: bool,
     profile: str | None,
     set_permissions: bool | None,
@@ -270,12 +294,6 @@ def cli_config_deploy(
     [lib_layered_config.default_permissions] in the bundled defaults, the
     configuration files this deploy does not overwrite and the environment,
     with any --set of that section laid over them; never from .env.
-
-    \f
-    Example:
-        >>> from click.testing import CliRunner
-        >>> runner = CliRunner()
-        >>> # Real invocation tested in test_cli_config.py
     """
     if set_permissions is False and (dir_mode is not None or file_mode is not None):
         raise click.UsageError(
@@ -284,14 +302,13 @@ def cli_config_deploy(
         )
     cli_ctx = get_cli_context(ctx)
     effective_profile = _get_effective_profile(cli_ctx, profile)
-    deploy_targets = tuple(DeployTarget(t.lower()) for t in targets)
-    target_values = tuple(t.value for t in deploy_targets)
+    target_values = tuple(t.value for t in targets)
 
     extra = {"command": "config-deploy", "targets": target_values, "force": force, "profile": effective_profile}
     with lib_log_rich.runtime.bind(job_id="cli-config-deploy", extra=extra):
         _execute_deploy(
             cli_ctx,
-            targets=deploy_targets,
+            targets=targets,
             force=force,
             profile=effective_profile,
             set_permissions=set_permissions,
@@ -398,7 +415,7 @@ def _permission_overrides(cli_ctx: CLIContext) -> Mapping[str, object] | None:
             (``--set lib_layered_config.default_permissions=5`` or ``=null``); one stderr
             line names it, exit 78, nothing is deployed.
     """
-    tree, _ = nest_overrides(cli_ctx.set_overrides)
+    tree = nest_overrides(cli_ctx.set_overrides)
     section = tree.get(_LAYERED_CONFIG_SECTION, {})
     if _PERMISSIONS_KEY not in section:
         return None
@@ -462,7 +479,7 @@ def _report_deployment_result(
         safe_console.echo("Use --force to overwrite existing configuration files.")
 
 
-@click.command("config-generate-examples", context_settings=CLICK_CONTEXT_SETTINGS)
+@click.command("config-generate-examples", context_settings=click_context_settings())
 @option("--destination", type=click.Path(file_okay=False), required=True, help="Directory to write example files")
 @option("--force", is_flag=True, default=False, help="Overwrite existing files")
 @click.pass_context
@@ -475,12 +492,6 @@ def cli_config_generate_examples(ctx: click.Context, destination: str, force: bo
     documenting available settings.
 
     By default, existing files are not overwritten. Use --force to overwrite.
-
-    \f
-    Example:
-        >>> from click.testing import CliRunner
-        >>> runner = CliRunner()
-        >>> # Real invocation tested in test_cli_config.py
     """
     extra = {"command": "config-generate-examples", "destination": destination, "force": force}
     with lib_log_rich.runtime.bind(job_id="cli-config-generate-examples", extra=extra):

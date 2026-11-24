@@ -9,7 +9,7 @@ import pytest
 
 from fake_winreg.adapters.persistence.json_backend import JsonBackend
 from fake_winreg.adapters.persistence.json_io import export_json, import_json
-from fake_winreg.domain.api import _get_backend, use_backend  # pyright: ignore[reportPrivateUsage]
+from fake_winreg.domain.api import get_backend, use_backend
 from fake_winreg.domain.constants import HKEY_LOCAL_MACHINE, HKEY_USERS, REG_EXPAND_SZ, REG_SZ
 from fake_winreg.domain.memory_backend import InMemoryBackend
 from fake_winreg.domain.serialization import registry_to_dict
@@ -157,7 +157,7 @@ class TestJsonBackendDelegation:
 @pytest.fixture()
 def _fresh_memory_backend():  # pyright: ignore[reportUnusedFunction]
     """Install a fresh InMemoryBackend and restore after the test."""
-    original = _get_backend()
+    original = get_backend()
     use_backend(InMemoryBackend())  # type: ignore[arg-type]
     yield
     use_backend(original)  # type: ignore[arg-type]
@@ -175,7 +175,7 @@ class TestJsonImportExport:
         assert "hives" in data
 
     def test_export_import_roundtrip(self, tmp_path: Path) -> None:
-        backend = _get_backend()
+        backend = get_backend()
         hive = backend.get_hive(HKEY_LOCAL_MACHINE)
         key = backend.create_key(hive, r"SOFTWARE\RoundTrip")
         backend.set_value(key, "Name", "test_value", REG_SZ)
@@ -186,7 +186,7 @@ class TestJsonImportExport:
         use_backend(InMemoryBackend())  # type: ignore[arg-type]
         import_json(export_path)
 
-        backend2 = _get_backend()
+        backend2 = get_backend()
         hive2 = backend2.get_hive(HKEY_LOCAL_MACHINE)
         reloaded = backend2.get_key(hive2, r"SOFTWARE\RoundTrip")
         fval = backend2.get_value(reloaded, "Name")
@@ -202,7 +202,7 @@ class TestJsonImportExport:
         use_backend(InMemoryBackend())  # type: ignore[arg-type]
         import_json(json_path)
 
-        backend = _get_backend()
+        backend = get_backend()
         hive = backend.get_hive(HKEY_LOCAL_MACHINE)
         cv_key = backend.get_key(hive, r"SOFTWARE\Microsoft\Windows NT\CurrentVersion")
         fval = backend.get_value(cv_key, "CurrentBuild")
@@ -219,7 +219,7 @@ class TestJsonImportExport:
         use_backend(InMemoryBackend())  # type: ignore[arg-type]
         import_json(export_path)
 
-        backend = _get_backend()
+        backend = get_backend()
 
         hive_lm = backend.get_hive(HKEY_LOCAL_MACHINE)
         cv_key = backend.get_key(hive_lm, r"SOFTWARE\Microsoft\Windows NT\CurrentVersion")
@@ -243,7 +243,7 @@ class TestJsonImportExport:
         json_path = tmp_path / "empty_hives.json"
         json_path.write_bytes(orjson.dumps({"hives": {}}))
         import_json(json_path)
-        backend = _get_backend()
+        backend = get_backend()
         hive = backend.get_hive(HKEY_LOCAL_MACHINE)
         assert backend.enum_keys(hive) == []
 

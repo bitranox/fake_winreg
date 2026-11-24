@@ -1,10 +1,10 @@
-"""Registry persistence adapters — backends and import/export functions."""
+"""Registry persistence adapters - backends and import/export functions."""
 
 from __future__ import annotations
 
 from fake_winreg.domain.memory_backend import InMemoryBackend
 
-from .convert import convert_registry
+from .convert import convert_registry, copy_backend
 from .json_backend import JsonBackend
 from .json_io import export_json, import_json
 from .reg_io import export_reg, import_reg
@@ -15,6 +15,7 @@ __all__ = [
     "JsonBackend",
     "SqliteBackend",
     "convert_registry",
+    "copy_backend",
     "export_json",
     "export_reg",
     "import_json",

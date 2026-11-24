@@ -33,36 +33,41 @@ from __future__ import annotations
 
 import codecs
 import sys
+from types import MappingProxyType
 from typing import IO, TYPE_CHECKING, Any, Final, TextIO
 
 import rich_click as click
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Mapping
 
-ASCII_FALLBACKS: Final[dict[str, str]] = {
-    "✓": "[OK]",  # check mark
-    "✔": "[OK]",  # heavy check mark
-    "✅": "[OK]",  # white heavy check mark
-    "✗": "[X]",  # ballot X
-    "✘": "[X]",  # heavy ballot X
-    "❌": "[X]",  # cross mark
-    "⚠": "[!]",  # warning sign
-    "️": "",  # variation selector 16, trails an emoji glyph and carries no text
-    "•": "-",  # bullet
-    "≥": ">=",
-    "≤": "<=",
-    "→": "->",
-    "←": "<-",
-    # The quotation marks are spelled as escapes on purpose: written literally
-    # they are indistinguishable from ASCII ' and " in most editors, which is
-    # exactly the confusion ruff's RUF001 exists to flag.
-    "\u2018": "'",  # left single quotation mark
-    "\u2019": "'",  # right single quotation mark
-    "\u201c": '"',  # left double quotation mark
-    "\u201d": '"',  # right double quotation mark
-    "…": "...",
-}
+# Read-only: the codec error handler consults it on every write, so a caller editing the public
+# table would change what every stream prints.
+ASCII_FALLBACKS: Final[Mapping[str, str]] = MappingProxyType(
+    {
+        "✓": "[OK]",  # check mark
+        "✔": "[OK]",  # heavy check mark
+        "✅": "[OK]",  # white heavy check mark
+        "✗": "[X]",  # ballot X
+        "✘": "[X]",  # heavy ballot X
+        "❌": "[X]",  # cross mark
+        "⚠": "[!]",  # warning sign
+        "️": "",  # variation selector 16, trails an emoji glyph and carries no text
+        "•": "-",  # bullet
+        "≥": ">=",
+        "≤": "<=",
+        "→": "->",
+        "←": "<-",
+        # The quotation marks are spelled as escapes on purpose: written literally
+        # they are indistinguishable from ASCII ' and " in most editors, which is
+        # exactly the confusion ruff's RUF001 exists to flag.
+        "\u2018": "'",  # left single quotation mark
+        "\u2019": "'",  # right single quotation mark
+        "\u201c": '"',  # left double quotation mark
+        "\u201d": '"',  # right double quotation mark
+        "…": "...",
+    }
+)
 
 #: The prefix of the codec error handlers :func:`ascii_fallback` encodes with, one per stream
 #: error handler (``<prefix>+strict``, ``<prefix>+surrogateescape``, ...). A codec calls it only

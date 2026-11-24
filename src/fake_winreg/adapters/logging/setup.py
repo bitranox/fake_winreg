@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import os
 from contextlib import contextmanager
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
@@ -91,7 +92,9 @@ def _build_runtime_config(config: Config) -> lib_log_rich.runtime.RuntimeConfig:
     service = parsed.service or __init__conf__.name
     environment = parsed.environment
 
-    # Get extra fields passed through by Pydantic
+    # The section is not validated straight into RuntimeConfig: exclude_none lets a
+    # `--set lib_log_rich.<key>=null` fall back to lib_log_rich's default (RuntimeConfig refuses
+    # None for most keys), and coerce_numbers_to_str above has no counterpart there.
     extra_config = parsed.model_dump(exclude={"service", "environment"}, exclude_none=True)
 
     return lib_log_rich.runtime.RuntimeConfig(
@@ -154,13 +157,27 @@ def _nearest_dotenv() -> Path | None:
     except OSError:
         return None
     for directory in (start, *start.parents):
-        found, stop = _dotenv_in(directory)
-        if found is not None or stop:
-            return found
+        probe = _dotenv_in(directory)
+        if probe.found is not None or probe.stop_here:
+            return probe.found
     return None
 
 
-def _dotenv_in(directory: Path) -> tuple[Path | None, bool]:
+@dataclass(frozen=True, slots=True)
+class _DotenvProbe:
+    """What one directory of the upward ``.env`` search answered.
+
+    Attributes:
+        found: The directory's ``.env``, or None when it has none (or cannot be read).
+        stop_here: Whether the search ends at this directory: it holds a ``.env`` or is a
+            project root.
+    """
+
+    found: Path | None
+    stop_here: bool
+
+
+def _dotenv_in(directory: Path) -> _DotenvProbe:
     """The ``.env`` in ``directory``, and whether the search stops there (a project root).
 
     A directory that cannot be read is passed over: Python before 3.14 raises for a path
@@ -169,10 +186,10 @@ def _dotenv_in(directory: Path) -> tuple[Path | None, bool]:
     try:
         candidate = directory / ".env"
         if candidate.is_file():
-            return candidate, True
-        return None, any((directory / marker).exists() for marker in _PROJECT_MARKERS)
+            return _DotenvProbe(found=candidate, stop_here=True)
+        return _DotenvProbe(found=None, stop_here=any((directory / marker).exists() for marker in _PROJECT_MARKERS))
     except OSError:
-        return None, False
+        return _DotenvProbe(found=None, stop_here=False)
 
 
 def _load_log_variables(dotenv_path: str | None) -> None:

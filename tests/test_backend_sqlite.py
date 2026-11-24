@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import sqlite3
 from typing import TYPE_CHECKING
 
 import pytest
 
+from fake_winreg.adapters.persistence.json_backend import JsonBackend
 from fake_winreg.adapters.persistence.sqlite_backend import SqliteBackend
 from fake_winreg.domain.constants import (
     HKEY_CURRENT_USER,
@@ -16,9 +18,15 @@ from fake_winreg.domain.constants import (
     REG_NONE,
     REG_SZ,
 )
+from fake_winreg.domain.memory_backend import InMemoryBackend
+from fake_winreg.domain.types import KeyInfo, ValueEntry
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from pathlib import Path
+
+    from fake_winreg.application.ports import RegistryBackend
+    from fake_winreg.domain.registry import FakeRegistryKey
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -375,3 +383,259 @@ def test_context_manager(tmp_path: Path) -> None:
     # After close, operations should fail
     with pytest.raises((OSError, Exception)):
         backend.get_hive(HKEY_LOCAL_MACHINE)
+
+
+# ---------------------------------------------------------------------------
+# Positional access and typed records
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.os_agnostic
+def test_enum_values_and_query_info_return_named_records(tmp_path: Path) -> None:
+    with _make_backend(tmp_path) as backend:
+        key = backend.create_key(backend.get_hive(HKEY_CURRENT_USER), r"Software\Rec")
+        backend.set_value(key, "B", 2, REG_DWORD)
+        backend.set_value(key, "A", "x", REG_SZ)
+        backend.create_key(key, "Child")
+        assert backend.enum_values(key) == [
+            ValueEntry(name="A", data="x", value_type=REG_SZ),
+            ValueEntry(name="B", data=2, value_type=REG_DWORD),
+        ]
+        info = backend.query_info(key)
+        assert (info.subkey_count, info.value_count) == (1, 2)
+        assert isinstance(info, KeyInfo)
+
+
+@pytest.mark.os_agnostic
+def test_subkey_name_at_follows_enum_keys_order(tmp_path: Path) -> None:
+    with _make_backend(tmp_path) as backend:
+        key = backend.create_key(backend.get_hive(HKEY_CURRENT_USER), r"Software\Pos")
+        for name in ("Gamma", "Alpha", "Beta"):
+            backend.create_key(key, name)
+        names = backend.enum_keys(key)
+        assert [backend.subkey_name_at(key, i) for i in range(len(names))] == names
+        with pytest.raises(IndexError):
+            backend.subkey_name_at(key, len(names))
+        # List rules: a negative index counts from the end. SQLite reads a negative
+        # OFFSET as 0, so an unresolved -1 would hand back the first row instead.
+        assert backend.subkey_name_at(key, -1) == names[-1]
+        assert backend.subkey_name_at(key, -len(names)) == names[0]
+        with pytest.raises(IndexError):
+            backend.subkey_name_at(key, -(len(names) + 1))
+
+
+@pytest.mark.os_agnostic
+def test_value_at_follows_enum_values_order(tmp_path: Path) -> None:
+    with _make_backend(tmp_path) as backend:
+        key = backend.create_key(backend.get_hive(HKEY_CURRENT_USER), r"Software\PosV")
+        backend.set_value(key, "z", b"\x01", REG_BINARY)
+        backend.set_value(key, "", "default", REG_SZ)
+        backend.set_value(key, "m", ["a"], REG_MULTI_SZ)
+        entries = backend.enum_values(key)
+        assert [backend.value_at(key, i) for i in range(len(entries))] == entries
+        with pytest.raises(IndexError):
+            backend.value_at(key, len(entries))
+        assert backend.value_at(key, -1) == entries[-1]
+        assert backend.value_at(key, -len(entries)) == entries[0]
+        with pytest.raises(IndexError):
+            backend.value_at(key, -(len(entries) + 1))
+
+
+def _positional_reads(backend: RegistryBackend, key: FakeRegistryKey, count: int) -> list[object]:
+    """Read subkey names and values at the boundary indexes, recording IndexError as a result."""
+    indexes = (0, count - 1, -1, -count, count, -(count + 1))
+    return [
+        _read_or_index_error(read, key, index)
+        for index in indexes
+        for read in (backend.subkey_name_at, backend.value_at)
+    ]
+
+
+def _read_or_index_error(read: Callable[[FakeRegistryKey, int], object], key: FakeRegistryKey, index: int) -> object:
+    try:
+        return read(key, index)
+    except IndexError:
+        return IndexError
+
+
+@pytest.mark.os_agnostic
+def test_positional_reads_agree_across_memory_json_and_sqlite(tmp_path: Path) -> None:
+    """EnumKey/EnumValue index the same way whatever backend holds the registry."""
+    names = ("Alpha", "Beta", "Gamma")
+    results: dict[str, list[object]] = {}
+    sqlite_backend = SqliteBackend(tmp_path / "pos.db")
+    backends: dict[str, RegistryBackend] = {
+        "memory": InMemoryBackend(),
+        "json": JsonBackend(tmp_path / "pos.json"),
+        "sqlite": sqlite_backend,
+    }
+    try:
+        for label, backend in backends.items():
+            key = backend.create_key(backend.get_hive(HKEY_CURRENT_USER), r"Software\Pos")
+            # Inserted in sorted order, so insertion order (memory, json) equals SQLite's name order.
+            for name in names:
+                backend.create_key(key, name)
+                backend.set_value(key, name.lower(), name, REG_SZ)
+            results[label] = _positional_reads(backend, key, len(names))
+    finally:
+        sqlite_backend.close()
+    assert results["memory"][:4] == [
+        "Alpha",
+        ValueEntry("alpha", "Alpha", REG_SZ),
+        "Gamma",
+        ValueEntry("gamma", "Gamma", REG_SZ),
+    ]
+    assert results["json"] == results["memory"]
+    assert results["sqlite"] == results["memory"]
+
+
+# ---------------------------------------------------------------------------
+# Schema: parent_path index
+# ---------------------------------------------------------------------------
+
+
+def _child_lookup_plan(db_path: Path) -> str:
+    conn = sqlite3.connect(str(db_path))
+    try:
+        rows = conn.execute(
+            "EXPLAIN QUERY PLAN SELECT full_path FROM registry_keys WHERE parent_path = ? ORDER BY full_path",
+            ("HKEY_CURRENT_USER",),
+        ).fetchall()
+    finally:
+        conn.close()
+    return " ".join(str(row[-1]) for row in rows)
+
+
+@pytest.mark.os_agnostic
+def test_child_lookups_use_the_parent_path_index(tmp_path: Path) -> None:
+    db_path = tmp_path / "idx.db"
+    SqliteBackend(db_path).close()
+    assert "ix_registry_keys_parent_path" in _child_lookup_plan(db_path)
+
+
+@pytest.mark.os_agnostic
+def test_database_created_without_the_index_gets_it_on_open(tmp_path: Path) -> None:
+    db_path = tmp_path / "old.db"
+    conn = sqlite3.connect(str(db_path))
+    conn.execute(
+        "CREATE TABLE registry_keys (full_path TEXT PRIMARY KEY, hive_name TEXT NOT NULL, "
+        "parent_path TEXT, last_modified_ns INTEGER NOT NULL DEFAULT 0)"
+    )
+    conn.commit()
+    conn.close()
+    assert "ix_registry_keys_parent_path" not in _child_lookup_plan(db_path)
+    SqliteBackend(db_path).close()
+    assert "ix_registry_keys_parent_path" in _child_lookup_plan(db_path)
+
+
+# ---------------------------------------------------------------------------
+# bulk(): one transaction for many writes
+# ---------------------------------------------------------------------------
+
+
+def _committed_key_paths(db_path: Path) -> set[str]:
+    """Read what another connection sees, i.e. only committed rows."""
+    conn = sqlite3.connect(str(db_path))
+    try:
+        return {row[0] for row in conn.execute("SELECT full_path FROM registry_keys WHERE parent_path IS NOT NULL")}
+    finally:
+        conn.close()
+
+
+@pytest.mark.os_agnostic
+def test_single_writes_commit_immediately(tmp_path: Path) -> None:
+    db_path = tmp_path / "auto.db"
+    with SqliteBackend(db_path) as backend:
+        backend.create_key(backend.get_hive(HKEY_CURRENT_USER), "Auto")
+        assert _committed_key_paths(db_path) == {r"HKEY_CURRENT_USER\Auto"}
+
+
+@pytest.mark.os_agnostic
+def test_bulk_commits_once_at_the_end(tmp_path: Path) -> None:
+    db_path = tmp_path / "bulk.db"
+    with SqliteBackend(db_path) as backend:
+        hive = backend.get_hive(HKEY_CURRENT_USER)
+        with backend.bulk():
+            key = backend.create_key(hive, "Bulk")
+            backend.set_value(key, "v", 1, REG_DWORD)
+            assert _committed_key_paths(db_path) == set()
+        assert _committed_key_paths(db_path) == {r"HKEY_CURRENT_USER\Bulk"}
+        assert backend.get_value(key, "v").value == 1
+        # Autocommit resumes after the block.
+        backend.create_key(hive, "After")
+        assert r"HKEY_CURRENT_USER\After" in _committed_key_paths(db_path)
+
+
+@pytest.mark.os_agnostic
+def test_bulk_rolls_back_when_the_block_raises(tmp_path: Path) -> None:
+    db_path = tmp_path / "rollback.db"
+    with SqliteBackend(db_path) as backend:
+        hive = backend.get_hive(HKEY_CURRENT_USER)
+        with pytest.raises(RuntimeError, match="boom"), backend.bulk():
+            backend.create_key(hive, "Gone")
+            raise RuntimeError("boom")
+        assert backend.enum_keys(hive) == []
+        backend.create_key(hive, "Kept")
+        assert _committed_key_paths(db_path) == {r"HKEY_CURRENT_USER\Kept"}
+
+
+@pytest.mark.os_agnostic
+def test_nested_bulk_commits_only_with_the_outer_block(tmp_path: Path) -> None:
+    db_path = tmp_path / "nested.db"
+    with SqliteBackend(db_path) as backend:
+        hive = backend.get_hive(HKEY_CURRENT_USER)
+        with backend.bulk():
+            with backend.bulk():
+                backend.create_key(hive, "Inner")
+            assert _committed_key_paths(db_path) == set()
+            backend.create_key(hive, "Outer")
+        assert _committed_key_paths(db_path) == {r"HKEY_CURRENT_USER\Inner", r"HKEY_CURRENT_USER\Outer"}
+
+
+@pytest.mark.os_agnostic
+def test_failed_inner_bulk_undoes_only_its_own_writes(tmp_path: Path) -> None:
+    db_path = tmp_path / "inner_fail.db"
+    with SqliteBackend(db_path) as backend:
+        hive = backend.get_hive(HKEY_CURRENT_USER)
+        with backend.bulk():
+            backend.create_key(hive, "Before")
+            with pytest.raises(RuntimeError), backend.bulk():
+                backend.create_key(hive, "Inner")
+                raise RuntimeError("inner")
+            backend.create_key(hive, "AfterInner")
+        assert _committed_key_paths(db_path) == {r"HKEY_CURRENT_USER\Before", r"HKEY_CURRENT_USER\AfterInner"}
+
+
+@pytest.mark.os_agnostic
+def test_failed_outer_bulk_undoes_a_finished_inner_block(tmp_path: Path) -> None:
+    db_path = tmp_path / "outer_fail.db"
+    with SqliteBackend(db_path) as backend:
+        hive = backend.get_hive(HKEY_CURRENT_USER)
+        with pytest.raises(RuntimeError), backend.bulk():
+            with backend.bulk():
+                backend.create_key(hive, "Inner")
+            raise RuntimeError("outer")
+        assert _committed_key_paths(db_path) == set()
+
+
+# ---------------------------------------------------------------------------
+# Stored value text
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.os_agnostic
+def test_stored_value_text_is_unchanged(tmp_path: Path) -> None:
+    """Existing databases keep reading the same: pin the JSON text in the data column."""
+    db_path = tmp_path / "text.db"
+    with SqliteBackend(db_path) as backend:
+        key = backend.create_key(backend.get_hive(HKEY_CURRENT_USER), "Text")
+        backend.set_value(key, "b", b"\x00\xff", REG_BINARY)
+        backend.set_value(key, "s", "caf" + chr(0xE9), REG_SZ)
+        backend.set_value(key, "m", ["a", "b"], REG_MULTI_SZ)
+        backend.set_value(key, "n", None, REG_NONE)
+    conn = sqlite3.connect(str(db_path))
+    try:
+        stored = dict(conn.execute("SELECT value_name, data FROM registry_values").fetchall())
+    finally:
+        conn.close()
+    assert stored == {"b": '{"_base64":"AP8="}', "s": '"caf' + chr(0xE9) + '"', "m": '["a","b"]', "n": None}

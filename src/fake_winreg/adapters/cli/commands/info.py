@@ -13,23 +13,14 @@ import rich_click as click
 
 from fake_winreg import __init__conf__
 
-from ..constants import CLICK_CONTEXT_SETTINGS
+from ..constants import click_context_settings
 
 logger = logging.getLogger(__name__)
 
 
-@click.command("info", context_settings=CLICK_CONTEXT_SETTINGS)
+@click.command("info", context_settings=click_context_settings())
 def cli_info() -> None:
-    """Print resolved metadata so users can inspect installation details.
-
-    \f
-    Example:
-        >>> from click.testing import CliRunner
-        >>> runner = CliRunner()
-        >>> result = runner.invoke(cli_info)
-        >>> result.exit_code == 0
-        True
-    """
+    """Print resolved metadata so users can inspect installation details."""
     with lib_log_rich.runtime.bind(job_id="cli-info", extra={"command": "info"}):
         logger.info("Displaying package information")
         __init__conf__.print_info()

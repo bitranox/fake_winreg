@@ -8,7 +8,7 @@ import textwrap
 import pytest
 
 from fake_winreg.adapters.persistence.reg_io import export_reg, import_reg
-from fake_winreg.domain.api import _get_backend, load_fake_registry, use_backend  # pyright: ignore[reportPrivateUsage]
+from fake_winreg.domain.api import get_backend, load_fake_registry, use_backend
 from fake_winreg.domain.constants import (
     HKEY_CURRENT_USER,
     HKEY_LOCAL_MACHINE,
@@ -120,7 +120,7 @@ def test_import_creates_keys(tmp_path):
     )
 
     import_reg(reg_file)
-    backend = _get_backend()
+    backend = get_backend()
     hive = backend.get_hive(HKEY_LOCAL_MACHINE)
     key = backend.get_key(hive, r"SOFTWARE\ImportTest")
     subkeys = backend.enum_keys(key)
@@ -144,7 +144,7 @@ def test_import_string_value(tmp_path):
     )
 
     import_reg(reg_file)
-    backend = _get_backend()
+    backend = get_backend()
     hive = backend.get_hive(HKEY_LOCAL_MACHINE)
     key = backend.get_key(hive, r"SOFTWARE\Test")
     values = backend.enum_values(key)
@@ -167,7 +167,7 @@ def test_import_default_value(tmp_path):
     )
 
     import_reg(reg_file)
-    backend = _get_backend()
+    backend = get_backend()
     hive = backend.get_hive(HKEY_LOCAL_MACHINE)
     key = backend.get_key(hive, r"SOFTWARE\Test")
     val = backend.get_value(key, "")
@@ -191,7 +191,7 @@ def test_import_dword(tmp_path):
     )
 
     import_reg(reg_file)
-    backend = _get_backend()
+    backend = get_backend()
     hive = backend.get_hive(HKEY_LOCAL_MACHINE)
     key = backend.get_key(hive, r"SOFTWARE\Test")
     val = backend.get_value(key, "Count")
@@ -215,7 +215,7 @@ def test_import_binary(tmp_path):
     )
 
     import_reg(reg_file)
-    backend = _get_backend()
+    backend = get_backend()
     hive = backend.get_hive(HKEY_LOCAL_MACHINE)
     key = backend.get_key(hive, r"SOFTWARE\Test")
     val = backend.get_value(key, "Data")
@@ -240,7 +240,7 @@ def test_import_expand_sz(tmp_path):
     )
 
     import_reg(reg_file)
-    backend = _get_backend()
+    backend = get_backend()
     hive = backend.get_hive(HKEY_LOCAL_MACHINE)
     key = backend.get_key(hive, r"SOFTWARE\Test")
     val = backend.get_value(key, "Expand")
@@ -265,7 +265,7 @@ def test_import_multi_sz(tmp_path):
     )
 
     import_reg(reg_file)
-    backend = _get_backend()
+    backend = get_backend()
     hive = backend.get_hive(HKEY_LOCAL_MACHINE)
     key = backend.get_key(hive, r"SOFTWARE\Test")
     val = backend.get_value(key, "Multi")
@@ -290,7 +290,7 @@ def test_import_qword(tmp_path):
     )
 
     import_reg(reg_file)
-    backend = _get_backend()
+    backend = get_backend()
     hive = backend.get_hive(HKEY_LOCAL_MACHINE)
     key = backend.get_key(hive, r"SOFTWARE\Test")
     val = backend.get_value(key, "Big")
@@ -314,7 +314,7 @@ def test_import_reg_none(tmp_path):
     )
 
     import_reg(reg_file)
-    backend = _get_backend()
+    backend = get_backend()
     hive = backend.get_hive(HKEY_LOCAL_MACHINE)
     key = backend.get_key(hive, r"SOFTWARE\Test")
     val = backend.get_value(key, "Nothing")
@@ -342,7 +342,7 @@ def test_import_line_continuation(tmp_path):
     )
 
     import_reg(reg_file)
-    backend = _get_backend()
+    backend = get_backend()
     hive = backend.get_hive(HKEY_LOCAL_MACHINE)
     key = backend.get_key(hive, r"SOFTWARE\Test")
     val = backend.get_value(key, "LongBin")
@@ -372,7 +372,7 @@ def test_import_escaped_strings(tmp_path):
     )
 
     import_reg(reg_file)
-    backend = _get_backend()
+    backend = get_backend()
     hive = backend.get_hive(HKEY_LOCAL_MACHINE)
     key = backend.get_key(hive, r"SOFTWARE\Test")
 
@@ -524,7 +524,7 @@ def test_import_comments_and_blanks_are_skipped(tmp_path):
     )
 
     import_reg(reg_file)
-    backend = _get_backend()
+    backend = get_backend()
     hive = backend.get_hive(HKEY_LOCAL_MACHINE)
     key = backend.get_key(hive, r"SOFTWARE\Test")
     val = backend.get_value(key, "Val")
@@ -547,7 +547,7 @@ def test_import_regedit4_header(tmp_path):
     )
 
     import_reg(reg_file)
-    backend = _get_backend()
+    backend = get_backend()
     hive = backend.get_hive(HKEY_LOCAL_MACHINE)
     key = backend.get_key(hive, r"SOFTWARE\Old")
     val = backend.get_value(key, "V")
@@ -597,7 +597,7 @@ def test_export_regedit4_ascii_encoding(tmp_path):
     out = tmp_path / "out.reg"
     export_reg(out, version=4)
 
-    # Should be valid ASCII — no BOM
+    # Should be valid ASCII - no BOM
     raw = out.read_bytes()
     assert not raw.startswith(b"\xff\xfe"), "Version 4 should not have UTF-16 BOM"
     content = raw.decode("ascii")
@@ -607,7 +607,7 @@ def test_export_regedit4_ascii_encoding(tmp_path):
 
 @pytest.mark.os_agnostic
 def test_regedit4_roundtrip(tmp_path):
-    """Values survive export (v4) → import round-trip."""
+    """Values survive export (v4) -> import round-trip."""
     backend = _fresh_backend()
     hklm = backend.get_hive(HKEY_LOCAL_MACHINE)
     key = backend.create_key(hklm, r"SOFTWARE\V4Test")
@@ -641,10 +641,145 @@ def test_regedit4_import_existing_header(tmp_path):
     _fresh_backend()
     import_reg(out)
 
-    from fake_winreg.domain.api import _get_backend  # pyright: ignore[reportPrivateUsage]
-
-    backend = _get_backend()
+    backend = get_backend()
     hklm = backend.get_hive(HKEY_LOCAL_MACHINE)
     key = backend.get_key(hklm, r"SOFTWARE\ImportV4")
     val = backend.get_value(key, "Key")
     assert val.value == "value"
+
+
+# ---------------------------------------------------------------------------
+# Streaming import/export
+# ---------------------------------------------------------------------------
+
+# Characters str.splitlines treats as line breaks although a .reg file never
+# uses them as such; a REG_SZ value may contain any of them.
+_NON_REG_LINE_BREAKS = [chr(c) for c in (0x0B, 0x0C, 0x1C, 0x1D, 0x1E, 0x85, 0x2028, 0x2029)]
+
+
+@pytest.mark.os_agnostic
+@pytest.mark.parametrize("encoding", ["utf-16-le", "utf-8"])
+@pytest.mark.parametrize("separator", _NON_REG_LINE_BREAKS, ids=lambda c: f"U+{ord(c):04X}")
+def test_reg_sz_with_a_non_reg_line_break_round_trips(tmp_path, separator, encoding):
+    """Import splits only on CR/LF, so a value holding e.g. U+2028 is not cut in two."""
+    backend = _fresh_backend()
+    hive = backend.get_hive(HKEY_LOCAL_MACHINE)
+    key = backend.create_key(hive, r"SOFTWARE\Breaks")
+    value = f"before{separator}after"
+    backend.set_value(key, "Text", value, REG_SZ)
+    reg_file = tmp_path / "breaks.reg"
+    export_reg(reg_file, encoding=encoding)
+
+    fresh = _fresh_backend()
+    import_reg(reg_file)
+    imported = fresh.get_key(fresh.get_hive(HKEY_LOCAL_MACHINE), r"SOFTWARE\Breaks")
+    assert fresh.get_value(imported, "Text").value == value
+
+
+@pytest.mark.os_agnostic
+@pytest.mark.parametrize("line_end", ["\r\n", "\n", "\r"], ids=["crlf", "lf", "cr"])
+def test_import_accepts_every_line_ending(tmp_path, line_end):
+    _fresh_backend()
+    lines = [
+        "Windows Registry Editor Version 5.00",
+        "",
+        r"[HKEY_CURRENT_USER\Ends]",
+        '"x"="1"',
+        '"b"=hex:01,\\',
+        "  02",
+    ]
+    reg_file = tmp_path / "ends.reg"
+    reg_file.write_bytes(line_end.join(lines).encode("utf-8"))
+    import_reg(reg_file)
+    backend = get_backend()
+    key = backend.get_key(backend.get_hive(HKEY_CURRENT_USER), "Ends")
+    assert backend.get_value(key, "x").value == "1"
+    assert backend.get_value(key, "b").value == b"\x01\x02"
+
+
+@pytest.mark.os_agnostic
+def test_export_with_an_unencodable_value_leaves_no_file(tmp_path):
+    """A failed export into a new path does not leave a truncated .reg file behind."""
+    backend = _fresh_backend()
+    key = backend.create_key(backend.get_hive(HKEY_LOCAL_MACHINE), r"SOFTWARE\Enc")
+    backend.set_value(key, "Text", "caf" + chr(0xE9), REG_SZ)
+    target = tmp_path / "out.reg"
+    with pytest.raises(UnicodeEncodeError):
+        export_reg(target, encoding="ascii")
+    assert not target.exists()
+
+
+@pytest.mark.os_agnostic
+def test_export_with_an_unknown_codec_leaves_no_file(tmp_path):
+    _fresh_backend()
+    target = tmp_path / "out.reg"
+    with pytest.raises(LookupError):
+        export_reg(target, encoding="no-such-codec")
+    assert not target.exists()
+
+
+@pytest.mark.os_agnostic
+def test_export_utf8_sig_writes_its_bom_once(tmp_path):
+    """Lines are encoded one at a time; a codec's own BOM must still appear only at the start."""
+    backend = _fresh_backend()
+    backend.create_key(backend.get_hive(HKEY_LOCAL_MACHINE), r"SOFTWARE\Bom")
+    target = tmp_path / "bom.reg"
+    export_reg(target, encoding="utf-8-sig")
+    raw = target.read_bytes()
+    assert raw.startswith(b"\xef\xbb\xbfWindows Registry Editor Version 5.00\r\n")
+    assert raw.count(b"\xef\xbb\xbf") == 1
+
+
+@pytest.mark.os_agnostic
+def test_export_version_other_than_4_writes_version_5(tmp_path):
+    _fresh_backend()
+    target = tmp_path / "v.reg"
+    export_reg(target, encoding="utf-8", version=7)
+    assert target.read_bytes().startswith(b"Windows Registry Editor Version 5.00\r\n")
+
+
+@pytest.mark.os_agnostic
+@pytest.mark.parametrize("encoding", ["utf-16-le", "UTF-16", "utf16"])
+def test_export_every_utf16_spelling_writes_le_with_bom(tmp_path, encoding):
+    _fresh_backend()
+    target = tmp_path / "u.reg"
+    export_reg(target, encoding=encoding)
+    assert target.read_bytes().startswith(b"\xff\xfe" + "Windows".encode("utf-16-le"))
+
+
+@pytest.mark.os_agnostic
+def test_failed_export_leaves_an_existing_target_untouched(tmp_path):
+    """An export that fails partway keeps the file it would have replaced, and leaves no temp file."""
+    backend = _fresh_backend()
+    key = backend.create_key(backend.get_hive(HKEY_LOCAL_MACHINE), r"SOFTWARE\Enc")
+    # Enough encodable lines first that the failure lands after writing has begun.
+    for index in range(500):
+        backend.set_value(key, f"A{index:04d}", "plain", REG_SZ)
+    backend.set_value(key, "Z", "caf" + chr(0xE9), REG_SZ)
+    target = tmp_path / "out.reg"
+    original = b"previous export\r\n"
+    target.write_bytes(original)
+
+    with pytest.raises(UnicodeEncodeError):
+        export_reg(target, encoding="ascii")
+
+    assert target.read_bytes() == original
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["out.reg"]
+
+
+@pytest.mark.os_agnostic
+def test_successful_export_over_an_existing_target_replaces_its_bytes_in_place(tmp_path):
+    """The new content is copied into the existing file (same inode), not renamed over it."""
+    backend = _fresh_backend()
+    backend.create_key(backend.get_hive(HKEY_LOCAL_MACHINE), r"SOFTWARE\Over")
+    fresh_path = tmp_path / "fresh.reg"
+    export_reg(fresh_path, encoding="utf-8")
+    target = tmp_path / "out.reg"
+    target.write_bytes(b"x" * 100_000)
+    inode = target.stat().st_ino
+
+    export_reg(target, encoding="utf-8")
+
+    assert target.read_bytes() == fresh_path.read_bytes()
+    assert target.stat().st_ino == inode
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["fresh.reg", "out.reg"]

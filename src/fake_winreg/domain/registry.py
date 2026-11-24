@@ -7,7 +7,8 @@ and values, plus functions to create and retrieve them.
 from __future__ import annotations
 
 import time
-from typing import TYPE_CHECKING
+from collections.abc import Iterator, MutableMapping
+from typing import TYPE_CHECKING, TypeVar
 
 from .constants import (
     HKEY_CLASSES_ROOT,
@@ -22,14 +23,121 @@ from .constants import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import ItemsView, KeysView, ValuesView
+
     from .types import RegData
+
+_V = TypeVar("_V")
+
+
+class ChildMap(MutableMapping[str, _V]):
+    """Insertion-ordered name -> child mapping that can answer "the n-th name" cheaply.
+
+    ``EnumKey``/``EnumValue`` ask for children by position, one call per index.
+    Building a fresh name list per call made a full enumeration quadratic, so
+    the map keeps one ordered name snapshot and drops it on every mutation.
+    It is a ``MutableMapping`` over a private dict rather than a ``dict``
+    subclass: the mixin ``pop``/``popitem``/``setdefault``/``update`` all route
+    through ``__setitem__``/``__delitem__``, so no mutating path can skip the
+    invalidation (a ``dict`` subclass would have to re-implement every C-level
+    mutator and would still miss ``dict.__setitem__(m, ...)`` calls).
+
+    Example:
+        >>> children: ChildMap[int] = ChildMap()
+        >>> children["a"] = 1
+        >>> children["b"] = 2
+        >>> children.name_at(1)
+        'b'
+        >>> del children["a"]
+        >>> children.name_at(0), children.item_at(0)
+        ('b', 2)
+        >>> children.name_at(1)
+        Traceback (most recent call last):
+            ...
+        IndexError: list index out of range
+    """
+
+    __slots__ = ("_data", "_names")
+
+    def __init__(self) -> None:
+        self._data: dict[str, _V] = {}
+        self._names: list[str] | None = None
+
+    def __getitem__(self, name: str) -> _V:
+        return self._data[name]
+
+    def __setitem__(self, name: str, child: _V) -> None:
+        # Replacing an existing name keeps its position, but invalidating on
+        # every write is simpler to reason about than tracking new-vs-existing.
+        self._data[name] = child
+        self._names = None
+
+    def __delitem__(self, name: str) -> None:
+        del self._data[name]
+        self._names = None
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._data)
+
+    def __len__(self) -> int:
+        return len(self._data)
+
+    def __contains__(self, name: object) -> bool:
+        return name in self._data
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}({self._data!r})"
+
+    def clear(self) -> None:
+        """Remove every child (one dict clear instead of the mixin's popitem loop)."""
+        self._data.clear()
+        self._names = None
+
+    def keys(self) -> KeysView[str]:
+        """Return a live read-only view of the child names in insertion order."""
+        return self._data.keys()
+
+    def values(self) -> ValuesView[_V]:
+        """Return a live read-only view of the children in insertion order."""
+        return self._data.values()
+
+    def items(self) -> ItemsView[str, _V]:
+        """Return a live read-only view of ``(name, child)`` pairs in insertion order."""
+        return self._data.items()
+
+    def name_at(self, index: int) -> str:
+        """Return the name at *index* in insertion order (list indexing rules).
+
+        Args:
+            index: Position to read; negative values count from the end, as
+                they did when callers indexed ``list(map)`` directly.
+
+        Returns:
+            The child name at that position.
+
+        Raises:
+            IndexError: If *index* is out of range.
+        """
+        names = self._names
+        if names is None:
+            names = list(self._data)
+            self._names = names
+        return names[index]
+
+    def item_at(self, index: int) -> _V:
+        """Return the child at *index* in insertion order (see :meth:`name_at`).
+
+        Raises:
+            IndexError: If *index* is out of range.
+        """
+        return self._data[self.name_at(index)]
 
 
 class FakeRegistry:
     """Container for the entire fake Windows registry."""
 
     def __init__(self) -> None:
-        self.hive: dict[object, FakeRegistryKey] = {}
+        self.hive: dict[int, FakeRegistryKey] = {}
         self.hive[HKEY_CLASSES_ROOT] = set_fake_reg_key(FakeRegistryKey(), "HKEY_CLASSES_ROOT")
         self.hive[HKEY_CURRENT_CONFIG] = set_fake_reg_key(FakeRegistryKey(), "HKEY_CURRENT_CONFIG")
         self.hive[HKEY_CURRENT_USER] = set_fake_reg_key(FakeRegistryKey(), "HKEY_CURRENT_USER")
@@ -48,9 +156,21 @@ class FakeRegistryKey:
     def __init__(self) -> None:
         self.full_key: str = ""
         self.parent_fake_registry_key: FakeRegistryKey | None = None
-        self.subkeys: dict[str, FakeRegistryKey] = {}
-        self.values: dict[str, FakeRegistryValue] = {}
+        self._subkeys: ChildMap[FakeRegistryKey] = ChildMap()
+        self._values: ChildMap[FakeRegistryValue] = ChildMap()
         self.last_modified_ns: int = 0
+
+    # Read-only attributes: rebinding them to a plain dict would bypass the
+    # ChildMap snapshot invalidation that index-based enumeration relies on.
+    @property
+    def subkeys(self) -> ChildMap[FakeRegistryKey]:
+        """Child keys by name, in insertion order."""
+        return self._subkeys
+
+    @property
+    def values(self) -> ChildMap[FakeRegistryValue]:
+        """Values of this key by name, in insertion order."""
+        return self._values
 
 
 class FakeRegistryValue:
@@ -191,6 +311,7 @@ def get_windows_timestamp_now() -> int:
 
 
 __all__ = [
+    "ChildMap",
     "FakeRegistry",
     "FakeRegistryKey",
     "FakeRegistryValue",

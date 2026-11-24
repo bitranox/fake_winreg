@@ -4,16 +4,16 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Final
 
 import lib_log_rich.runtime
 import rich_click as click
 
 from fake_winreg.adapters.persistence.reg_io import export_reg
 from fake_winreg.domain.api import use_backend
-from fake_winreg.domain.constants import hive_name_hashed_by_int
+from fake_winreg.domain.enums import RegistryFormat
 from fake_winreg.domain.memory_backend import InMemoryBackend
-from fake_winreg.domain.registry import FakeRegistryKey
 from fake_winreg.domain.test_registries import (
     get_minimal_windows11_testregistry,
     get_minimal_windows_testregistry,
@@ -21,44 +21,34 @@ from fake_winreg.domain.test_registries import (
 )
 
 if TYPE_CHECKING:
-    from fake_winreg.adapters.persistence.sqlite_backend import SqliteBackend
+    from collections.abc import Mapping
 
 from .. import safe_console
-from ..constants import CLICK_CONTEXT_SETTINGS
+from ..constants import click_context_settings
 
 logger = logging.getLogger(__name__)
 
-_REGISTRIES = [
-    ("windows10", "get_minimal_windows_testregistry"),
-    ("wine", "get_minimal_wine_testregistry"),
-]
+#: The file extension each demo file gets, in the order the files are written. SQLite files
+#: are named ``.db``, the extension the converter also reads as SQLite.
+_EXTENSION_BY_FORMAT: Final[Mapping[RegistryFormat, str]] = MappingProxyType(
+    {RegistryFormat.JSON: ".json", RegistryFormat.REG: ".reg", RegistryFormat.SQLITE: ".db"}
+)
 
-_FORMATS = ["json", "reg", "db"]
 
-
-@click.command("export-demo-registries", context_settings=CLICK_CONTEXT_SETTINGS)
+@click.command("export-demo-registries", context_settings=click_context_settings())
 def cli_export_demo_registries() -> None:
-    """Export demo registry files (Windows 10, Wine) to the current directory.
+    """Export demo registry files (Windows 10, Windows 11, Wine) to the current directory.
 
     \b
     Creates 9 files:
       windows10.json, windows10.reg, windows10.db
       windows11.json, windows11.reg, windows11.db
       wine.json, wine.reg, wine.db
-
-    \f
-    Example:
-        >>> from click.testing import CliRunner
-        >>> import tempfile, os
-        >>> runner = CliRunner()
-        >>> with runner.isolated_filesystem():
-        ...     result = runner.invoke(cli_export_demo_registries)
-        ...     assert result.exit_code == 0
-        ...     assert os.path.exists("windows10.json")
     """
     with lib_log_rich.runtime.bind(job_id="cli-export-demo", extra={"command": "export-demo-registries"}):
-        # Deferred: json_io and sqlite_backend pull in orjson/sqlite3 - keep those out of
-        # `--help` and every other subcommand's path; only this command's db-export needs them.
+        # Deferred: convert, json_io and sqlite_backend pull in orjson/sqlite3 - keep those out
+        # of `--help` and every other subcommand's path; only this command's db-export needs them.
+        from fake_winreg.adapters.persistence.convert import copy_backend  # noqa: PLC0415
         from fake_winreg.adapters.persistence.json_io import export_json  # noqa: PLC0415
         from fake_winreg.adapters.persistence.sqlite_backend import SqliteBackend  # noqa: PLC0415
 
@@ -71,52 +61,25 @@ def cli_export_demo_registries() -> None:
         for name, builder in builders.items():
             registry = builder()
             backend = InMemoryBackend(registry)
-            use_backend(backend)  # type: ignore[arg-type]
+            use_backend(backend)
 
-            for fmt in _FORMATS:
-                filename = f"{name}.{fmt}"
+            for fmt, extension in _EXTENSION_BY_FORMAT.items():
+                filename = f"{name}{extension}"
                 path = Path(filename)
 
-                if fmt == "json":
+                if fmt is RegistryFormat.JSON:
                     export_json(path)
-                elif fmt == "reg":
+                elif fmt is RegistryFormat.REG:
                     export_reg(path)
-                elif fmt == "db":
-                    db_backend = SqliteBackend(path)
-                    _copy_registry_to_sqlite(backend, db_backend)
-                    db_backend.close()
+                else:  # RegistryFormat.SQLITE, the one member left
+                    # One transaction for the whole copy: committing every write costs a disk sync each.
+                    with SqliteBackend(path) as db_backend, db_backend.bulk():
+                        copy_backend(backend, db_backend)
 
                 safe_console.echo(f"Created {filename}")
 
         # Restore default backend
-        use_backend(InMemoryBackend())  # type: ignore[arg-type]
-
-
-def _copy_registry_to_sqlite(source: InMemoryBackend, target: SqliteBackend) -> None:
-    """Copy all keys and values from in-memory backend to SQLite."""
-    for hive_int in sorted(hive_name_hashed_by_int):
-        src_hive = source.get_hive(hive_int)
-        tgt_hive = target.get_hive(hive_int)
-        _copy_key_recursive(source, target, src_hive, tgt_hive)
-
-
-def _copy_key_recursive(
-    source: InMemoryBackend,
-    target: SqliteBackend,
-    src_key: object,
-    tgt_key: object,
-) -> None:
-    """Recursively copy keys and values."""
-    if not isinstance(src_key, FakeRegistryKey) or not isinstance(tgt_key, FakeRegistryKey):
-        return
-
-    for vname, vdata, vtype in source.enum_values(src_key):
-        target.set_value(tgt_key, vname, vdata, vtype)
-
-    for subkey_name in source.enum_keys(src_key):
-        child_src = source.get_key(src_key, subkey_name)
-        child_tgt = target.create_key(tgt_key, subkey_name)
-        _copy_key_recursive(source, target, child_src, child_tgt)
+        use_backend(InMemoryBackend())
 
 
 __all__ = ["cli_export_demo_registries"]

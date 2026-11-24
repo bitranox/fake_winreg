@@ -7,91 +7,55 @@ implementation is in use.
 
 from __future__ import annotations
 
-import base64
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING
 
 import orjson
 
-from fake_winreg.domain.api import _get_backend  # pyright: ignore[reportPrivateUsage]
+from fake_winreg.domain.api import get_backend
 from fake_winreg.domain.constants import hive_name_hashed_by_int
-from fake_winreg.domain.serialization import _encode_value  # pyright: ignore[reportPrivateUsage]
+from fake_winreg.domain.serialization import (
+    SnapshotDict,
+    SnapshotKeyDict,
+    SnapshotValueDict,
+    encode_value,
+    parse_registry_document,
+)
 
 if TYPE_CHECKING:
     from fake_winreg.application.ports import RegistryBackend
     from fake_winreg.domain.registry import FakeRegistryKey
-    from fake_winreg.domain.types import RegData
-
-_HIVE_NAME_TO_INT: dict[str, int] = {v: k for k, v in hive_name_hashed_by_int.items()}
+    from fake_winreg.domain.serialization import KeyRecord
 
 
 def import_json(path: str | Path) -> None:
     """Load JSON file data into the currently active backend.
 
-    Walks the deserialized tree structure and calls ``create_key`` and
-    ``set_value`` on the active backend for every key and value found.
-    This works with any backend implementation (memory, SQLite, etc.).
+    Parses the document once (see
+    :func:`fake_winreg.domain.serialization.parse_registry_document`), then
+    calls ``create_key`` and ``set_value`` on the active backend for every key
+    and value found.  This works with any backend implementation (memory,
+    SQLite, etc.).  Document timestamps are not imported: the backend stamps
+    what it writes.
 
     >>> import tempfile, os, orjson as _oj
     >>> p = os.path.join(tempfile.mkdtemp(), "import_test.json")
     >>> _ = open(p, "wb").write(_oj.dumps({"hives": {}}))
     >>> import_json(p)
     """
-    file_path = Path(path)
-    raw = file_path.read_bytes()
-    data = orjson.loads(raw)
-
-    hives_raw = data.get("hives", {})
-    if not isinstance(hives_raw, dict):
-        return
-    hives_data = cast("dict[str, Any]", hives_raw)
-
-    backend = _get_backend()
-
-    for hive_name, hive_dict in hives_data.items():
-        hive_int = _HIVE_NAME_TO_INT.get(hive_name)
-        if hive_int is None or not isinstance(hive_dict, dict):
-            continue
-        hive_key = backend.get_hive(hive_int)
-        _import_key_recursive(backend, hive_key, cast("dict[str, Any]", hive_dict))
+    hives = parse_registry_document(orjson.loads(Path(path).read_bytes()))
+    backend = get_backend()
+    for hive in hives:
+        _import_key(backend, backend.get_hive(hive.hive), hive.key)
 
 
-def _import_key_recursive(backend: RegistryBackend, parent_key: FakeRegistryKey, data: dict[str, Any]) -> None:
-    """Walk a key dict and create subkeys/values in the backend."""
-    values_data = data.get("values", {})
-    if isinstance(values_data, dict):
-        values_dict = cast("dict[str, Any]", values_data)
-        for vname, vdict in values_dict.items():
-            if not isinstance(vdict, dict):
-                continue
-            typed_vdict = cast("dict[str, Any]", vdict)
-            value = _decode_import_value(typed_vdict.get("data"))
-            raw_type: object = typed_vdict.get("type", 1)
-            value_type: int = raw_type if isinstance(raw_type, int) else 1
-            backend.set_value(parent_key, str(vname), value, value_type)
-
-    keys_data = data.get("keys", {})
-    if isinstance(keys_data, dict):
-        keys_dict = cast("dict[str, Any]", keys_data)
-        for sname, sdict in keys_dict.items():
-            if not isinstance(sdict, dict):
-                continue
-            child_key = backend.create_key(parent_key, str(sname))
-            _import_key_recursive(backend, child_key, cast("dict[str, Any]", sdict))
-
-
-def _decode_import_value(data: object) -> RegData:
-    """Decode a JSON value back to a registry data type."""
-    if isinstance(data, dict):
-        typed_dict = cast("dict[str, Any]", data)
-        if "_base64" in typed_dict:
-            return base64.b64decode(typed_dict["_base64"])
-        return str(typed_dict)
-    if isinstance(data, list):
-        return [str(item) for item in cast("list[object]", data)]
-    if data is None or isinstance(data, (str, int, bytes)):
-        return data
-    return str(data)
+def _import_key(backend: RegistryBackend, parent_key: FakeRegistryKey, record: KeyRecord) -> None:
+    """Write one parsed key's values and subkeys into the backend."""
+    for value in record.values:
+        backend.set_value(parent_key, value.name, value.data, value.value_type)
+    for sub in record.subkeys:
+        child_key = backend.create_key(parent_key, sub.name)
+        _import_key(backend, child_key, sub.key)
 
 
 def export_json(path: str | Path) -> None:
@@ -105,8 +69,8 @@ def export_json(path: str | Path) -> None:
     >>> export_json(p)
     >>> assert os.path.exists(p)
     """
-    backend = _get_backend()
-    hives: dict[str, object] = {}
+    backend = get_backend()
+    hives: dict[str, SnapshotKeyDict] = {}
 
     for hive_int, hive_name in sorted(hive_name_hashed_by_int.items(), key=lambda kv: kv[1]):
         try:
@@ -115,34 +79,28 @@ def export_json(path: str | Path) -> None:
             continue
         hives[hive_name] = _export_key_recursive(backend, hive_key)
 
-    data = {"hives": hives}
-    raw = orjson.dumps(data, option=orjson.OPT_INDENT_2)
+    raw = orjson.dumps(SnapshotDict(hives=hives), option=orjson.OPT_INDENT_2)
     file_path = Path(path)
     file_path.parent.mkdir(parents=True, exist_ok=True)
     file_path.write_bytes(raw)
 
 
-def _export_key_recursive(backend: RegistryBackend, key: FakeRegistryKey) -> dict[str, object]:
-    """Recursively build a dict from the backend's key tree."""
-    _num_subkeys, _num_values, last_modified_ns = backend.query_info(key)
+def _export_key_recursive(backend: RegistryBackend, key: FakeRegistryKey) -> SnapshotKeyDict:
+    """Recursively build the snapshot dict of the backend's key tree."""
+    values: dict[str, SnapshotValueDict] = {}
+    for entry in sorted(backend.enum_values(key), key=lambda e: e.name):
+        values[entry.name] = SnapshotValueDict(data=encode_value(entry.data), type=entry.value_type)
 
-    values: dict[str, object] = {}
-    for vname, vdata, vtype in sorted(backend.enum_values(key), key=lambda t: t[0]):
-        values[vname] = {
-            "data": _encode_value(vdata),
-            "type": vtype,
-        }
-
-    keys: dict[str, object] = {}
+    keys: dict[str, SnapshotKeyDict] = {}
     for sname in sorted(backend.enum_keys(key)):
         child_key = backend.get_key(key, sname)
         keys[sname] = _export_key_recursive(backend, child_key)
 
-    return {
-        "last_modified_ns": last_modified_ns,
-        "values": values,
-        "keys": keys,
-    }
+    return SnapshotKeyDict(
+        last_modified_ns=backend.query_info(key).last_modified_ns,
+        values=values,
+        keys=keys,
+    )
 
 
 __all__ = ["export_json", "import_json"]
